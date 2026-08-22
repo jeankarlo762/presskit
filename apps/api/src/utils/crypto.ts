@@ -1,0 +1,11 @@
+import { createHash, randomBytes } from "node:crypto";
+
+export function generateOpaqueToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+/** Refresh tokens are only ever stored as this hash — the raw value exists
+ * solely in the client's hands and in the response body that issued it. */
+export function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}

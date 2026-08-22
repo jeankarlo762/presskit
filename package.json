@@ -1,0 +1,19 @@
+{
+  "name": "presskit",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@presskit/api",
+    "dev:dashboard": "npm run dev --workspace=@presskit/dashboard",
+    "dev:site": "npm run dev --workspace=@presskit/site",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

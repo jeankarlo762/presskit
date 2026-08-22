@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanKey {
+  FREE
+  PRO
+}
+
+enum ArtistCategory {
+  MUSICO_BANDA
+  DJ
+  ATOR
+  ARTISTA_VISUAL
+}
+
+enum SectionType {
+  BIO
+  MEDIA
+  GALLERY
+  PRESS
+  TOUR_DATES
+  CONTACT
+  TECH_RIDER
+  CUSTOM
+}
+
+enum MediaProvider {
+  SPOTIFY
+  YOUTUBE
+  SOUNDCLOUD
+  VIMEO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  passwordHash String
+  name      String
+  planKey   PlanKey  @default(FREE)
+
+  asaasCustomerId     String?
+  asaasSubscriptionId String?
+  subscriptionStatus  String?
+  currentPeriodEnd    DateTime?
+
+  presskit      Presskit?
+  refreshTokens RefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Replaces the in-memory Map used in the sibling ArenaHub project — must
+/// survive a process restart and work across more than one API instance.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Presskit {
+  id       String         @id @default(cuid())
+  userId   String         @unique
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  slug        String         @unique
+  category    ArtistCategory
+  templateKey String         @default("default")
+  published   Boolean        @default(false)
+
+  shortBio     String?
+  longBio      String?
+  contactEmail String?
+  contactPhone String?
+  city         String?
+  state        String?
+
+  ogTitleOverride       String?
+  ogDescriptionOverride String?
+
+  sections       Section[]
+  mediaEmbeds    MediaEmbed[]
+  galleryPhotos  GalleryPhoto[]
+  tourDates      TourDate[]
+  pressMentions  PressMention[]
+  trackableLinks TrackableLink[]
+  pageViews      PageView[]
+  slugHistory    SlugHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Keeps old slugs redirecting (301) for a period after an artist renames
+/// their presskit, so links already shared (including trackable ones) don't
+/// break silently.
+model SlugHistory {
+  id         String   @id @default(cuid())
+  presskitId String
+  presskit   Presskit @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  oldSlug    String   @unique
+  createdAt  DateTime @default(now())
+}
+
+/// Ordering/visibility layer for singular blocks (bio, contact, tech rider,
+/// custom). Collection-shaped sections (media/gallery/tour dates/press) only
+/// use this row to toggle visibility+order — the actual items live in their
+/// own tables below, keyed directly by presskitId.
+model Section {
+  id         String      @id @default(cuid())
+  presskitId String
+  presskit   Presskit    @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  type       SectionType
+  order      Int
+  visible    Boolean     @default(true)
+  data       Json        @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([presskitId, type])
+  @@index([presskitId])
+}
+
+model MediaEmbed {
+  id         String        @id @default(cuid())
+  presskitId String
+  presskit   Presskit      @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  provider   MediaProvider
+  url        String
+  title      String?
+  order      Int
+
+  @@index([presskitId])
+}
+
+model GalleryPhoto {
+  id         String   @id @default(cuid())
+  presskitId String
+  presskit   Presskit @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  storageKey String
+  url        String
+  width      Int
+  height     Int
+  order      Int
+  caption    String?
+
+  @@index([presskitId])
+}
+
+model TourDate {
+  id         String   @id @default(cuid())
+  presskitId String
+  presskit   Presskit @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  date       DateTime
+  venueName  String
+  city       String
+  ticketUrl  String?
+
+  @@index([presskitId])
+}
+
+model PressMention {
+  id          String    @id @default(cuid())
+  presskitId  String
+  presskit    Presskit  @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  outlet      String
+  quote       String?
+  url         String?
+  logoUrl     String?
+  publishedAt DateTime?
+
+  @@index([presskitId])
+}
+
+model TrackableLink {
+  id         String   @id @default(cuid())
+  presskitId String
+  presskit   Presskit @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  code       String
+  label      String
+  active     Boolean  @default(true)
+
+  pageViews PageView[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([presskitId, code])
+  @@index([presskitId])
+}
+
+/// Raw IP is never persisted — it's only used transiently (request-time) to
+/// resolve `country`. See PLAN risk notes on LGPD.
+model PageView {
+  id              String         @id @default(cuid())
+  presskitId      String
+  presskit        Presskit       @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  trackableLinkId String?
+  trackableLink   TrackableLink? @relation(fields: [trackableLinkId], references: [id], onDelete: SetNull)
+
+  sessionId    String
+  referrerUrl  String?
+  referrerHost String?
+  deviceType   String?
+  country      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([presskitId, createdAt])
+  @@index([presskitId, trackableLinkId])
+}
+
+/// Dedup key for Asaas webhook delivery (at-least-once, so retries are expected).
+model AsaasWebhookEvent {
+  id           String    @id @default(cuid())
+  asaasEventId String    @unique
+  eventType    String
+  payload      Json
+  processedAt  DateTime?
+  error        String?
+  createdAt    DateTime  @default(now())
+}
