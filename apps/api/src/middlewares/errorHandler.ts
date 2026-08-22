@@ -10,6 +10,11 @@ import {
   PresskitNotFoundError,
   SlugAlreadyInUseError,
 } from "../services/presskit.service";
+import { MediaEmbedNotFoundError } from "../services/mediaEmbed.service";
+import { TourDateNotFoundError } from "../services/tourDate.service";
+import { PressMentionNotFoundError } from "../services/pressMention.service";
+import { TrackableLinkCodeInUseError, TrackableLinkNotFoundError } from "../services/trackableLink.service";
+import { StorageNotConfiguredError, UploadNotFoundError } from "../services/storage.service";
 import { PlanLimitError } from "@presskit/shared";
 import { InvalidAccessTokenError } from "../utils/jwt";
 
@@ -22,6 +27,13 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [SlugAlreadyInUseError, 409],
   [PresskitAlreadyExistsError, 409],
   [PlanLimitError, 402],
+  [MediaEmbedNotFoundError, 404],
+  [TourDateNotFoundError, 404],
+  [PressMentionNotFoundError, 404],
+  [TrackableLinkNotFoundError, 404],
+  [TrackableLinkCodeInUseError, 409],
+  [UploadNotFoundError, 400],
+  [StorageNotConfiguredError, 503],
 ]);
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {

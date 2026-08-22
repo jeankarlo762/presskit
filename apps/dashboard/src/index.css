@@ -1,1 +1,5 @@
 @import "tailwindcss";
+/* Same reasoning as apps/site/app/globals.css — packages/shared is only
+   reachable through node_modules (npm workspace symlink), which Tailwind
+   skips by default. */
+@source "../../../packages/shared/src";

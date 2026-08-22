@@ -13,8 +13,6 @@ const pressDataSchema = z.object({
 const contactDataSchema = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().max(30).optional(),
-  city: z.string().trim().max(120).optional(),
-  state: z.string().trim().max(60).optional(),
   socialLinks: z
     .array(
       z.object({

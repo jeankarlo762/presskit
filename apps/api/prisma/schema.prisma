@@ -82,12 +82,11 @@ model Presskit {
   templateKey String         @default("default")
   published   Boolean        @default(false)
 
-  shortBio     String?
-  longBio      String?
-  contactEmail String?
-  contactPhone String?
-  city         String?
-  state        String?
+  /// Header location tag ("São Paulo - SP"), distinct from the CONTACT
+  /// section — bio/contact content itself lives in Section.data (BIO and
+  /// CONTACT types) so there is exactly one place to edit each, not two.
+  city  String?
+  state String?
 
   ogTitleOverride       String?
   ogDescriptionOverride String?
