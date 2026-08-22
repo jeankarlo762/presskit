@@ -1,4 +1,9 @@
+import type { MediaProvider } from "../schemas/collections";
 import type { PublicMediaEmbed } from "../types/publicPresskit";
+import { SectionHeading } from "./SectionHeading";
+
+export const AUDIO_PROVIDERS: MediaProvider[] = ["SPOTIFY", "SOUNDCLOUD"];
+export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO"];
 
 function toEmbedSrc(embed: PublicMediaEmbed): string | null {
   try {
@@ -32,10 +37,16 @@ function toEmbedSrc(embed: PublicMediaEmbed): string | null {
 
 function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
   const src = toEmbedSrc(embed);
+  const isVideo = VIDEO_PROVIDERS.includes(embed.provider);
 
   if (!src) {
     return (
-      <a href={embed.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+      <a
+        href={embed.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[var(--presskit-accent)] underline underline-offset-2"
+      >
         {embed.title ?? embed.url}
       </a>
     );
@@ -49,18 +60,18 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
         title={embed.title ?? embed.provider}
         loading="lazy"
         allow="autoplay; encrypted-media; picture-in-picture"
-        className="h-[152px] w-full border-0"
+        className={isVideo ? "aspect-video w-full border-0" : "h-[152px] w-full border-0"}
       />
     </div>
   );
 }
 
-export function MediaEmbedBlock({ embeds }: { embeds: PublicMediaEmbed[] }) {
+export function MediaEmbedBlock({ title, embeds }: { title: string; embeds: PublicMediaEmbed[] }) {
   if (embeds.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Música e vídeos</h2>
+      <SectionHeading>{title}</SectionHeading>
       <div className="flex flex-col gap-4">
         {embeds.map((embed) => (
           <EmbedFrame key={embed.id} embed={embed} />

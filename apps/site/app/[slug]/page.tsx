@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { ARTIST_CATEGORY_LABELS, isBotUserAgent } from "@presskit/shared";
 import { PresskitRenderer } from "@presskit/shared/ui";
 import { fetchPublicPresskit, recordPresskitView } from "../../lib/api";
+import { FONT_CLASS_NAME } from "../../lib/fonts";
 
 const getLookup = cache(async (slug: string) => fetchPublicPresskit(slug));
 
@@ -51,12 +52,16 @@ export default async function PresskitPage(props: PageProps<"/[slug]">) {
       {
         trackableCode,
         referrerUrl: headerList.get("referer") ?? undefined,
-        sessionId: crypto.randomUUID(),
+        sessionId: headerList.get("x-session-id") ?? crypto.randomUUID(),
         country: headerList.get("x-geo-country") ?? undefined,
       },
       userAgent,
     );
   }
 
-  return <PresskitRenderer presskit={presskit} />;
+  return (
+    <div className={FONT_CLASS_NAME[presskit.themeFontKey]}>
+      <PresskitRenderer presskit={presskit} />
+    </div>
+  );
 }

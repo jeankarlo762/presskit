@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { ARTIST_CATEGORIES, RESERVED_SLUGS } from "../constants/category";
+import { FONT_KEYS } from "../constants/theme";
+
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/, "use uma cor no formato #rrggbb");
 
 export const slugSchema = z
   .string()
@@ -20,6 +26,12 @@ export const presskitUpdateSchema = z.object({
   state: z.string().trim().max(60).optional(),
   ogTitleOverride: z.string().trim().max(70).optional(),
   ogDescriptionOverride: z.string().trim().max(160).optional(),
+  themeBackgroundColor: hexColorSchema.optional(),
+  themeTextColor: hexColorSchema.optional(),
+  themeAccentColor: hexColorSchema.optional(),
+  themeFontKey: z.enum(FONT_KEYS).optional(),
+  themeBackgroundImageUrl: z.string().trim().url().nullable().optional(),
+  themeBackgroundImageKey: z.string().trim().nullable().optional(),
 });
 export type PresskitUpdateInput = z.infer<typeof presskitUpdateSchema>;
 

@@ -1,4 +1,5 @@
 import type { ArtistCategory, SectionType } from "../constants/category";
+import type { FontKey } from "../constants/theme";
 import type { MediaProvider } from "../schemas/collections";
 
 /** Shape of what GET /public/presskits/:slug returns after the HTTP+JSON
@@ -7,6 +8,7 @@ import type { MediaProvider } from "../schemas/collections";
 export type PublicSection = {
   id: string;
   type: SectionType;
+  title: string | null;
   order: number;
   visible: boolean;
   data: unknown;
@@ -56,6 +58,11 @@ export type PublicPresskit = {
   state: string | null;
   ogTitleOverride: string | null;
   ogDescriptionOverride: string | null;
+  themeBackgroundColor: string;
+  themeTextColor: string;
+  themeAccentColor: string;
+  themeFontKey: FontKey;
+  themeBackgroundImageUrl: string | null;
   sections: PublicSection[];
   mediaEmbeds: PublicMediaEmbed[];
   galleryPhotos: PublicGalleryPhoto[];

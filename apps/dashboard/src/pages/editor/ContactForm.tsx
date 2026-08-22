@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { ContactSectionData } from "@presskit/shared";
+import { SECTION_DEFAULT_TITLES, type ContactSectionData } from "@presskit/shared";
 import { updateSectionData } from "../../api/presskit";
+import { SectionTitleField } from "./SectionTitleField";
 
 const PLATFORMS = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "SPOTIFY", "X", "IMDB", "SITE", "OUTRO"] as const;
 
@@ -18,12 +19,15 @@ const schema = z.object({
 
 export function ContactForm({
   initial,
+  initialTitle,
   onSaved,
 }: {
   initial: ContactSectionData;
-  onSaved: (data: ContactSectionData) => void;
+  initialTitle: string;
+  onSaved: (data: ContactSectionData, title: string) => void;
 }) {
   const [saved, setSaved] = useState(false);
+  const [title, setTitle] = useState(initialTitle);
   const {
     register,
     control,
@@ -34,18 +38,21 @@ export function ContactForm({
   const { fields, append, remove } = useFieldArray({ control, name: "socialLinks" });
 
   useEffect(() => reset(initial), [initial, reset]);
+  useEffect(() => setTitle(initialTitle), [initialTitle]);
+
+  const titleChanged = title !== initialTitle;
 
   async function onSubmit(values: ContactSectionData) {
     setSaved(false);
-    const section = await updateSectionData("CONTACT", values);
-    onSaved(section.data as ContactSectionData);
+    const section = await updateSectionData("CONTACT", values, title);
+    onSaved(section.data as ContactSectionData, section.title ?? SECTION_DEFAULT_TITLES.CONTACT);
     reset(values);
     setSaved(true);
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 rounded-lg border p-4">
-      <h3 className="font-medium">Contato</h3>
+      <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.CONTACT} onChange={setTitle} />
       <div>
         <label className="mb-1 block text-sm font-medium">E-mail</label>
         <input className="w-full rounded border px-3 py-2 text-sm" {...register("email")} />
@@ -89,12 +96,12 @@ export function ContactForm({
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={isSubmitting || !isDirty}
+          disabled={isSubmitting || (!isDirty && !titleChanged)}
           className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
         >
           {isSubmitting ? "Salvando..." : "Salvar"}
         </button>
-        {saved && !isDirty && <span className="text-sm text-green-600">Salvo</span>}
+        {saved && !isDirty && !titleChanged && <span className="text-sm text-green-600">Salvo</span>}
       </div>
     </form>
   );

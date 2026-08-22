@@ -30,14 +30,17 @@ function getClient() {
   });
 }
 
-export async function createGalleryUploadUrl(presskitId: string, extension: string) {
+/** `folder` separates the different kinds of images a presskit can have
+ * (gallery photos vs. the theme background) into distinct R2 prefixes —
+ * same presign/confirm/delete mechanics either way. */
+export async function createImageUploadUrl(presskitId: string, extension: string, folder: "gallery" | "theme-bg") {
   const normalizedExtension = extension.toLowerCase().replace(/^\./, "");
   if (!ALLOWED_EXTENSIONS.has(normalizedExtension)) {
     throw new Error(`Extensão não suportada: ${extension}`);
   }
 
   const client = getClient();
-  const storageKey = `presskits/${presskitId}/gallery/${generateOpaqueToken()}.${normalizedExtension}`;
+  const storageKey = `presskits/${presskitId}/${folder}/${generateOpaqueToken()}.${normalizedExtension}`;
 
   const uploadUrl = await getSignedUrl(
     client,
@@ -50,8 +53,8 @@ export async function createGalleryUploadUrl(presskitId: string, extension: stri
 
 /** Confirms the object actually landed in R2 before the metadata row is
  * persisted — a client that calls "confirm" without ever uploading (or after
- * a failed upload) must not be able to plant a broken gallery entry. */
-export async function assertGalleryObjectExists(storageKey: string) {
+ * a failed upload) must not be able to plant a broken gallery/background entry. */
+export async function assertImageObjectExists(storageKey: string) {
   const client = getClient();
   try {
     await client.send(new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
@@ -60,7 +63,7 @@ export async function assertGalleryObjectExists(storageKey: string) {
   }
 }
 
-export async function deleteGalleryObject(storageKey: string) {
+export async function deleteImageObject(storageKey: string) {
   if (!env.R2_ACCOUNT_ID) return;
   const client = getClient();
   await client.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey })).catch(() => undefined);

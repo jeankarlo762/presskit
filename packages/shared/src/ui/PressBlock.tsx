@@ -1,12 +1,21 @@
 import type { PressSectionData } from "../schemas/section";
 import type { PublicPressMention } from "../types/publicPresskit";
+import { SectionHeading } from "./SectionHeading";
 
-export function PressBlock({ data, mentions }: { data: PressSectionData; mentions: PublicPressMention[] }) {
+export function PressBlock({
+  title,
+  data,
+  mentions,
+}: {
+  title: string;
+  data: PressSectionData;
+  mentions: PublicPressMention[];
+}) {
   if (!data.highlightStats && mentions.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Imprensa</h2>
+      <SectionHeading>{title}</SectionHeading>
       {data.highlightStats && <p className="text-sm font-medium">{data.highlightStats}</p>}
       {mentions.length > 0 && (
         <ul className="flex flex-col gap-3">
@@ -17,16 +26,14 @@ export function PressBlock({ data, mentions }: { data: PressSectionData; mention
                   href={mention.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium underline underline-offset-2"
+                  className="font-medium text-[var(--presskit-accent)] underline underline-offset-2"
                 >
                   {mention.outlet}
                 </a>
               ) : (
                 <span className="font-medium">{mention.outlet}</span>
               )}
-              {mention.quote && (
-                <p className="text-neutral-600 dark:text-neutral-300">"{mention.quote}"</p>
-              )}
+              {mention.quote && <p className="text-[var(--presskit-muted)]">"{mention.quote}"</p>}
             </li>
           ))}
         </ul>

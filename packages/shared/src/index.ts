@@ -1,6 +1,7 @@
 export * from "./constants/category";
 export * from "./constants/plan";
 export * from "./constants/bots";
+export * from "./constants/theme";
 
 export * from "./schemas/section";
 export * from "./schemas/collections";

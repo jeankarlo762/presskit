@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type {
-  BioSectionData,
-  ContactSectionData,
-  PublicPresskit,
+import {
+  FONT_FAMILY_CSS,
+  SECTION_DEFAULT_TITLES,
+  type BioSectionData,
+  type ContactSectionData,
+  type PublicPresskit,
 } from "@presskit/shared";
-import { PresskitRenderer } from "@presskit/shared/ui";
+import { AUDIO_PROVIDERS, PresskitRenderer, VIDEO_PROVIDERS } from "@presskit/shared/ui";
 import {
   getMyPresskit,
   listGalleryPhotos,
   listLinks,
   listMedia,
-  listPress,
   listSections,
   listTourDates,
   publishPresskit,
@@ -19,7 +20,6 @@ import {
   type GalleryPhoto,
   type MediaEmbed,
   type Presskit,
-  type PressMention,
   type Section,
   type TourDate,
   type TrackableLink,
@@ -28,11 +28,11 @@ import { logout } from "../api/auth";
 import { useAuthStore } from "../store/auth.store";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
-import { MediaManager } from "./editor/MediaManager";
+import { EmbedManager } from "./editor/EmbedManager";
 import { GalleryManager } from "./editor/GalleryManager";
 import { TourDatesManager } from "./editor/TourDatesManager";
-import { PressManager } from "./editor/PressManager";
 import { LinksManager } from "./editor/LinksManager";
+import { ThemeEditor } from "./editor/ThemeEditor";
 
 const EMPTY_BIO: BioSectionData = { shortBio: "", longBio: "" };
 const EMPTY_CONTACT: ContactSectionData = { email: "", socialLinks: [] };
@@ -46,7 +46,6 @@ export function DashboardHomePage() {
   const [media, setMedia] = useState<MediaEmbed[]>([]);
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [tourDates, setTourDates] = useState<TourDate[]>([]);
-  const [press, setPress] = useState<PressMention[]>([]);
   const [links, setLinks] = useState<TrackableLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishBusy, setPublishBusy] = useState(false);
@@ -62,12 +61,11 @@ export function DashboardHomePage() {
       }
       setPresskit(found);
 
-      const [sectionsRes, mediaRes, galleryRes, tourDatesRes, pressRes, linksRes] = await Promise.all([
+      const [sectionsRes, mediaRes, galleryRes, tourDatesRes, linksRes] = await Promise.all([
         listSections(),
         listMedia(),
         listGalleryPhotos(),
         listTourDates(),
-        listPress(),
         listLinks(),
       ]);
       if (cancelled) return;
@@ -76,7 +74,6 @@ export function DashboardHomePage() {
       setMedia(mediaRes);
       setGallery(galleryRes);
       setTourDates(tourDatesRes);
-      setPress(pressRes);
       setLinks(linksRes);
       setLoading(false);
     });
@@ -107,6 +104,10 @@ export function DashboardHomePage() {
 
   const bioSection = sections.find((s) => s.type === "BIO");
   const contactSection = sections.find((s) => s.type === "CONTACT");
+  const musicSection = sections.find((s) => s.type === "MUSIC");
+  const videoSection = sections.find((s) => s.type === "VIDEO");
+  const tourDatesSection = sections.find((s) => s.type === "TOUR_DATES");
+
   const bioData = (bioSection?.data as BioSectionData) ?? EMPTY_BIO;
   const contactData = (contactSection?.data as ContactSectionData) ?? EMPTY_CONTACT;
 
@@ -120,11 +121,16 @@ export function DashboardHomePage() {
     state: presskit.state,
     ogTitleOverride: null,
     ogDescriptionOverride: null,
+    themeBackgroundColor: presskit.themeBackgroundColor,
+    themeTextColor: presskit.themeTextColor,
+    themeAccentColor: presskit.themeAccentColor,
+    themeFontKey: presskit.themeFontKey,
+    themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
     sections: sections.map((s) => ({ ...s, data: s.data ?? {} })),
     mediaEmbeds: media,
     galleryPhotos: gallery,
     tourDates,
-    pressMentions: press,
+    pressMentions: [],
   };
 
   return (
@@ -150,21 +156,65 @@ export function DashboardHomePage() {
 
       <div className="grid flex-1 grid-cols-1 gap-6 p-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <BioForm initial={bioData} onSaved={(data) => setSections((prev) => upsertSection(prev, "BIO", data))} />
+          <ThemeEditor
+            initial={{
+              themeBackgroundColor: presskit.themeBackgroundColor,
+              themeTextColor: presskit.themeTextColor,
+              themeAccentColor: presskit.themeAccentColor,
+              themeFontKey: presskit.themeFontKey,
+              themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
+            }}
+            onChange={(theme) => setPresskit((prev) => (prev ? { ...prev, ...theme } : prev))}
+          />
+
+          <BioForm
+            initial={bioData}
+            initialTitle={bioSection?.title ?? SECTION_DEFAULT_TITLES.BIO}
+            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
+          />
           <ContactForm
             initial={contactData}
-            onSaved={(data) => setSections((prev) => upsertSection(prev, "CONTACT", data))}
+            initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
+            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
           />
-          <MediaManager initial={media} onChange={setMedia} />
+          <EmbedManager
+            sectionType="MUSIC"
+            providers={AUDIO_PROVIDERS}
+            initial={media.filter((m) => AUDIO_PROVIDERS.includes(m.provider))}
+            initialTitle={musicSection?.title ?? SECTION_DEFAULT_TITLES.MUSIC}
+            defaultTitle={SECTION_DEFAULT_TITLES.MUSIC}
+            onChange={(items) =>
+              setMedia((prev) => [...prev.filter((m) => !AUDIO_PROVIDERS.includes(m.provider)), ...items])
+            }
+            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
+          />
           <GalleryManager initial={gallery} onChange={setGallery} />
-          <TourDatesManager initial={tourDates} onChange={setTourDates} />
-          <PressManager initial={press} onChange={setPress} />
+          <TourDatesManager
+            initial={tourDates}
+            initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
+            onChange={setTourDates}
+            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
+          />
+          <EmbedManager
+            sectionType="VIDEO"
+            providers={VIDEO_PROVIDERS}
+            initial={media.filter((m) => VIDEO_PROVIDERS.includes(m.provider))}
+            initialTitle={videoSection?.title ?? SECTION_DEFAULT_TITLES.VIDEO}
+            defaultTitle={SECTION_DEFAULT_TITLES.VIDEO}
+            onChange={(items) =>
+              setMedia((prev) => [...prev.filter((m) => !VIDEO_PROVIDERS.includes(m.provider)), ...items])
+            }
+            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
+          />
           <LinksManager initial={links} slug={presskit.slug} />
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Preview</p>
-          <div className="max-h-[85vh] overflow-y-auto rounded-lg border">
+          <div
+            className="max-h-[85vh] overflow-y-auto rounded-lg border"
+            style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
+          >
             <PresskitRenderer presskit={previewPresskit} />
           </div>
         </div>
@@ -173,8 +223,10 @@ export function DashboardHomePage() {
   );
 }
 
-function upsertSection(sections: Section[], type: Section["type"], data: unknown): Section[] {
+function upsertSection(sections: Section[], type: Section["type"], data: unknown, title?: string): Section[] {
   const existing = sections.find((s) => s.type === type);
-  if (existing) return sections.map((s) => (s.type === type ? { ...s, data } : s));
-  return [...sections, { id: type, type, order: sections.length, visible: true, data }];
+  if (existing) {
+    return sections.map((s) => (s.type === type ? { ...s, data, ...(title !== undefined ? { title } : {}) } : s));
+  }
+  return [...sections, { id: type, type, title: title ?? null, order: sections.length, visible: true, data }];
 }

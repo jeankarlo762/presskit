@@ -21,7 +21,8 @@ enum ArtistCategory {
 
 enum SectionType {
   BIO
-  MEDIA
+  MUSIC
+  VIDEO
   GALLERY
   PRESS
   TOUR_DATES
@@ -91,6 +92,16 @@ model Presskit {
   ogTitleOverride       String?
   ogDescriptionOverride String?
 
+  /// Theme: colors are picked directly (hex); "muted"/"border" tones used by
+  /// the renderer are derived from themeTextColor at render time (CSS
+  /// color-mix), not stored — one fewer thing for the artist to configure.
+  themeBackgroundColor    String  @default("#0a0a0a")
+  themeTextColor          String  @default("#fafafa")
+  themeAccentColor        String  @default("#f43f5e")
+  themeFontKey            String  @default("inter")
+  themeBackgroundImageUrl String?
+  themeBackgroundImageKey String?
+
   sections       Section[]
   mediaEmbeds    MediaEmbed[]
   galleryPhotos  GalleryPhoto[]
@@ -124,6 +135,10 @@ model Section {
   presskitId String
   presskit   Presskit    @relation(fields: [presskitId], references: [id], onDelete: Cascade)
   type       SectionType
+  /// Editable display title (falls back to SECTION_DEFAULT_TITLES[type] in
+  /// the UI when null) — the section TYPE stays fixed (it determines what
+  /// content lives there), only the label the artist sees is customizable.
+  title      String?
   order      Int
   visible    Boolean     @default(true)
   data       Json        @default("{}")

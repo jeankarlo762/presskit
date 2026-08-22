@@ -1,12 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { SECTION_TYPES, sectionDataSchemaByType, type SectionType } from "@presskit/shared";
+import { SECTION_TYPES, sectionDataSchemaByType, sectionTitleSchema, type SectionType } from "@presskit/shared";
 import { getOwnedPresskitOrThrow } from "../services/presskit.service";
 import { listSections, reorderSections, setSectionVisibility, upsertSectionData } from "../services/section.service";
 
 const sectionTypeParamSchema = z.object({ type: z.enum(SECTION_TYPES) });
 const visibilitySchema = z.object({ visible: z.boolean() });
 const reorderSchema = z.object({ order: z.array(z.enum(SECTION_TYPES)) });
+const sectionUpdateBodySchema = z.object({ data: z.unknown(), title: sectionTitleSchema.optional() });
 
 export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -18,11 +19,12 @@ export async function sectionRoutes(fastify: FastifyInstance) {
 
   fastify.patch("/presskit/sections/:type", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
+    const { data: rawData, title } = sectionUpdateBodySchema.parse(request.body);
     const dataSchema = sectionDataSchemaByType[type as SectionType];
-    const data = dataSchema.parse((request.body as { data: unknown })?.data);
+    const data = dataSchema.parse(rawData);
 
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
-    const section = await upsertSectionData(presskit.id, type, data);
+    const section = await upsertSectionData(presskit.id, type, data, title);
     return reply.send({ section });
   });
 

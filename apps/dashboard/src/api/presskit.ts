@@ -3,6 +3,7 @@ import type {
   ArtistCategory,
   BioSectionData,
   ContactSectionData,
+  FontKey,
   MediaEmbedInput,
   PresskitUpdateInput,
   PressMentionInput,
@@ -24,9 +25,22 @@ export type Presskit = {
   published: boolean;
   city: string | null;
   state: string | null;
+  themeBackgroundColor: string;
+  themeTextColor: string;
+  themeAccentColor: string;
+  themeFontKey: FontKey;
+  themeBackgroundImageUrl: string | null;
+  themeBackgroundImageKey: string | null;
 };
 
-export type Section = { id: string; type: SectionType; order: number; visible: boolean; data: unknown };
+export type Section = {
+  id: string;
+  type: SectionType;
+  title: string | null;
+  order: number;
+  visible: boolean;
+  data: unknown;
+};
 // These reuse the *Public types (what the API actually returns — nullable
 // fields serialize as null, not undefined) rather than the write-input
 // schemas, which use `.optional()` (undefined) for the same fields.
@@ -61,8 +75,15 @@ export async function listSections() {
   return data.sections;
 }
 
-export async function updateSectionData(type: SectionType, sectionData: BioSectionData | ContactSectionData | PressSectionData | Record<string, unknown>) {
-  const { data } = await api.patch<{ section: Section }>(`/presskit/sections/${type}`, { data: sectionData });
+export async function updateSectionData(
+  type: SectionType,
+  sectionData: BioSectionData | ContactSectionData | PressSectionData | Record<string, unknown>,
+  title?: string,
+) {
+  const { data } = await api.patch<{ section: Section }>(`/presskit/sections/${type}`, {
+    data: sectionData,
+    ...(title !== undefined ? { title } : {}),
+  });
   return data.section;
 }
 
@@ -133,6 +154,22 @@ export async function createPressMention(input: Omit<PressMentionInput, "id">) {
 }
 export async function deletePressMention(id: string) {
   await api.delete(`/presskit/press/${id}`);
+}
+
+export async function requestThemeBackgroundUploadUrl(extension: string) {
+  const { data } = await api.post<{ uploadUrl: string; storageKey: string; publicUrl: string }>(
+    "/presskit/theme/background-upload-url",
+    { extension },
+  );
+  return data;
+}
+export async function confirmThemeBackground(input: { storageKey: string; url: string }) {
+  const { data } = await api.post<{ presskit: Presskit }>("/presskit/theme/background-confirm", input);
+  return data.presskit;
+}
+export async function removeThemeBackground() {
+  const { data } = await api.delete<{ presskit: Presskit }>("/presskit/theme/background");
+  return data.presskit;
 }
 
 export async function listLinks() {

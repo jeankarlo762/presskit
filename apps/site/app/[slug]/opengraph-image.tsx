@@ -14,6 +14,12 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const subtitle = presskit ? ARTIST_CATEGORY_LABELS[presskit.category] : "";
   const location = presskit ? [presskit.city, presskit.state].filter(Boolean).join(" - ") : "";
   const coverPhoto = presskit?.galleryPhotos[0]?.url;
+  // Satori (next/og's renderer) doesn't support color-mix() or CSS variables
+  // — plain hex values only, so the theme is applied directly here rather
+  // than reusing PresskitRenderer's CSS-variable approach.
+  const backgroundColor = presskit?.themeBackgroundColor ?? "#0a0a0a";
+  const textColor = presskit?.themeTextColor ?? "#fafafa";
+  const accentColor = presskit?.themeAccentColor ?? "#f43f5e";
 
   return new ImageResponse(
     (
@@ -24,8 +30,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-end",
-          background: "linear-gradient(135deg, #18181b 0%, #3f3f46 100%)",
-          color: "white",
+          backgroundColor,
+          color: textColor,
           fontFamily: "sans-serif",
           position: "relative",
         }}
@@ -35,18 +41,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           <img
             src={coverPhoto}
             alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: 0.35,
-            }}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           />
         )}
+        {coverPhoto && (
+          <div style={{ position: "absolute", inset: 0, backgroundColor, opacity: 0.55, display: "flex" }} />
+        )}
         <div style={{ display: "flex", flexDirection: "column", padding: 64, position: "relative" }}>
-          <span style={{ fontSize: 28, opacity: 0.8, textTransform: "uppercase", letterSpacing: 2 }}>
+          <span style={{ fontSize: 28, color: accentColor, textTransform: "uppercase", letterSpacing: 2 }}>
             {subtitle}
           </span>
           <span style={{ fontSize: 72, fontWeight: 700, marginTop: 12 }}>{title}</span>

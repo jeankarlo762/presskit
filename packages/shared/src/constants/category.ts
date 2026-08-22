@@ -11,7 +11,8 @@ export const ARTIST_CATEGORY_LABELS: Record<ArtistCategory, string> = {
 
 export const SECTION_TYPES = [
   "BIO",
-  "MEDIA",
+  "MUSIC",
+  "VIDEO",
   "GALLERY",
   "PRESS",
   "TOUR_DATES",
@@ -23,16 +24,36 @@ export const SECTION_TYPES = [
 export type SectionType = (typeof SECTION_TYPES)[number];
 
 /**
+ * Shown in the editor and used as the public page heading whenever the
+ * artist hasn't overridden a section's title — every section's title is
+ * editable (Section.title in Prisma), these are just the seed/fallback text.
+ */
+export const SECTION_DEFAULT_TITLES: Record<SectionType, string> = {
+  BIO: "Sobre",
+  MUSIC: "Música",
+  VIDEO: "Vídeos",
+  GALLERY: "Fotos",
+  PRESS: "Imprensa",
+  TOUR_DATES: "Agenda",
+  CONTACT: "Contato",
+  TECH_RIDER: "Rider técnico",
+  CUSTOM: "",
+};
+
+/**
  * Which section types appear by default (and in what order) when an artist
  * picks a category during onboarding. The artist can still show/hide/reorder
  * from the full SECTION_TYPES list afterwards — this only seeds sensible
- * defaults per category so the editor isn't a blank slate.
+ * defaults per category so the editor isn't a blank slate. PRESS/TECH_RIDER
+ * stay valid section types but aren't seeded by default anywhere — kept
+ * simple (Sobre/Música/Agenda/Fotos/Vídeos/Contato) per the artist-facing
+ * product spec.
  */
 export const DEFAULT_SECTIONS_BY_CATEGORY: Record<ArtistCategory, SectionType[]> = {
-  MUSICO_BANDA: ["BIO", "MEDIA", "GALLERY", "TOUR_DATES", "PRESS", "TECH_RIDER", "CONTACT"],
-  DJ: ["BIO", "MEDIA", "GALLERY", "TOUR_DATES", "PRESS", "TECH_RIDER", "CONTACT"],
-  ATOR: ["BIO", "MEDIA", "GALLERY", "PRESS", "CONTACT"],
-  ARTISTA_VISUAL: ["BIO", "GALLERY", "PRESS", "CONTACT"],
+  MUSICO_BANDA: ["BIO", "MUSIC", "TOUR_DATES", "GALLERY", "VIDEO", "CONTACT"],
+  DJ: ["BIO", "MUSIC", "TOUR_DATES", "GALLERY", "VIDEO", "CONTACT"],
+  ATOR: ["BIO", "VIDEO", "GALLERY", "CONTACT"],
+  ARTISTA_VISUAL: ["BIO", "GALLERY", "CONTACT"],
 };
 
 export const PLAN_KEYS = ["FREE", "PRO"] as const;

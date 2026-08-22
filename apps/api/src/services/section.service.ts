@@ -9,16 +9,26 @@ export async function listSections(presskitId: string) {
 /** Sections are seeded on onboarding (one row per type in the category's
  * default set), so editing one is always an update — a section that isn't
  * part of the artist's current set simply doesn't exist yet and is created
- * on first write, keeping the editor able to turn on any section type later. */
-export async function upsertSectionData(presskitId: string, type: SectionType, data: unknown) {
+ * on first write, keeping the editor able to turn on any section type later.
+ * `title` is optional per call — omitting it leaves whatever title (or lack
+ * of one) the section already has untouched. */
+export async function upsertSectionData(
+  presskitId: string,
+  type: SectionType,
+  data: unknown,
+  title?: string,
+) {
   const existing = await prisma.section.findUnique({ where: { presskitId_type: { presskitId, type } } });
   if (existing) {
-    return prisma.section.update({ where: { id: existing.id }, data: { data: data as object } });
+    return prisma.section.update({
+      where: { id: existing.id },
+      data: { data: data as object, ...(title !== undefined ? { title } : {}) },
+    });
   }
 
   const last = await prisma.section.findFirst({ where: { presskitId }, orderBy: { order: "desc" } });
   return prisma.section.create({
-    data: { presskitId, type, order: (last?.order ?? -1) + 1, data: data as object },
+    data: { presskitId, type, title, order: (last?.order ?? -1) + 1, data: data as object },
   });
 }
 

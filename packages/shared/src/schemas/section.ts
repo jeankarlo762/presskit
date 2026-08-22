@@ -29,19 +29,22 @@ const techRiderDataSchema = z.object({
   pdfUrl: z.string().trim().url().optional(),
 });
 
+// CUSTOM used to carry its own title in `data` — now redundant since every
+// section (this one included) has a top-level, editable `title`.
 const customDataSchema = z.object({
-  title: z.string().trim().max(120),
   body: z.string().trim().max(4000),
 });
 
-/** MEDIA, GALLERY, TOUR_DATES and PRESS mentions are collection sections — the
- * items live in their own tables (MediaEmbed/GalleryPhoto/TourDate/PressMention).
+/** MUSIC, VIDEO, GALLERY, TOUR_DATES and PRESS mentions are collection
+ * sections — the items live in their own tables (MediaEmbed, filtered by
+ * provider for MUSIC vs VIDEO / GalleryPhoto / TourDate / PressMention).
  * Their Section.data only carries display-level config, not the items. */
 const collectionDataSchema = z.object({}).catchall(z.never());
 
 export const sectionDataSchemaByType = {
   BIO: bioDataSchema,
-  MEDIA: collectionDataSchema,
+  MUSIC: collectionDataSchema,
+  VIDEO: collectionDataSchema,
   GALLERY: collectionDataSchema,
   PRESS: pressDataSchema,
   TOUR_DATES: collectionDataSchema,
@@ -52,6 +55,7 @@ export const sectionDataSchemaByType = {
 
 const sectionBaseFields = {
   id: z.string().cuid2().optional(),
+  title: z.string().trim().min(1).max(60).optional(),
   order: z.number().int().min(0),
   visible: z.boolean().default(true),
 };
@@ -61,7 +65,8 @@ const sectionBaseFields = {
 // (TS widens it to ZodObject[], not the required non-empty object tuple).
 export const sectionSchema = z.discriminatedUnion("type", [
   z.object({ ...sectionBaseFields, type: z.literal("BIO"), data: bioDataSchema }),
-  z.object({ ...sectionBaseFields, type: z.literal("MEDIA"), data: collectionDataSchema }),
+  z.object({ ...sectionBaseFields, type: z.literal("MUSIC"), data: collectionDataSchema }),
+  z.object({ ...sectionBaseFields, type: z.literal("VIDEO"), data: collectionDataSchema }),
   z.object({ ...sectionBaseFields, type: z.literal("GALLERY"), data: collectionDataSchema }),
   z.object({ ...sectionBaseFields, type: z.literal("PRESS"), data: pressDataSchema }),
   z.object({ ...sectionBaseFields, type: z.literal("TOUR_DATES"), data: collectionDataSchema }),
@@ -76,3 +81,5 @@ export type ContactSectionData = z.infer<typeof contactDataSchema>;
 export type TechRiderSectionData = z.infer<typeof techRiderDataSchema>;
 export type CustomSectionData = z.infer<typeof customDataSchema>;
 export type PressSectionData = z.infer<typeof pressDataSchema>;
+
+export const sectionTitleSchema = z.string().trim().min(1).max(60);
