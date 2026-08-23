@@ -8,11 +8,15 @@ export function TourDatesManager({
   initial,
   initialTitle,
   onChange,
+  onTitleLiveChange,
   onTitleSaved,
 }: {
   initial: TourDate[];
   initialTitle: string;
   onChange: (items: TourDate[]) => void;
+  /** Fires on every keystroke in the title field (unsaved) so the preview
+   * updates instantly — persistence still waits for "Salvar título". */
+  onTitleLiveChange: (title: string) => void;
   onTitleSaved: (title: string) => void;
 }) {
   const [items, setItems] = useState(initial);
@@ -58,6 +62,11 @@ export function TourDatesManager({
     onChange(next);
   }
 
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    onTitleLiveChange(value);
+  }
+
   async function handleSaveTitle() {
     setTitleSaving(true);
     try {
@@ -71,7 +80,7 @@ export function TourDatesManager({
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
-        <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.TOUR_DATES} onChange={setTitle} />
+        <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.TOUR_DATES} onChange={handleTitleChange} />
         {titleChanged && (
           <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título

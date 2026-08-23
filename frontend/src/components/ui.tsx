@@ -118,7 +118,7 @@ export function GrainOverlay() {
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cx("font-display uppercase tracking-tight", className)}>
-      autentic<span className="text-gradient-brand">.ai</span>
+      presskit<span className="text-gradient-brand">.ai</span>
     </span>
   );
 }

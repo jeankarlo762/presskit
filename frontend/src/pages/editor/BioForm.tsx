@@ -15,10 +15,14 @@ const schema = z.object({
 export function BioForm({
   initial,
   initialTitle,
+  onLiveChange,
   onSaved,
 }: {
   initial: BioSectionData;
   initialTitle: string;
+  /** Fires on every keystroke (unsaved) so the preview panel updates
+   * instantly — persistence still only happens on "Salvar". */
+  onLiveChange: (data: BioSectionData, title: string) => void;
   onSaved: (data: BioSectionData, title: string) => void;
 }) {
   const [saved, setSaved] = useState(false);
@@ -27,11 +31,25 @@ export function BioForm({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<BioSectionData>({ resolver: zodResolver(schema), defaultValues: initial });
 
   useEffect(() => reset(initial), [initial, reset]);
   useEffect(() => setTitle(initialTitle), [initialTitle]);
+
+  useEffect(() => {
+    const subscription = watch((values) => {
+      onLiveChange({ shortBio: values.shortBio ?? "", longBio: values.longBio ?? "" }, title);
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watch, title]);
+
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    onLiveChange({ shortBio: watch("shortBio") ?? "", longBio: watch("longBio") ?? "" }, value);
+  }
 
   const titleChanged = title !== initialTitle;
 
@@ -45,7 +63,7 @@ export function BioForm({
 
   return (
     <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.BIO} onChange={setTitle} />
+      <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.BIO} onChange={handleTitleChange} />
       <div>
         <Label>Bio curta (até 280 caracteres)</Label>
         <Textarea rows={2} {...register("shortBio")} />

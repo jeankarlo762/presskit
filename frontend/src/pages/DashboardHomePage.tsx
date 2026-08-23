@@ -43,7 +43,15 @@ export function DashboardHomePage() {
   const { user, refreshToken, clearSession } = useAuthStore();
 
   const [presskit, setPresskit] = useState<Presskit | null>(null);
+  // `sections` is the authoritative (server-confirmed) state — it only
+  // changes on load or after a real save, so it's safe to feed into each
+  // form's `initial` prop without fighting active typing. `previewSections`
+  // is a separate, ephemeral copy that also absorbs live (unsaved)
+  // keystrokes, and drives the preview panel only. Resyncing one into the
+  // other here — instead of routing live edits through `sections` itself —
+  // is what avoids the loop: initial → reset() → cursor jumps while typing.
   const [sections, setSections] = useState<Section[]>([]);
+  const [previewSections, setPreviewSections] = useState<Section[]>([]);
   const [media, setMedia] = useState<MediaEmbed[]>([]);
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [tourDates, setTourDates] = useState<TourDate[]>([]);
@@ -83,6 +91,8 @@ export function DashboardHomePage() {
       cancelled = true;
     };
   }, [navigate]);
+
+  useEffect(() => setPreviewSections(sections), [sections]);
 
   async function handleLogout() {
     if (refreshToken) await logout(refreshToken).catch(() => undefined);
@@ -127,7 +137,7 @@ export function DashboardHomePage() {
     themeAccentColor: presskit.themeAccentColor,
     themeFontKey: presskit.themeFontKey,
     themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
-    sections: sections.map((s) => ({ ...s, data: s.data ?? {} })),
+    sections: previewSections.map((s) => ({ ...s, data: s.data ?? {} })),
     mediaEmbeds: media,
     galleryPhotos: gallery,
     tourDates,
@@ -179,11 +189,13 @@ export function DashboardHomePage() {
           <BioForm
             initial={bioData}
             initialTitle={bioSection?.title ?? SECTION_DEFAULT_TITLES.BIO}
+            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "BIO", data, title))}
             onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
           />
           <ContactForm
             initial={contactData}
             initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
+            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CONTACT", data, title))}
             onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
           />
           <EmbedManager
@@ -195,6 +207,7 @@ export function DashboardHomePage() {
             onChange={(items) =>
               setMedia((prev) => [...prev.filter((m) => !AUDIO_PROVIDERS.includes(m.provider)), ...items])
             }
+            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
           />
           <GalleryManager initial={gallery} onChange={setGallery} />
@@ -202,6 +215,7 @@ export function DashboardHomePage() {
             initial={tourDates}
             initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
             onChange={setTourDates}
+            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
           />
           <EmbedManager
@@ -213,6 +227,7 @@ export function DashboardHomePage() {
             onChange={(items) =>
               setMedia((prev) => [...prev.filter((m) => !VIDEO_PROVIDERS.includes(m.provider)), ...items])
             }
+            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
           />
           <LinksManager initial={links} slug={presskit.slug} />

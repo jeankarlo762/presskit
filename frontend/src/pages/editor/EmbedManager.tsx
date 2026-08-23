@@ -11,6 +11,7 @@ export function EmbedManager({
   initialTitle,
   defaultTitle,
   onChange,
+  onTitleLiveChange,
   onTitleSaved,
 }: {
   sectionType: SectionType;
@@ -19,6 +20,9 @@ export function EmbedManager({
   initialTitle: string;
   defaultTitle: string;
   onChange: (items: MediaEmbed[]) => void;
+  /** Fires on every keystroke in the title field (unsaved) so the preview
+   * updates instantly — persistence still waits for "Salvar título". */
+  onTitleLiveChange: (title: string) => void;
   onTitleSaved: (title: string) => void;
 }) {
   const [items, setItems] = useState(initial);
@@ -60,6 +64,11 @@ export function EmbedManager({
     onChange(next);
   }
 
+  function handleTitleChange(value: string) {
+    setSectionTitle(value);
+    onTitleLiveChange(value);
+  }
+
   async function handleSaveTitle() {
     setTitleSaving(true);
     try {
@@ -73,7 +82,7 @@ export function EmbedManager({
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
-        <SectionTitleField value={sectionTitle} defaultTitle={defaultTitle} onChange={setSectionTitle} />
+        <SectionTitleField value={sectionTitle} defaultTitle={defaultTitle} onChange={handleTitleChange} />
         {titleChanged && (
           <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título

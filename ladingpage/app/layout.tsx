@@ -11,7 +11,7 @@ const playfair = Playfair_Display({ variable: "--font-editorial", subsets: ["lat
 const inter = Inter({ variable: "--font-body", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Autentic.AI — Press kit profissional pro seu som",
+  title: "PressKit.AI — Press kit profissional pro seu som",
   description:
     "Seu press kit pronto em minutos, com a cara da sua música. Bio, discografia, fotos, métricas e contatos — gerado automaticamente, editável e pronto pra negociar shows, parcerias e contratos.",
 };

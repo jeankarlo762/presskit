@@ -25,7 +25,7 @@ export function ProductDemo() {
         </SectionHeading>
 
         <div className="mt-14 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <MockupBrowser title="autentic.ai/editor">
+          <MockupBrowser title="presskit.ai/editor">
             <div className="space-y-3 p-6">
               <div className="h-4 w-1/3 rounded-full bg-gradient-to-r from-violet to-magenta" />
               <div className="h-3 w-full rounded-full bg-white/10" />
@@ -39,7 +39,7 @@ export function ProductDemo() {
             </div>
           </MockupBrowser>
 
-          <MockupBrowser title="autentic.ai/seu-nome">
+          <MockupBrowser title="presskit.ai/seu-nome">
             <div className="space-y-4 p-6">
               <div className="h-24 w-full rounded-xl bg-gradient-to-br from-violet/40 to-magenta/40" />
               <div className="h-5 w-1/2 rounded-full bg-white/20" />

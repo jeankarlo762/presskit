@@ -18,13 +18,30 @@ const schema = z.object({
     .default([]),
 });
 
+function toLiveData(values: {
+  email?: string;
+  phone?: string;
+  socialLinks?: { platform?: (typeof PLATFORMS)[number]; url?: string }[];
+}): ContactSectionData {
+  return {
+    email: values.email ?? "",
+    phone: values.phone,
+    socialLinks: (values.socialLinks ?? [])
+      .filter((l): l is { platform: (typeof PLATFORMS)[number]; url: string } => Boolean(l?.platform && l.url)),
+  };
+}
+
 export function ContactForm({
   initial,
   initialTitle,
+  onLiveChange,
   onSaved,
 }: {
   initial: ContactSectionData;
   initialTitle: string;
+  /** Fires on every keystroke (unsaved) so the preview panel updates
+   * instantly — persistence still only happens on "Salvar". */
+  onLiveChange: (data: ContactSectionData, title: string) => void;
   onSaved: (data: ContactSectionData, title: string) => void;
 }) {
   const [saved, setSaved] = useState(false);
@@ -34,12 +51,24 @@ export function ContactForm({
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ContactSectionData>({ resolver: zodResolver(schema), defaultValues: initial });
   const { fields, append, remove } = useFieldArray({ control, name: "socialLinks" });
 
   useEffect(() => reset(initial), [initial, reset]);
   useEffect(() => setTitle(initialTitle), [initialTitle]);
+
+  useEffect(() => {
+    const subscription = watch((values) => onLiveChange(toLiveData(values), title));
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watch, title]);
+
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    onLiveChange(toLiveData(watch()), value);
+  }
 
   const titleChanged = title !== initialTitle;
 
@@ -53,7 +82,7 @@ export function ContactForm({
 
   return (
     <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.CONTACT} onChange={setTitle} />
+      <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.CONTACT} onChange={handleTitleChange} />
       <div>
         <Label>E-mail</Label>
         <Input {...register("email")} />

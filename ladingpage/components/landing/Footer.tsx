@@ -16,7 +16,7 @@ export function Footer() {
         <div className="flex flex-col justify-between gap-8 sm:flex-row">
           <div>
             <p className="font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
-              autentic<span className="text-gradient-brand">.ai</span>
+              presskit<span className="text-gradient-brand">.ai</span>
             </p>
             <p className="mt-2 max-w-xs font-[family-name:var(--font-body)] text-sm text-fg-muted">
               Press kit profissional pra artista musical, gerado com IA.
@@ -31,7 +31,7 @@ export function Footer() {
           </nav>
         </div>
         <div className="flex flex-col justify-between gap-4 border-t border-border pt-8 text-xs text-fg-muted sm:flex-row">
-          <p>© {new Date().getFullYear()} Autentic.AI. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} PressKit.AI. Todos os direitos reservados.</p>
           <div className="flex gap-6">
             <Link href="/termos" className="hover:text-fg">
               Termos de uso
