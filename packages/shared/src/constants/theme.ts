@@ -1,5 +1,5 @@
 /**
- * A curated, finite list rather than free-text font entry — lets apps/site
+ * A curated, finite list rather than free-text font entry — lets ladingpage
  * load every option through next/font/google at build time (self-hosted,
  * no runtime request to Google, no layout-shift/FOUC surprises) while still
  * giving the artist real typographic range (sans/serif/display).

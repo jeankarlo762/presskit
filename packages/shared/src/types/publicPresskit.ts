@@ -4,7 +4,7 @@ import type { MediaProvider } from "../schemas/collections";
 
 /** Shape of what GET /public/presskits/:slug returns after the HTTP+JSON
  * round-trip — dates arrive as ISO strings, not Date instances, which is why
- * this isn't just reused from the Prisma client types in apps/api. */
+ * this isn't just reused from the Prisma client types in backend. */
 export type PublicSection = {
   id: string;
   type: SectionType;

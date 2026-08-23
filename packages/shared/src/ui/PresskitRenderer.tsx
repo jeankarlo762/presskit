@@ -55,7 +55,7 @@ function renderSection(section: PublicSection, presskit: PublicPresskit) {
 }
 
 /** Colors are the only thing this component drives — font-family is
- * deliberately left to the caller (apps/site applies it via a next/font
+ * deliberately left to the caller (ladingpage applies it via a next/font
  * className wrapper for self-hosted, optimized loading; the dashboard
  * preview applies a plain CSS font-family from FONT_FAMILY_CSS). Mixing a
  * hardcoded font-family here would fight whichever mechanism the host app

@@ -1,4 +1,4 @@
-// Separate entry point (@presskit/shared/ui) so apps/api never has to
+// Separate entry point (@presskit/shared/ui) so backend never has to
 // resolve JSX/React types just to import a Zod schema from the main
 // @presskit/shared barrel.
 export * from "./SectionHeading";

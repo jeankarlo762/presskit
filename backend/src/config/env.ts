@@ -1,4 +1,13 @@
+import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
+
+// Railway sets real env vars directly (NODE_ENV=production included) — a .env
+// file has no business overriding those, so this only runs for local dev.
+// tsx (unlike some Node loaders) does not read .env files on its own, so
+// without this the dev server silently ignores backend/.env entirely.
+if (process.env.NODE_ENV !== "production") {
+  loadDotenv();
+}
 
 const envSchema = z
   .object({

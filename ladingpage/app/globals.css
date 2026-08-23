@@ -3,7 +3,7 @@
    resolved through the npm workspace symlink, so its section-rendering
    components need to be added back explicitly or their classes never
    make it into the compiled CSS. */
-@source "../../../packages/shared/src";
+@source "../../packages/shared/src";
 
 :root {
   --background: #ffffff;

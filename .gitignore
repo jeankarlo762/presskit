@@ -10,5 +10,5 @@ build/
 .DS_Store
 .turbo/
 coverage/
-apps/api/prisma/*.db
-apps/api/prisma/*.db-journal
+backend/prisma/*.db
+backend/prisma/*.db-journal
