@@ -48,7 +48,7 @@ export function PressManager({
         {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
             <span className="truncate">{item.outlet}</span>
-            <button onClick={() => handleDelete(item.id)} className="shrink-0 text-red-600">
+            <button onClick={() => handleDelete(item.id)} className="shrink-0 text-red-400">
               remover
             </button>
           </li>

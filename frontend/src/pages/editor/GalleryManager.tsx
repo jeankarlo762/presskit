@@ -62,7 +62,7 @@ export function GalleryManager({
 
   return (
     <Card className="flex flex-col gap-4">
-      <h3 className="font-medium text-neutral-900">Fotos</h3>
+      <h3 className="font-medium text-fg">Fotos</h3>
       {items.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {items.map((item) => (
@@ -88,9 +88,9 @@ export function GalleryManager({
             const file = e.target.files?.[0];
             if (file) void handleFileSelected(file);
           }}
-          className="text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-neutral-700"
+          className="text-sm text-fg-muted file:mr-3 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-violet file:to-magenta file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:opacity-90"
         />
-        {uploading && <p className="mt-2 text-sm text-neutral-500">Enviando...</p>}
+        {uploading && <p className="mt-2 text-sm text-fg-muted">Enviando...</p>}
         <FieldError>{error}</FieldError>
       </div>
     </Card>

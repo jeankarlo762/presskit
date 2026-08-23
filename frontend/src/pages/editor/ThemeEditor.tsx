@@ -18,7 +18,7 @@ type ThemeValues = Pick<
 function ColorSwatch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <div
-      className="relative h-10 w-10 overflow-hidden rounded-full border border-neutral-200 shadow-sm"
+      className="relative h-10 w-10 overflow-hidden rounded-full border border-white/10 shadow-sm"
       style={{ backgroundColor: value }}
     >
       <input
@@ -78,7 +78,7 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
 
   return (
     <Card className="flex flex-col gap-5">
-      <h3 className="font-medium text-neutral-900">Aparência</h3>
+      <h3 className="font-medium text-fg">Aparência</h3>
 
       <div className="flex flex-wrap gap-6">
         <div>
@@ -146,14 +146,14 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
               const file = e.target.files?.[0];
               if (file) void handleBackgroundUpload(file);
             }}
-            className="text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-neutral-700"
+            className="text-sm text-fg-muted file:mr-3 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-violet file:to-magenta file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:opacity-90"
           />
         )}
-        {uploadingBg && <p className="mt-2 text-sm text-neutral-500">Enviando...</p>}
+        {uploadingBg && <p className="mt-2 text-sm text-fg-muted">Enviando...</p>}
         <FieldError>{error}</FieldError>
       </div>
 
-      {savingColor && <p className="text-xs text-neutral-400">Salvando...</p>}
+      {savingColor && <p className="text-xs text-fg-muted">Salvando...</p>}
     </Card>
   );
 }

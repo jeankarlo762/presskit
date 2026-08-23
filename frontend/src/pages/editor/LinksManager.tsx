@@ -33,8 +33,8 @@ export function LinksManager({ initial, slug }: { initial: TrackableLink[]; slug
   return (
     <Card className="flex flex-col gap-4">
       <div>
-        <h3 className="font-medium text-neutral-900">Links rastreáveis</h3>
-        <p className="text-sm text-neutral-500">
+        <h3 className="font-medium text-fg">Links rastreáveis</h3>
+        <p className="text-sm text-fg-muted">
           Crie um link diferente para cada destinatário e veja quem abriu na aba de analytics.
         </p>
       </div>
@@ -43,7 +43,7 @@ export function LinksManager({ initial, slug }: { initial: TrackableLink[]; slug
           {items.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-neutral-50 px-4 py-2 text-sm"
+              className="flex items-center justify-between gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm"
             >
               <span className="truncate">
                 {item.label} — presskit.com.br/{slug}?ref={item.code}

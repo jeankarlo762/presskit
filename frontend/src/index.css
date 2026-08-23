@@ -3,3 +3,72 @@
    reachable through node_modules (npm workspace symlink), which Tailwind
    skips by default. */
 @source "../../packages/shared/src";
+
+/* Brand tokens mirrored from ladingpage/app/globals.css — same identity,
+   applied to the app's own chrome (not the artist's public presskit, which
+   has its own independent per-artist theme in packages/shared/src/ui). */
+:root {
+  --bg: #08070a;
+  --bg-elevated: #121016;
+  --bg-elevated-2: #1a1620;
+  --fg: #f5f5f5;
+  --fg-muted: #a8a3ad;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --violet: #8b5cf6;
+  --magenta: #e11d9c;
+  --orange: #f97316;
+  --yellow: #facc15;
+
+  --brand-gradient: linear-gradient(135deg, var(--violet) 0%, var(--magenta) 100%);
+  --brand-gradient-warm: linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-elevated-2: var(--bg-elevated-2);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-violet: var(--violet);
+  --color-magenta: var(--magenta);
+  --color-orange: var(--orange);
+  --color-yellow: var(--yellow);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.grain-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.text-gradient-brand {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.font-display {
+  font-family: "Anton", sans-serif;
+}
+
+.font-editorial {
+  font-family: "Playfair Display", serif;
+}

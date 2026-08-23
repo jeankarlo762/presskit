@@ -13,11 +13,11 @@ function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-// Shared design language for the whole dashboard: generously rounded fields
-// (rounded-2xl), pill buttons (rounded-full), soft shadows instead of hard
-// borders where possible — no square corners anywhere.
+// Shared design language for the whole dashboard — same brand identity as
+// ladingpage (dark, gradient-accented): generously rounded fields
+// (rounded-2xl), pill buttons (rounded-full), no square corners anywhere.
 const fieldBase =
-  "w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 shadow-sm outline-none transition focus:border-neutral-900 focus:ring-4 focus:ring-neutral-900/5 disabled:opacity-50";
+  "w-full rounded-2xl border border-white/10 bg-bg-elevated px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-muted/60 focus:border-violet/60 focus:ring-4 focus:ring-violet/15 disabled:opacity-50";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
   { className, ...props },
@@ -42,10 +42,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-neutral-900 text-white shadow-sm hover:bg-neutral-700",
-  secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-200",
-  danger: "bg-red-50 text-red-600 hover:bg-red-100",
-  ghost: "text-neutral-500 hover:text-neutral-900",
+  primary:
+    "bg-gradient-to-r from-violet to-magenta text-white shadow-[0_0_30px_-10px_rgba(225,29,156,0.6)] hover:scale-[1.02]",
+  secondary: "bg-white/5 text-fg hover:bg-white/10",
+  danger: "bg-red-500/10 text-red-400 hover:bg-red-500/20",
+  ghost: "text-fg-muted hover:text-fg",
 };
 
 const buttonSizes = {
@@ -72,7 +73,7 @@ export function Button({
   );
 }
 
-const cardClassName = "rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm";
+const cardClassName = "rounded-3xl border border-white/10 bg-bg-elevated p-6";
 
 type CardDivProps = { as?: "div"; className?: string; children: ReactNode } & Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -102,10 +103,22 @@ export function Card(props: CardDivProps | CardFormProps) {
 }
 
 export function Label({ children, className }: { children: ReactNode; className?: string }) {
-  return <label className={cx("mb-1.5 block text-sm font-medium text-neutral-700", className)}>{children}</label>;
+  return <label className={cx("mb-1.5 block text-sm font-medium text-fg-muted", className)}>{children}</label>;
 }
 
 export function FieldError({ children }: { children?: ReactNode }) {
   if (!children) return null;
-  return <p className="mt-1.5 text-sm text-red-600">{children}</p>;
+  return <p className="mt-1.5 text-sm text-red-400">{children}</p>;
+}
+
+export function GrainOverlay() {
+  return <div className="grain-overlay" aria-hidden />;
+}
+
+export function Logo({ className }: { className?: string }) {
+  return (
+    <span className={cx("font-display uppercase tracking-tight", className)}>
+      autentic<span className="text-gradient-brand">.ai</span>
+    </span>
+  );
 }

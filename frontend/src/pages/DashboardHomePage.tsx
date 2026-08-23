@@ -26,7 +26,7 @@ import {
 } from "../api/presskit";
 import { logout } from "../api/auth";
 import { useAuthStore } from "../store/auth.store";
-import { Button } from "../components/ui";
+import { Button, GrainOverlay, Logo } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
@@ -101,7 +101,7 @@ export function DashboardHomePage() {
     }
   }
 
-  if (loading || !presskit) return <p className="p-8 text-neutral-500">Carregando...</p>;
+  if (loading || !presskit) return <p className="p-8 text-fg-muted">Carregando...</p>;
 
   const bioSection = sections.find((s) => s.type === "BIO");
   const contactSection = sections.find((s) => s.type === "CONTACT");
@@ -135,17 +135,21 @@ export function DashboardHomePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50">
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-white/80 px-6 py-4 shadow-sm backdrop-blur">
-        <div>
-          <h1 className="font-semibold text-neutral-900">Olá, {user?.name}</h1>
-          <p className="text-sm text-neutral-500">presskit.com.br/{presskit.slug}</p>
+    <div className="relative flex min-h-screen flex-col bg-bg">
+      <GrainOverlay />
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-bg/80 px-6 py-4 backdrop-blur-lg">
+        <div className="flex items-center gap-6">
+          <Logo className="hidden text-lg sm:block" />
+          <div>
+            <h1 className="font-semibold text-fg">Olá, {user?.name}</h1>
+            <p className="text-sm text-fg-muted">presskit.com.br/{presskit.slug}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span
             className={
               "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +
-              (presskit.published ? "bg-emerald-50 text-emerald-600" : "bg-neutral-100 text-neutral-500")
+              (presskit.published ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-fg-muted")
             }
           >
             {presskit.published ? "Publicado" : "Rascunho"}
@@ -215,9 +219,9 @@ export function DashboardHomePage() {
         </div>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Preview</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-muted">Preview</p>
           <div
-            className="max-h-[85vh] overflow-y-auto rounded-3xl border border-neutral-200 shadow-sm"
+            className="max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10"
             style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
           >
             <PresskitRenderer presskit={previewPresskit} />

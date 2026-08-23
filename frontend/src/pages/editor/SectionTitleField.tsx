@@ -11,7 +11,7 @@ export function SectionTitleField({
 }) {
   return (
     <div>
-      <Label className="text-xs text-neutral-500">Título da seção</Label>
+      <Label className="text-xs text-fg-muted">Título da seção</Label>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}

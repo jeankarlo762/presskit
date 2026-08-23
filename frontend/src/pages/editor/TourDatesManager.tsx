@@ -83,7 +83,7 @@ export function TourDatesManager({
           {items.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-neutral-50 px-4 py-2 text-sm"
+              className="flex items-center justify-between gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm"
             >
               <span>
                 {new Date(item.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })} — {item.venueName}, {item.city}
