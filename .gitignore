@@ -12,3 +12,4 @@ build/
 coverage/
 backend/prisma/*.db
 backend/prisma/*.db-journal
+backend/.s3rver-data/

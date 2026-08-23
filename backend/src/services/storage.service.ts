@@ -19,14 +19,18 @@ export class UploadNotFoundError extends Error {
 
 const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 
+function isConfigured() {
+  const hasEndpoint = Boolean(env.STORAGE_ENDPOINT) || Boolean(env.R2_ACCOUNT_ID);
+  return hasEndpoint && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY && env.R2_BUCKET;
+}
+
 function getClient() {
-  if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) {
-    throw new StorageNotConfiguredError();
-  }
+  if (!isConfigured()) throw new StorageNotConfiguredError();
   return new S3Client({
     region: "auto",
-    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId: env.R2_ACCESS_KEY_ID, secretAccessKey: env.R2_SECRET_ACCESS_KEY },
+    endpoint: env.STORAGE_ENDPOINT ?? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
+    credentials: { accessKeyId: env.R2_ACCESS_KEY_ID!, secretAccessKey: env.R2_SECRET_ACCESS_KEY! },
   });
 }
 
@@ -64,7 +68,7 @@ export async function assertImageObjectExists(storageKey: string) {
 }
 
 export async function deleteImageObject(storageKey: string) {
-  if (!env.R2_ACCOUNT_ID) return;
+  if (!isConfigured()) return;
   const client = getClient();
   await client.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey })).catch(() => undefined);
 }

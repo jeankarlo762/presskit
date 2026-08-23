@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:storage": "tsx scripts/dev-storage.ts",
     "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.js --external:@aws-sdk/* --external:@fastify/* --external:@prisma/client --external:bcryptjs --external:fastify --external:fastify-plugin --external:jose --external:zod",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
@@ -31,6 +32,7 @@
     "@types/node": "^20.16.11",
     "esbuild": "^0.28.2",
     "prisma": "^5.22.0",
+    "s3rver": "^3.7.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"
   }

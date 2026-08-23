@@ -27,6 +27,13 @@ const envSchema = z
     R2_SECRET_ACCESS_KEY: z.string().optional(),
     R2_BUCKET: z.string().optional(),
     R2_PUBLIC_BASE_URL: z.string().optional(),
+    // Local-dev-only escape hatch: point the S3 client at a local
+    // S3-compatible server (s3rver) instead of deriving the endpoint from
+    // R2_ACCOUNT_ID, so image upload works without a real Cloudflare
+    // account. Unset in production — real R2 always uses the account-ID
+    // endpoint.
+    STORAGE_ENDPOINT: z.string().optional(),
+    STORAGE_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
 
     ASAAS_API_KEY: z.string().optional(),
     ASAAS_BASE_URL: z.string().default("https://api-sandbox.asaas.com/v3"),

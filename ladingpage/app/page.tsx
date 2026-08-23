@@ -1,13 +1,37 @@
+import { GrainOverlay } from "../components/landing/GrainOverlay";
+import { Header } from "../components/landing/Header";
+import { Hero } from "../components/landing/Hero";
+import { PainPoints } from "../components/landing/PainPoints";
+import { HowItWorks } from "../components/landing/HowItWorks";
+import { ProductDemo } from "../components/landing/ProductDemo";
+import { Features } from "../components/landing/Features";
+import { Audiences } from "../components/landing/Audiences";
+import { Pricing } from "../components/landing/Pricing";
+import { Security } from "../components/landing/Security";
+import { SocialProof } from "../components/landing/SocialProof";
+import { FAQ } from "../components/landing/FAQ";
+import { FinalCTA } from "../components/landing/FinalCTA";
+import { Footer } from "../components/landing/Footer";
+
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 text-center dark:bg-black">
-      <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-        Presskit
-      </h1>
-      <p className="mt-4 max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-        Crie o presskit eletrônico da sua carreira artística e compartilhe com bookers,
-        jornalistas e curadores. Em construção.
-      </p>
-    </div>
+    <>
+      <GrainOverlay />
+      <Header />
+      <main>
+        <Hero />
+        <PainPoints />
+        <HowItWorks />
+        <ProductDemo />
+        <Features />
+        <Audiences />
+        <Pricing />
+        <Security />
+        <SocialProof />
+        <FAQ />
+        <FinalCTA />
+      </main>
+      <Footer />
+    </>
   );
 }
