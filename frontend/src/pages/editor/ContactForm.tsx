@@ -5,6 +5,7 @@ import { z } from "zod";
 import { SECTION_DEFAULT_TITLES, type ContactSectionData } from "@presskit/shared";
 import { updateSectionData } from "../../api/presskit";
 import { SectionTitleField } from "./SectionTitleField";
+import { Button, Card, FieldError, Input, Label, Select } from "../../components/ui";
 
 const PLATFORMS = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "SPOTIFY", "X", "IMDB", "SITE", "OUTRO"] as const;
 
@@ -51,58 +52,52 @@ export function ContactForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 rounded-lg border p-4">
+    <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.CONTACT} onChange={setTitle} />
       <div>
-        <label className="mb-1 block text-sm font-medium">E-mail</label>
-        <input className="w-full rounded border px-3 py-2 text-sm" {...register("email")} />
-        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+        <Label>E-mail</Label>
+        <Input {...register("email")} />
+        <FieldError>{errors.email?.message}</FieldError>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Telefone</label>
-        <input className="w-full rounded border px-3 py-2 text-sm" {...register("phone")} />
+        <Label>Telefone</Label>
+        <Input {...register("phone")} />
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Redes sociais</label>
+        <Label>Redes sociais</Label>
         {fields.map((field, index) => (
           <div key={field.id} className="flex gap-2">
-            <select className="rounded border px-2 py-2 text-sm" {...register(`socialLinks.${index}.platform`)}>
+            <Select className="w-40" {...register(`socialLinks.${index}.platform`)}>
               {PLATFORMS.map((platform) => (
                 <option key={platform} value={platform}>
                   {platform}
                 </option>
               ))}
-            </select>
-            <input
-              className="flex-1 rounded border px-3 py-2 text-sm"
-              placeholder="https://..."
-              {...register(`socialLinks.${index}.url`)}
-            />
-            <button type="button" onClick={() => remove(index)} className="text-sm text-red-600">
+            </Select>
+            <Input placeholder="https://..." {...register(`socialLinks.${index}.url`)} />
+            <Button type="button" onClick={() => remove(index)} variant="ghost" size="sm">
               remover
-            </button>
+            </Button>
           </div>
         ))}
-        <button
+        <Button
           type="button"
           onClick={() => append({ platform: "INSTAGRAM", url: "" })}
-          className="self-start text-sm underline"
+          variant="secondary"
+          size="sm"
+          className="self-start"
         >
           + adicionar rede social
-        </button>
+        </Button>
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSubmitting || (!isDirty && !titleChanged)}
-          className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSubmitting || (!isDirty && !titleChanged)} size="sm">
           {isSubmitting ? "Salvando..." : "Salvar"}
-        </button>
-        {saved && !isDirty && !titleChanged && <span className="text-sm text-green-600">Salvo</span>}
+        </Button>
+        {saved && !isDirty && !titleChanged && <span className="text-sm text-emerald-600">Salvo</span>}
       </div>
-    </form>
+    </Card>
   );
 }

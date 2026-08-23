@@ -1,3 +1,5 @@
+import { Input, Label } from "../../components/ui";
+
 export function SectionTitleField({
   value,
   defaultTitle,
@@ -9,12 +11,12 @@ export function SectionTitleField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500">Título da seção</label>
-      <input
+      <Label className="text-xs text-neutral-500">Título da seção</Label>
+      <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={defaultTitle}
-        className="w-full max-w-xs rounded border px-3 py-1.5 text-sm font-medium"
+        className="max-w-xs py-1.5 font-medium"
       />
     </div>
   );

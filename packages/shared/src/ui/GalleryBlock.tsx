@@ -17,7 +17,7 @@ export function GalleryBlock({ title, photos }: { title: string; photos: PublicG
             width={photo.width}
             height={photo.height}
             loading="lazy"
-            className="aspect-square w-full rounded-lg object-cover"
+            className="aspect-square w-full rounded-3xl object-cover shadow-sm"
           />
         ))}
       </div>

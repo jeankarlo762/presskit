@@ -8,11 +8,28 @@ import {
   updatePresskit,
   type Presskit,
 } from "../../api/presskit";
+import { Button, Card, FieldError, Label, Select } from "../../components/ui";
 
 type ThemeValues = Pick<
   Presskit,
   "themeBackgroundColor" | "themeTextColor" | "themeAccentColor" | "themeFontKey" | "themeBackgroundImageUrl"
 >;
+
+function ColorSwatch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div
+      className="relative h-10 w-10 overflow-hidden rounded-full border border-neutral-200 shadow-sm"
+      style={{ backgroundColor: value }}
+    >
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute -left-1 -top-1 h-12 w-12 cursor-pointer opacity-0"
+      />
+    </div>
+  );
+}
 
 export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onChange: (theme: ThemeValues) => void }) {
   const [theme, setTheme] = useState(initial);
@@ -60,44 +77,29 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border p-4">
-      <h3 className="font-medium">Aparência</h3>
+    <Card className="flex flex-col gap-5">
+      <h3 className="font-medium text-neutral-900">Aparência</h3>
 
       <div className="flex flex-wrap gap-6">
         <div>
-          <label className="mb-1 block text-sm font-medium">Cor de fundo</label>
-          <input
-            type="color"
-            value={theme.themeBackgroundColor}
-            onChange={(e) => persist({ themeBackgroundColor: e.target.value })}
-            className="h-9 w-16 cursor-pointer rounded border"
-          />
+          <Label>Cor de fundo</Label>
+          <ColorSwatch value={theme.themeBackgroundColor} onChange={(v) => persist({ themeBackgroundColor: v })} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Cor do texto</label>
-          <input
-            type="color"
-            value={theme.themeTextColor}
-            onChange={(e) => persist({ themeTextColor: e.target.value })}
-            className="h-9 w-16 cursor-pointer rounded border"
-          />
+          <Label>Cor do texto</Label>
+          <ColorSwatch value={theme.themeTextColor} onChange={(v) => persist({ themeTextColor: v })} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Cor de destaque</label>
-          <input
-            type="color"
-            value={theme.themeAccentColor}
-            onChange={(e) => persist({ themeAccentColor: e.target.value })}
-            className="h-9 w-16 cursor-pointer rounded border"
-          />
-          <div className="mt-1 flex gap-1">
+          <Label>Cor de destaque</Label>
+          <ColorSwatch value={theme.themeAccentColor} onChange={(v) => persist({ themeAccentColor: v })} />
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {PRESET_ACCENT_COLORS.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => persist({ themeAccentColor: color })}
                 style={{ backgroundColor: color }}
-                className="h-5 w-5 rounded-full border border-black/10"
+                className="h-5 w-5 rounded-full border border-black/10 transition hover:scale-110"
                 aria-label={color}
               />
             ))}
@@ -106,11 +108,11 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Tipografia</label>
-        <select
+        <Label>Tipografia</Label>
+        <Select
           value={theme.themeFontKey}
           onChange={(e) => persist({ themeFontKey: e.target.value as FontKey })}
-          className="rounded border px-3 py-2 text-sm"
+          className="max-w-xs"
           style={{ fontFamily: FONT_FAMILY_CSS[theme.themeFontKey] }}
         >
           {FONT_OPTIONS.map((font) => (
@@ -118,17 +120,21 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
               {font.label}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Imagem / textura de fundo</label>
+        <Label>Imagem / textura de fundo</Label>
         {theme.themeBackgroundImageUrl ? (
           <div className="flex items-center gap-3">
-            <img src={theme.themeBackgroundImageUrl} alt="Fundo" className="h-16 w-16 rounded object-cover" />
-            <button onClick={handleRemoveBackground} className="text-sm text-red-600">
+            <img
+              src={theme.themeBackgroundImageUrl}
+              alt="Fundo"
+              className="h-16 w-16 rounded-2xl object-cover shadow-sm"
+            />
+            <Button onClick={handleRemoveBackground} variant="ghost" size="sm">
               remover
-            </button>
+            </Button>
           </div>
         ) : (
           <input
@@ -140,14 +146,14 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
               const file = e.target.files?.[0];
               if (file) void handleBackgroundUpload(file);
             }}
-            className="text-sm"
+            className="text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-neutral-700"
           />
         )}
-        {uploadingBg && <p className="mt-1 text-sm text-neutral-500">Enviando...</p>}
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {uploadingBg && <p className="mt-2 text-sm text-neutral-500">Enviando...</p>}
+        <FieldError>{error}</FieldError>
       </div>
 
       {savingColor && <p className="text-xs text-neutral-400">Salvando...</p>}
-    </div>
+    </Card>
   );
 }

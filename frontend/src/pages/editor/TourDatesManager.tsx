@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SECTION_DEFAULT_TITLES } from "@presskit/shared";
 import { createTourDate, deleteTourDate, updateSectionData, type TourDate } from "../../api/presskit";
 import { SectionTitleField } from "./SectionTitleField";
+import { Button, Card, Input } from "../../components/ui";
 
 export function TourDatesManager({
   initial,
@@ -68,55 +69,51 @@ export function TourDatesManager({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
+    <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
         <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.TOUR_DATES} onChange={setTitle} />
         {titleChanged && (
-          <button
-            onClick={handleSaveTitle}
-            disabled={titleSaving}
-            className="rounded bg-black px-3 py-1.5 text-xs text-white disabled:opacity-50"
-          >
+          <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título
-          </button>
+          </Button>
         )}
       </div>
-      <ul className="flex flex-col gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-            <span>
-              {new Date(item.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })} — {item.venueName}, {item.city}
-            </span>
-            <button onClick={() => handleDelete(item.id)} className="text-red-600">
-              remover
-            </button>
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-2 rounded-xl bg-neutral-50 px-4 py-2 text-sm"
+            >
+              <span>
+                {new Date(item.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })} — {item.venueName}, {item.city}
+              </span>
+              <Button onClick={() => handleDelete(item.id)} variant="ghost" size="sm">
+                remover
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap gap-2">
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border px-3 py-2 text-sm" />
-        <input
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-auto" />
+        <Input
           value={venueName}
           onChange={(e) => setVenueName(e.target.value)}
           placeholder="Local"
-          className="flex-1 rounded border px-3 py-2 text-sm"
+          className="flex-1"
         />
-        <input
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="Cidade"
-          className="w-32 rounded border px-3 py-2 text-sm"
-        />
-        <input
+        <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Cidade" className="w-32" />
+        <Input
           value={ticketUrl}
           onChange={(e) => setTicketUrl(e.target.value)}
           placeholder="Link de ingressos (opcional)"
-          className="w-48 rounded border px-3 py-2 text-sm"
+          className="w-48"
         />
-        <button onClick={handleAdd} disabled={busy} className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
+        <Button onClick={handleAdd} disabled={busy}>
           Adicionar
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

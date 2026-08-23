@@ -53,7 +53,7 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg">
+    <div className="overflow-hidden rounded-3xl shadow-sm">
       {embed.title && <p className="mb-1 text-sm font-medium">{embed.title}</p>}
       <iframe
         src={src}

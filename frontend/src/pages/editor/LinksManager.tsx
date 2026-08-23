@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createLink, deleteLink, type TrackableLink } from "../../api/presskit";
+import { Button, Card, FieldError, Input } from "../../components/ui";
 
 export function LinksManager({ initial, slug }: { initial: TrackableLink[]; slug: string }) {
   const [items, setItems] = useState(initial);
@@ -30,41 +31,48 @@ export function LinksManager({ initial, slug }: { initial: TrackableLink[]; slug
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <h3 className="font-medium">Links rastreáveis</h3>
-      <p className="text-sm text-neutral-500">
-        Crie um link diferente para cada destinatário e veja quem abriu na aba de analytics.
-      </p>
-      <ul className="flex flex-col gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-            <span className="truncate">
-              {item.label} — presskit.com.br/{slug}?ref={item.code}
-            </span>
-            <button onClick={() => handleDelete(item.id)} className="shrink-0 text-red-600">
-              remover
-            </button>
-          </li>
-        ))}
-      </ul>
+    <Card className="flex flex-col gap-4">
+      <div>
+        <h3 className="font-medium text-neutral-900">Links rastreáveis</h3>
+        <p className="text-sm text-neutral-500">
+          Crie um link diferente para cada destinatário e veja quem abriu na aba de analytics.
+        </p>
+      </div>
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-2 rounded-xl bg-neutral-50 px-4 py-2 text-sm"
+            >
+              <span className="truncate">
+                {item.label} — presskit.com.br/{slug}?ref={item.code}
+              </span>
+              <Button onClick={() => handleDelete(item.id)} variant="ghost" size="sm" className="shrink-0">
+                remover
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap gap-2">
-        <input
+        <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Rótulo (ex: Rolling Stone)"
-          className="flex-1 rounded border px-3 py-2 text-sm"
+          className="flex-1"
         />
-        <input
+        <Input
           value={code}
           onChange={(e) => setCode(e.target.value.toLowerCase())}
           placeholder="codigo-do-link"
-          className="w-48 rounded border px-3 py-2 text-sm"
+          className="w-48"
         />
-        <button onClick={handleAdd} disabled={busy} className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
+        <Button onClick={handleAdd} disabled={busy}>
           Criar link
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+      <FieldError>{error}</FieldError>
+    </Card>
   );
 }

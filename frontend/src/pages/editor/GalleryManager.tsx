@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import axios from "axios";
 import { confirmGalleryPhoto, deleteGalleryPhoto, requestGalleryUploadUrl, type GalleryPhoto } from "../../api/presskit";
+import { Card, FieldError } from "../../components/ui";
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -60,21 +61,23 @@ export function GalleryManager({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <h3 className="font-medium">Galeria de fotos</h3>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {items.map((item) => (
-          <div key={item.id} className="group relative aspect-square overflow-hidden rounded">
-            <img src={item.url} alt={item.caption ?? ""} className="h-full w-full object-cover" />
-            <button
-              onClick={() => handleDelete(item.id)}
-              className="absolute right-1 top-1 hidden rounded bg-black/70 px-2 py-0.5 text-xs text-white group-hover:block"
-            >
-              remover
-            </button>
-          </div>
-        ))}
-      </div>
+    <Card className="flex flex-col gap-4">
+      <h3 className="font-medium text-neutral-900">Fotos</h3>
+      {items.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {items.map((item) => (
+            <div key={item.id} className="group relative aspect-square overflow-hidden rounded-2xl">
+              <img src={item.url} alt={item.caption ?? ""} className="h-full w-full object-cover" />
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="absolute right-1.5 top-1.5 hidden rounded-full bg-black/70 px-2.5 py-1 text-xs text-white backdrop-blur group-hover:block"
+              >
+                remover
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div>
         <input
           ref={inputRef}
@@ -85,11 +88,11 @@ export function GalleryManager({
             const file = e.target.files?.[0];
             if (file) void handleFileSelected(file);
           }}
-          className="text-sm"
+          className="text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-900 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:bg-neutral-700"
         />
-        {uploading && <p className="mt-1 text-sm text-neutral-500">Enviando...</p>}
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {uploading && <p className="mt-2 text-sm text-neutral-500">Enviando...</p>}
+        <FieldError>{error}</FieldError>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -26,6 +26,7 @@ import {
 } from "../api/presskit";
 import { logout } from "../api/auth";
 import { useAuthStore } from "../store/auth.store";
+import { Button } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
@@ -100,7 +101,7 @@ export function DashboardHomePage() {
     }
   }
 
-  if (loading || !presskit) return <p className="p-8">Carregando...</p>;
+  if (loading || !presskit) return <p className="p-8 text-neutral-500">Carregando...</p>;
 
   const bioSection = sections.find((s) => s.type === "BIO");
   const contactSection = sections.find((s) => s.type === "CONTACT");
@@ -134,23 +135,27 @@ export function DashboardHomePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b px-6 py-4">
+    <div className="flex min-h-screen flex-col bg-neutral-50">
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-white/80 px-6 py-4 shadow-sm backdrop-blur">
         <div>
-          <h1 className="font-semibold">Olá, {user?.name}</h1>
+          <h1 className="font-semibold text-neutral-900">Olá, {user?.name}</h1>
           <p className="text-sm text-neutral-500">presskit.com.br/{presskit.slug}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleTogglePublish}
-            disabled={publishBusy}
-            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+          <span
+            className={
+              "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +
+              (presskit.published ? "bg-emerald-50 text-emerald-600" : "bg-neutral-100 text-neutral-500")
+            }
           >
+            {presskit.published ? "Publicado" : "Rascunho"}
+          </span>
+          <Button onClick={handleTogglePublish} disabled={publishBusy} size="sm">
             {presskit.published ? "Despublicar" : "Publicar"}
-          </button>
-          <button onClick={handleLogout} className="text-sm text-neutral-500 underline">
+          </Button>
+          <Button onClick={handleLogout} variant="ghost" size="sm">
             Sair
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -209,10 +214,10 @@ export function DashboardHomePage() {
           <LinksManager initial={links} slug={presskit.slug} />
         </div>
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
+        <div className="lg:sticky lg:top-24 lg:self-start">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Preview</p>
           <div
-            className="max-h-[85vh] overflow-y-auto rounded-lg border"
+            className="max-h-[85vh] overflow-y-auto rounded-3xl border border-neutral-200 shadow-sm"
             style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
           >
             <PresskitRenderer presskit={previewPresskit} />

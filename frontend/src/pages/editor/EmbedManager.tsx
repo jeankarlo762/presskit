@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { MediaProvider, SectionType } from "@presskit/shared";
 import { createMedia, deleteMedia, updateSectionData, type MediaEmbed } from "../../api/presskit";
 import { SectionTitleField } from "./SectionTitleField";
+import { Button, Card, FieldError, Input, Select } from "../../components/ui";
 
 export function EmbedManager({
   sectionType,
@@ -70,64 +71,57 @@ export function EmbedManager({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
+    <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
         <SectionTitleField value={sectionTitle} defaultTitle={defaultTitle} onChange={setSectionTitle} />
         {titleChanged && (
-          <button
-            onClick={handleSaveTitle}
-            disabled={titleSaving}
-            className="rounded bg-black px-3 py-1.5 text-xs text-white disabled:opacity-50"
-          >
+          <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título
-          </button>
+          </Button>
         )}
       </div>
-      <ul className="flex flex-col gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-            <span className="truncate">
-              [{item.provider}] {item.title || item.url}
-            </span>
-            <button onClick={() => handleDelete(item.id)} className="shrink-0 text-red-600">
-              remover
-            </button>
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-2 rounded-xl bg-neutral-50 px-4 py-2 text-sm"
+            >
+              <span className="truncate">
+                [{item.provider}] {item.title || item.url}
+              </span>
+              <Button onClick={() => handleDelete(item.id)} variant="ghost" size="sm" className="shrink-0">
+                remover
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap gap-2">
-        <select
-          value={provider}
-          onChange={(e) => setProvider(e.target.value as MediaProvider)}
-          className="rounded border px-2 py-2 text-sm"
-        >
+        <Select value={provider} onChange={(e) => setProvider(e.target.value as MediaProvider)} className="w-32">
           {providers.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
           ))}
-        </select>
-        <input
+        </Select>
+        <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://..."
-          className="min-w-[200px] flex-1 rounded border px-3 py-2 text-sm"
+          className="min-w-[200px] flex-1"
         />
-        <input
+        <Input
           value={embedTitle}
           onChange={(e) => setEmbedTitle(e.target.value)}
           placeholder="Título (opcional)"
-          className="w-40 rounded border px-3 py-2 text-sm"
+          className="w-40"
         />
-        <button
-          onClick={handleAdd}
-          disabled={busy}
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
+        <Button onClick={handleAdd} disabled={busy}>
           Adicionar
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+      <FieldError>{error}</FieldError>
+    </Card>
   );
 }

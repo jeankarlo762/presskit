@@ -86,10 +86,10 @@ export function PresskitRenderer({ presskit }: { presskit: PublicPresskit }) {
   return (
     <div style={themeStyle(presskit)} className="min-h-screen">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10">
-        <header className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--presskit-accent)]">
+        <header className="flex flex-col gap-3">
+          <span className="w-fit rounded-full border border-[var(--presskit-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--presskit-accent)]">
             {ARTIST_CATEGORY_LABELS[presskit.category]}
-          </p>
+          </span>
           <h1 className="text-3xl font-semibold tracking-tight">{presskit.artistName}</h1>
           {(presskit.city || presskit.state) && (
             <p className="text-sm text-[var(--presskit-muted)]">

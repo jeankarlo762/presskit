@@ -5,6 +5,7 @@ import { z } from "zod";
 import { SECTION_DEFAULT_TITLES, type BioSectionData } from "@presskit/shared";
 import { updateSectionData } from "../../api/presskit";
 import { SectionTitleField } from "./SectionTitleField";
+import { Button, Card, FieldError, Label, Textarea } from "../../components/ui";
 
 const schema = z.object({
   shortBio: z.string().trim().max(280),
@@ -43,28 +44,24 @@ export function BioForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 rounded-lg border p-4">
+    <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.BIO} onChange={setTitle} />
       <div>
-        <label className="mb-1 block text-sm font-medium">Bio curta (até 280 caracteres)</label>
-        <textarea rows={2} className="w-full rounded border px-3 py-2 text-sm" {...register("shortBio")} />
-        {errors.shortBio && <p className="mt-1 text-sm text-red-600">{errors.shortBio.message}</p>}
+        <Label>Bio curta (até 280 caracteres)</Label>
+        <Textarea rows={2} {...register("shortBio")} />
+        <FieldError>{errors.shortBio?.message}</FieldError>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Bio completa</label>
-        <textarea rows={6} className="w-full rounded border px-3 py-2 text-sm" {...register("longBio")} />
-        {errors.longBio && <p className="mt-1 text-sm text-red-600">{errors.longBio.message}</p>}
+        <Label>Bio completa</Label>
+        <Textarea rows={6} {...register("longBio")} />
+        <FieldError>{errors.longBio?.message}</FieldError>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSubmitting || (!isDirty && !titleChanged)}
-          className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSubmitting || (!isDirty && !titleChanged)} size="sm">
           {isSubmitting ? "Salvando..." : "Salvar"}
-        </button>
-        {saved && !isDirty && !titleChanged && <span className="text-sm text-green-600">Salvo</span>}
+        </Button>
+        {saved && !isDirty && !titleChanged && <span className="text-sm text-emerald-600">Salvo</span>}
       </div>
-    </form>
+    </Card>
   );
 }
