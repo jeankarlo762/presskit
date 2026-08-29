@@ -1,6 +1,6 @@
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import { maxGalleryPhotosFor, requireWithinGalleryLimit, type ArtistCategory, type PlanKey } from "@presskit/shared";
-import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "./storage.service";
+import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "../../shared/storage.service";
 
 export async function listGalleryPhotos(presskitId: string) {
   return prisma.galleryPhoto.findMany({ where: { presskitId }, orderBy: { order: "asc" } });

@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
 import {
   confirmGalleryPhoto,
   deleteGalleryPhoto,
   listGalleryPhotos,
   reorderGalleryPhotos,
   requestGalleryUpload,
-} from "../services/gallery.service";
+} from "./gallery.service";
 
 const idParamSchema = z.object({ id: z.string() });
 const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });

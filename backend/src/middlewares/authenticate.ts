@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../config/prisma";
-import { InvalidAccessTokenError, verifyAccessToken } from "../utils/jwt";
+import { InvalidAccessTokenError, verifyAccessToken } from "../shared/jwt";
 
 export default fp(async function authenticatePlugin(fastify: FastifyInstance) {
   fastify.decorate("authenticate", async (request: FastifyRequest, reply: FastifyReply) => {

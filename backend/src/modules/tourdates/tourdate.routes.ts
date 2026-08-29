@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { tourDateSchema } from "@presskit/shared";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
-import { createTourDate, deleteTourDate, listTourDates, updateTourDate } from "../services/tourDate.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
+import { createTourDate, deleteTourDate, listTourDates, updateTourDate } from "./tourDate.service";
 
 const idParamSchema = z.object({ id: z.string() });
 

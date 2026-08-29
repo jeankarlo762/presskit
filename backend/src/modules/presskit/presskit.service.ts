@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import { DEFAULT_SECTIONS_BY_CATEGORY, type ArtistCategory, type PresskitUpdateInput } from "@presskit/shared";
 
 export class PresskitNotFoundError extends Error {

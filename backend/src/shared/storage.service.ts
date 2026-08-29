@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../config/env";
-import { generateOpaqueToken } from "../utils/crypto";
+import { generateOpaqueToken } from "./crypto";
 
 export class StorageNotConfiguredError extends Error {
   constructor() {

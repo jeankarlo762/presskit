@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { isBotUserAgent, slugSchema } from "@presskit/shared";
-import { findPublicPresskitBySlug, isSlugAvailable } from "../services/presskit.service";
-import { recordPageView } from "../services/pageView.service";
+import { findPublicPresskitBySlug, isSlugAvailable } from "../presskit/presskit.service";
+import { recordPageView } from "../analytics/pageView.service";
 
 const slugParamSchema = z.object({ slug: z.string() });
 const viewBodySchema = z.object({

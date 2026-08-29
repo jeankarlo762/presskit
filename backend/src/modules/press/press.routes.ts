@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { pressMentionSchema } from "@presskit/shared";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
-import { createPressMention, deletePressMention, listPressMentions, updatePressMention } from "../services/pressMention.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
+import { createPressMention, deletePressMention, listPressMentions, updatePressMention } from "./pressMention.service";
 
 const idParamSchema = z.object({ id: z.string() });
 

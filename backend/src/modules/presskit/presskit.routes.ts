@@ -8,8 +8,8 @@ import {
   publishPresskit,
   unpublishPresskit,
   updatePresskit,
-} from "../services/presskit.service";
-import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "../services/storage.service";
+} from "./presskit.service";
+import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "../../shared/storage.service";
 
 const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
 const confirmBackgroundSchema = z.object({ storageKey: z.string().min(1), url: z.string().url() });

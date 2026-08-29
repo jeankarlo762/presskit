@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import { SECTION_TYPES, type SectionType } from "@presskit/shared";
 
 export async function listSections(presskitId: string) {

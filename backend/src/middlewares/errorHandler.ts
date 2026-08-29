@@ -4,19 +4,19 @@ import {
   EmailAlreadyInUseError,
   InvalidCredentialsError,
   InvalidRefreshTokenError,
-} from "../services/auth.service";
+} from "../modules/auth/auth.service";
 import {
   PresskitAlreadyExistsError,
   PresskitNotFoundError,
   SlugAlreadyInUseError,
-} from "../services/presskit.service";
-import { MediaEmbedNotFoundError } from "../services/mediaEmbed.service";
-import { TourDateNotFoundError } from "../services/tourDate.service";
-import { PressMentionNotFoundError } from "../services/pressMention.service";
-import { TrackableLinkCodeInUseError, TrackableLinkNotFoundError } from "../services/trackableLink.service";
-import { StorageNotConfiguredError, UploadNotFoundError } from "../services/storage.service";
+} from "../modules/presskit/presskit.service";
+import { MediaEmbedNotFoundError } from "../modules/media/mediaEmbed.service";
+import { TourDateNotFoundError } from "../modules/tourdates/tourDate.service";
+import { PressMentionNotFoundError } from "../modules/press/pressMention.service";
+import { TrackableLinkCodeInUseError, TrackableLinkNotFoundError } from "../modules/links/trackableLink.service";
+import { StorageNotConfiguredError, UploadNotFoundError } from "../shared/storage.service";
 import { PlanLimitError } from "@presskit/shared";
-import { InvalidAccessTokenError } from "../utils/jwt";
+import { InvalidAccessTokenError } from "../shared/jwt";
 
 const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [InvalidCredentialsError, 401],

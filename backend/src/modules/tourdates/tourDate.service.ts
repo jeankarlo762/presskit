@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import type { TourDateInput } from "@presskit/shared";
 
 export class TourDateNotFoundError extends Error {

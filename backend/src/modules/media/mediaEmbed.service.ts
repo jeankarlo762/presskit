@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import type { MediaEmbedInput } from "@presskit/shared";
 
 export async function listMediaEmbeds(presskitId: string) {

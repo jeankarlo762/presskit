@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 
 function detectDeviceType(userAgent: string | undefined): string {
   if (!userAgent) return "UNKNOWN";

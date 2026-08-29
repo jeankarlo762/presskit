@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { mediaEmbedSchema } from "@presskit/shared";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
-import { createMediaEmbed, deleteMediaEmbed, listMediaEmbeds, updateMediaEmbed } from "../services/mediaEmbed.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
+import { createMediaEmbed, deleteMediaEmbed, listMediaEmbeds, updateMediaEmbed } from "./mediaEmbed.service";
 
 const idParamSchema = z.object({ id: z.string() });
 

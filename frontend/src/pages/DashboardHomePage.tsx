@@ -24,9 +24,8 @@ import {
   type TourDate,
   type TrackableLink,
 } from "../api/presskit";
-import { logout } from "../api/auth";
 import { useAuthStore } from "../store/auth.store";
-import { Button, GrainOverlay, Logo } from "../components/ui";
+import { Button, Logo } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
@@ -40,7 +39,7 @@ const EMPTY_CONTACT: ContactSectionData = { email: "", socialLinks: [] };
 
 export function DashboardHomePage() {
   const navigate = useNavigate();
-  const { user, refreshToken, clearSession } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [presskit, setPresskit] = useState<Presskit | null>(null);
   // `sections` is the authoritative (server-confirmed) state — it only
@@ -94,12 +93,6 @@ export function DashboardHomePage() {
 
   useEffect(() => setPreviewSections(sections), [sections]);
 
-  async function handleLogout() {
-    if (refreshToken) await logout(refreshToken).catch(() => undefined);
-    clearSession();
-    navigate("/login");
-  }
-
   async function handleTogglePublish() {
     if (!presskit) return;
     setPublishBusy(true);
@@ -145,8 +138,7 @@ export function DashboardHomePage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-bg">
-      <GrainOverlay />
+    <div className="flex min-h-screen flex-col bg-bg">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-bg/80 px-6 py-4 backdrop-blur-lg">
         <div className="flex items-center gap-6">
           <Logo className="hidden text-lg sm:block" />
@@ -166,9 +158,6 @@ export function DashboardHomePage() {
           </span>
           <Button onClick={handleTogglePublish} disabled={publishBusy} size="sm">
             {presskit.published ? "Despublicar" : "Publicar"}
-          </Button>
-          <Button onClick={handleLogout} variant="ghost" size="sm">
-            Sair
           </Button>
         </div>
       </header>

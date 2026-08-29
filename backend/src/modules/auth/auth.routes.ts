@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { loginSchema, refreshSchema, signupSchema } from "@presskit/shared";
-import { createUser, issueRefreshToken, revokeRefreshToken, rotateRefreshToken, verifyCredentials } from "../services/auth.service";
-import { signAccessToken } from "../utils/jwt";
+import { createUser, issueRefreshToken, revokeRefreshToken, rotateRefreshToken, verifyCredentials } from "./auth.service";
+import { signAccessToken } from "../../shared/jwt";
 
 function toPublicUser(user: { id: string; name: string; email: string; planKey: string }) {
   return { id: user.id, name: user.name, email: user.email, planKey: user.planKey };

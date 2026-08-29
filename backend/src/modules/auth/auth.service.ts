@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../config/prisma";
-import { env } from "../config/env";
-import { generateOpaqueToken, hashToken } from "../utils/crypto";
+import { prisma } from "../../config/prisma";
+import { env } from "../../config/env";
+import { generateOpaqueToken, hashToken } from "../../shared/crypto";
 
 const BCRYPT_ROUNDS = 12;
 

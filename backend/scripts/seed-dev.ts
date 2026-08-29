@@ -2,9 +2,9 @@
 // password policy (enforced by signupSchema at the route layer, not here) —
 // "123" is only acceptable for local testing, never a real signup path.
 import { prisma } from "../src/config/prisma";
-import { createUser } from "../src/services/auth.service";
-import { createPresskitForUser } from "../src/services/presskit.service";
-import { upsertSectionData } from "../src/services/section.service";
+import { createUser } from "../src/modules/auth/auth.service";
+import { createPresskitForUser } from "../src/modules/presskit/presskit.service";
+import { upsertSectionData } from "../src/modules/sections/section.service";
 
 async function main() {
   const email = "admin@gmail.com";

@@ -6,15 +6,15 @@ import rateLimit from "@fastify/rate-limit";
 import { env, corsOrigins } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import authenticatePlugin from "./middlewares/authenticate";
-import { authRoutes } from "./routes/auth.routes";
-import { presskitRoutes } from "./routes/presskit.routes";
-import { sectionRoutes } from "./routes/section.routes";
-import { mediaRoutes } from "./routes/media.routes";
-import { galleryRoutes } from "./routes/gallery.routes";
-import { tourDateRoutes } from "./routes/tourdate.routes";
-import { pressRoutes } from "./routes/press.routes";
-import { linkRoutes } from "./routes/link.routes";
-import { publicRoutes } from "./routes/public.routes";
+import { authRoutes } from "./modules/auth/auth.routes";
+import { presskitRoutes } from "./modules/presskit/presskit.routes";
+import { sectionRoutes } from "./modules/sections/section.routes";
+import { mediaRoutes } from "./modules/media/media.routes";
+import { galleryRoutes } from "./modules/gallery/gallery.routes";
+import { tourDateRoutes } from "./modules/tourdates/tourdate.routes";
+import { pressRoutes } from "./modules/press/press.routes";
+import { linkRoutes } from "./modules/links/link.routes";
+import { publicRoutes } from "./modules/public/public.routes";
 
 async function buildServer() {
   const fastify = Fastify({
@@ -24,7 +24,15 @@ async function buildServer() {
   });
 
   await fastify.register(helmet);
-  await fastify.register(cors, { origin: corsOrigins, credentials: true });
+  await fastify.register(cors, {
+    origin: corsOrigins,
+    credentials: true,
+    // @fastify/cors defaults `methods` to "GET,HEAD,POST" — without this,
+    // every PATCH/PUT/DELETE call from a browser fails the CORS preflight
+    // silently (the request never leaves the browser), even though curl/the
+    // server itself has no problem with those verbs.
+    methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE"],
+  });
   await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await fastify.register(authenticatePlugin);
 

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../config/prisma";
+import { prisma } from "../../config/prisma";
 import { requireWithinTrackableLinkLimit, type PlanKey, type TrackableLinkInput } from "@presskit/shared";
 
 export class TrackableLinkNotFoundError extends Error {

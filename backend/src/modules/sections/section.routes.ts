@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { SECTION_TYPES, sectionDataSchemaByType, sectionTitleSchema, type SectionType } from "@presskit/shared";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
-import { listSections, reorderSections, setSectionVisibility, upsertSectionData } from "../services/section.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
+import { listSections, reorderSections, setSectionVisibility, upsertSectionData } from "./section.service";
 
 const sectionTypeParamSchema = z.object({ type: z.enum(SECTION_TYPES) });
 const visibilitySchema = z.object({ visible: z.boolean() });

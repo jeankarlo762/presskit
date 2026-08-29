@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { trackableLinkSchema } from "@presskit/shared";
-import { getOwnedPresskitOrThrow } from "../services/presskit.service";
+import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
 import {
   createTrackableLink,
   deleteTrackableLink,
   listTrackableLinks,
   updateTrackableLink,
-} from "../services/trackableLink.service";
+} from "./trackableLink.service";
 
 const idParamSchema = z.object({ id: z.string() });
 const updateSchema = trackableLinkSchema.pick({ label: true, active: true }).partial();
