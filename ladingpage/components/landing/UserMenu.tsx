@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 
 const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:5173";
@@ -13,23 +13,10 @@ function initials(name: string) {
 }
 
 export function UserMenu() {
-  const { user, logout, uploadAvatar, avatarUploading } = useAuth();
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
-
-  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      await uploadAvatar(file);
-    } catch {
-      // Erro silencioso na landing — se R2 não estiver configurado no
-      // backend, a próxima tentativa depois de configurado funciona igual.
-    }
-  }
 
   return (
     <div className="relative">
@@ -39,12 +26,7 @@ export function UserMenu() {
         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-bg-elevated-2 text-xs font-bold uppercase text-fg transition-transform hover:scale-105"
         aria-label="Menu da conta"
       >
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
-        ) : (
-          initials(user.name)
-        )}
+        {initials(user.name)}
       </button>
 
       {open && (
@@ -56,19 +38,9 @@ export function UserMenu() {
               <p className="truncate text-xs text-fg-muted">{user.email}</p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-white/5 disabled:opacity-60"
-            >
-              {avatarUploading ? "Enviando foto..." : "Trocar foto"}
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleFileChange} />
-
             <a
               href={DASHBOARD_URL}
-              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-white/5"
+              className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm text-fg hover:bg-white/5"
             >
               Ir para o painel
             </a>

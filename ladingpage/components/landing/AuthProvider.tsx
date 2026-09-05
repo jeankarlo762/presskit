@@ -2,13 +2,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  confirmAvatar,
   fetchMe,
   login as loginRequest,
   logout as logoutRequest,
   refreshSession,
-  requestAvatarUploadUrl,
-  uploadAvatarFile,
   type SiteUser,
 } from "../../lib/auth-client";
 import { LoginModal } from "./LoginModal";
@@ -28,8 +25,6 @@ type AuthContextValue = {
   closeLoginModal: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  uploadAvatar: (file: File) => Promise<void>;
-  avatarUploading: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -58,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tokens, setTokens] = useState<StoredTokens | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     async function restoreSession() {
@@ -114,23 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("anonymous");
   }, [tokens]);
 
-  const uploadAvatar = useCallback(
-    async (file: File) => {
-      if (!tokens) return;
-      setAvatarUploading(true);
-      try {
-        const extension = file.name.split(".").pop() ?? "jpg";
-        const { uploadUrl, storageKey, publicUrl } = await requestAvatarUploadUrl(tokens.accessToken, extension);
-        await uploadAvatarFile(uploadUrl, file);
-        const { user: updated } = await confirmAvatar(tokens.accessToken, { storageKey, url: publicUrl });
-        setUser(updated);
-      } finally {
-        setAvatarUploading(false);
-      }
-    },
-    [tokens],
-  );
-
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -144,10 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       closeLoginModal: () => setLoginModalOpen(false),
       login,
       logout,
-      uploadAvatar,
-      avatarUploading,
     }),
-    [status, user, loginError, loginModalOpen, login, logout, uploadAvatar, avatarUploading],
+    [status, user, loginError, loginModalOpen, login, logout],
   );
 
   return (

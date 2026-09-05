@@ -3,7 +3,6 @@ export type SiteUser = {
   name: string;
   email: string;
   planKey: "FREE" | "PRO";
-  avatarUrl: string | null;
 };
 
 type AuthResponse = { user: SiteUser; accessToken: string; refreshToken: string };
@@ -59,27 +58,3 @@ export async function logout(refreshToken: string) {
   }).catch(() => undefined);
 }
 
-export async function requestAvatarUploadUrl(accessToken: string, extension: string) {
-  const res = await fetch(`${API_URL}/auth/me/avatar/upload-url`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ extension }),
-  });
-  if (!res.ok) throw new Error(await readErrorMessage(res));
-  return res.json() as Promise<{ uploadUrl: string; storageKey: string; publicUrl: string }>;
-}
-
-export async function uploadAvatarFile(uploadUrl: string, file: File) {
-  const res = await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-  if (!res.ok) throw new Error("Falha ao enviar a imagem");
-}
-
-export async function confirmAvatar(accessToken: string, input: { storageKey: string; url: string }) {
-  const res = await fetch(`${API_URL}/auth/me/avatar/confirm`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) throw new Error(await readErrorMessage(res));
-  return res.json() as Promise<{ user: SiteUser }>;
-}
