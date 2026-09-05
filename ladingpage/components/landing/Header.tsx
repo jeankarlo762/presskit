@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Container, GradientButton } from "./ui";
+import { useAuth } from "./AuthProvider";
+import { UserMenu } from "./UserMenu";
 
 const NAV_LINKS = [
   { label: "Como funciona", href: "#como-funciona" },
@@ -11,6 +15,8 @@ const NAV_LINKS = [
 ];
 
 export function Header() {
+  const { status, openLoginModal } = useAuth();
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-bg/70 backdrop-blur-lg">
       <Container className="flex h-16 items-center justify-between">
@@ -24,9 +30,27 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <GradientButton href="#planos" className="px-5 py-2 text-xs">
-          Começar agora
-        </GradientButton>
+
+        <div className="flex items-center gap-3">
+          {status === "authenticated" ? (
+            <UserMenu />
+          ) : status === "anonymous" ? (
+            <>
+              <button
+                type="button"
+                onClick={openLoginModal}
+                className="text-xs font-medium uppercase tracking-wide text-fg-muted transition-colors hover:text-fg"
+              >
+                Entrar
+              </button>
+              <GradientButton href="#planos" className="px-5 py-2 text-xs">
+                Começar agora
+              </GradientButton>
+            </>
+          ) : (
+            <div className="h-10 w-10" aria-hidden />
+          )}
+        </div>
       </Container>
     </header>
   );

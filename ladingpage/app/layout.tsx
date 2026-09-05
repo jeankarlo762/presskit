@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anton, Inter, Playfair_Display } from "next/font/google";
+import { AuthProvider } from "../components/landing/AuthProvider";
 import "./globals.css";
 
 // The brand's typographic contrast IS the identity: a bold poster-condensed
@@ -23,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${anton.variable} ${playfair.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-[#08070a] font-[family-name:var(--font-body)] text-zinc-100">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -55,6 +55,26 @@ export async function createImageUploadUrl(presskitId: string, extension: string
   return { uploadUrl, storageKey, publicUrl: `${env.R2_PUBLIC_BASE_URL}/${storageKey}` };
 }
 
+/** Same presign mechanics as createImageUploadUrl, keyed by userId instead of
+ * presskitId — the avatar belongs to the account, not to any one presskit. */
+export async function createUserAvatarUploadUrl(userId: string, extension: string) {
+  const normalizedExtension = extension.toLowerCase().replace(/^\./, "");
+  if (!ALLOWED_EXTENSIONS.has(normalizedExtension)) {
+    throw new Error(`Extensão não suportada: ${extension}`);
+  }
+
+  const client = getClient();
+  const storageKey = `users/${userId}/avatar/${generateOpaqueToken()}.${normalizedExtension}`;
+
+  const uploadUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }),
+    { expiresIn: 300 },
+  );
+
+  return { uploadUrl, storageKey, publicUrl: `${env.R2_PUBLIC_BASE_URL}/${storageKey}` };
+}
+
 /** Confirms the object actually landed in R2 before the metadata row is
  * persisted — a client that calls "confirm" without ever uploading (or after
  * a failed upload) must not be able to plant a broken gallery/background entry. */

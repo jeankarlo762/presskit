@@ -45,6 +45,9 @@ model User {
   name      String
   planKey   PlanKey  @default(FREE)
 
+  avatarUrl String?
+  avatarKey String?
+
   asaasCustomerId     String?
   asaasSubscriptionId String?
   subscriptionStatus  String?

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../../config/prisma";
 import { env } from "../../config/env";
 import { generateOpaqueToken, hashToken } from "../../shared/crypto";
+import { assertImageObjectExists, deleteImageObject } from "../../shared/storage.service";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -106,4 +107,22 @@ export async function revokeRefreshToken(rawToken: string) {
     where: { tokenHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+}
+
+/** Old avatar object is deleted only after the new one is confirmed to exist
+ * in R2 — a failed/never-sent upload must not leave the account without a
+ * usable avatar. */
+export async function updateUserAvatar(userId: string, input: { storageKey: string; url: string }) {
+  await assertImageObjectExists(input.storageKey);
+
+  const previous = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { avatarUrl: input.url, avatarKey: input.storageKey },
+  });
+
+  if (previous.avatarKey) await deleteImageObject(previous.avatarKey);
+
+  return user;
 }
