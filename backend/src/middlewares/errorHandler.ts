@@ -14,7 +14,12 @@ import { MediaEmbedNotFoundError } from "../modules/media/mediaEmbed.service";
 import { TourDateNotFoundError } from "../modules/tourdates/tourDate.service";
 import { PressMentionNotFoundError } from "../modules/press/pressMention.service";
 import { TrackableLinkCodeInUseError, TrackableLinkNotFoundError } from "../modules/links/trackableLink.service";
-import { StorageNotConfiguredError, UploadNotFoundError } from "../shared/storage.service";
+import {
+  ForeignStorageKeyError,
+  StorageNotConfiguredError,
+  UnsupportedImageExtensionError,
+  UploadNotFoundError,
+} from "../shared/storage.service";
 import { PlanLimitError } from "@presskit/shared";
 import { InvalidAccessTokenError } from "../shared/jwt";
 
@@ -33,6 +38,8 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [TrackableLinkNotFoundError, 404],
   [TrackableLinkCodeInUseError, 409],
   [UploadNotFoundError, 400],
+  [UnsupportedImageExtensionError, 400],
+  [ForeignStorageKeyError, 403],
   [StorageNotConfiguredError, 503],
 ]);
 

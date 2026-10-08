@@ -1,6 +1,7 @@
 import { Container, GradientButton } from "./ui";
 import { Waveform } from "./Waveform";
 import { GlitchText } from "./GlitchText";
+import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
 
 export function Hero() {
   return (
@@ -27,7 +28,7 @@ export function Hero() {
           negociar show, parceria e patrocínio.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <GradientButton href="#planos">Criar meu press kit</GradientButton>
+          <GradientButton href={DASHBOARD_SIGNUP_URL}>Criar meu press kit</GradientButton>
           <GradientButton href="#como-funciona" variant="outline">
             Ver como funciona
           </GradientButton>

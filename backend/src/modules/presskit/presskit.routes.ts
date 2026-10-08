@@ -6,13 +6,20 @@ import {
   findPresskitByUserId,
   getOwnedPresskitOrThrow,
   publishPresskit,
+  setThemeBackgroundImage,
   unpublishPresskit,
   updatePresskit,
 } from "./presskit.service";
-import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "../../shared/storage.service";
+import {
+  assertImageObjectExists,
+  assertOwnedStorageKey,
+  createImageUploadUrl,
+  deleteImageObject,
+  publicUrlFor,
+} from "../../shared/storage.service";
 
 const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
-const confirmBackgroundSchema = z.object({ storageKey: z.string().min(1), url: z.string().url() });
+const confirmBackgroundSchema = z.object({ storageKey: z.string().min(1).max(512) });
 
 export async function presskitRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -52,27 +59,25 @@ export async function presskitRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post("/presskit/theme/background-confirm", async (request, reply) => {
-    const { storageKey, url } = confirmBackgroundSchema.parse(request.body);
+    const { storageKey } = confirmBackgroundSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+
+    assertOwnedStorageKey(presskit.id, "theme-bg", storageKey);
     await assertImageObjectExists(storageKey);
 
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
     const previousKey = presskit.themeBackgroundImageKey;
-
-    const updated = await updatePresskit(request.currentUser.id, {
-      themeBackgroundImageUrl: url,
-      themeBackgroundImageKey: storageKey,
+    const updated = await setThemeBackgroundImage(request.currentUser.id, {
+      url: publicUrlFor(storageKey),
+      key: storageKey,
     });
-    if (previousKey) await deleteImageObject(previousKey);
+    if (previousKey && previousKey !== storageKey) await deleteImageObject(previousKey);
 
     return reply.send({ presskit: updated });
   });
 
   fastify.delete("/presskit/theme/background", async (request, reply) => {
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
-    const updated = await updatePresskit(request.currentUser.id, {
-      themeBackgroundImageUrl: null,
-      themeBackgroundImageKey: null,
-    });
+    const updated = await setThemeBackgroundImage(request.currentUser.id, null);
     if (presskit.themeBackgroundImageKey) await deleteImageObject(presskit.themeBackgroundImageKey);
     return reply.send({ presskit: updated });
   });

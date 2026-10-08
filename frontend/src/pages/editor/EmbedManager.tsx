@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import type { MediaProvider, SectionType } from "@presskit/shared";
+import { useEffect, useMemo, useState } from "react";
+import { MEDIA_PROVIDER_LABELS, parseMediaUrl, type MediaProvider, type SectionType } from "@presskit/shared";
 import { createMedia, deleteMedia, updateSectionData, type MediaEmbed } from "../../api/presskit";
+import { apiErrorMessage } from "../../api/axios";
 import { SectionTitleField } from "./SectionTitleField";
-import { Button, Card, FieldError, Input, Select } from "../../components/ui";
+import { Button, Card, FieldError, Input } from "../../components/ui";
+
+const PLACEHOLDER_BY_KIND: Record<"video" | "audio", string> = {
+  video: "Cole o link do YouTube ou Vimeo (ex: https://youtu.be/...)",
+  audio: "Cole o link do Spotify ou SoundCloud",
+};
 
 export function EmbedManager({
   sectionType,
@@ -26,7 +32,6 @@ export function EmbedManager({
   onTitleSaved: (title: string) => void;
 }) {
   const [items, setItems] = useState(initial);
-  const [provider, setProvider] = useState<MediaProvider>(providers[0]);
   const [url, setUrl] = useState("");
   const [embedTitle, setEmbedTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,19 +44,33 @@ export function EmbedManager({
   useEffect(() => setItems(initial), [initial]);
   useEffect(() => setSectionTitle(initialTitle), [initialTitle]);
 
+  // The provider is read off the pasted link instead of asked for in a
+  // dropdown — nobody knows (or should care) that a youtu.be short link and
+  // a youtube.com/shorts link are "the same provider".
+  const parsed = useMemo(() => parseMediaUrl(url), [url]);
+  const trimmedUrl = url.trim();
+  const isVideoSection = sectionType === "VIDEO";
+  const providerMismatch = parsed !== null && !providers.includes(parsed.provider);
+
+  let hint: string | null = null;
+  if (trimmedUrl && !parsed) hint = "Link não reconhecido — confira se é um link completo do YouTube, Vimeo, Spotify ou SoundCloud";
+  else if (parsed && providerMismatch) {
+    hint = `Esse link é do ${MEDIA_PROVIDER_LABELS[parsed.provider]} — adicione na seção ${isVideoSection ? "Música" : "Vídeos"}`;
+  }
+
   async function handleAdd() {
     setError(null);
-    if (!url.trim()) return;
+    if (!parsed || providerMismatch) return;
     setBusy(true);
     try {
-      const media = await createMedia({ provider, url: url.trim(), title: embedTitle.trim() || undefined });
+      const media = await createMedia({ provider: parsed.provider, url: trimmedUrl, title: embedTitle.trim() || undefined });
       const next = [...items, media];
       setItems(next);
       onChange(next);
       setUrl("");
       setEmbedTitle("");
-    } catch {
-      setError("Não foi possível adicionar — confira o link");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível adicionar — confira o link"));
     } finally {
       setBusy(false);
     }
@@ -96,8 +115,11 @@ export function EmbedManager({
               key={item.id}
               className="flex items-center justify-between gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm"
             >
-              <span className="truncate">
-                [{item.provider}] {item.title || item.url}
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
+                  {MEDIA_PROVIDER_LABELS[item.provider]}
+                </span>
+                <span className="truncate">{item.title || item.url}</span>
               </span>
               <Button onClick={() => handleDelete(item.id)} variant="ghost" size="sm" className="shrink-0">
                 remover
@@ -106,31 +128,43 @@ export function EmbedManager({
           ))}
         </ul>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Select value={provider} onChange={(e) => setProvider(e.target.value as MediaProvider)} className="w-32">
-          {providers.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </Select>
-        <Input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://..."
-          className="min-w-[200px] flex-1"
-        />
-        <Input
-          value={embedTitle}
-          onChange={(e) => setEmbedTitle(e.target.value)}
-          placeholder="Título (opcional)"
-          className="w-40"
-        />
-        <Button onClick={handleAdd} disabled={busy}>
-          Adicionar
-        </Button>
-      </div>
-      <FieldError>{error}</FieldError>
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handleAdd();
+        }}
+      >
+        <div className="flex flex-wrap gap-2">
+          <div className="relative min-w-[240px] flex-1">
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={PLACEHOLDER_BY_KIND[isVideoSection ? "video" : "audio"]}
+              inputMode="url"
+              autoComplete="off"
+              className={parsed && !providerMismatch ? "pr-24" : undefined}
+            />
+            {parsed && !providerMismatch && (
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                {MEDIA_PROVIDER_LABELS[parsed.provider]}
+              </span>
+            )}
+          </div>
+          <Input
+            value={embedTitle}
+            onChange={(e) => setEmbedTitle(e.target.value)}
+            placeholder="Título (opcional)"
+            maxLength={150}
+            className="w-44"
+          />
+          <Button type="submit" disabled={busy || !parsed || providerMismatch}>
+            {busy ? "Adicionando..." : "Adicionar"}
+          </Button>
+        </div>
+        {hint && <p className="text-sm text-fg-muted">{hint}</p>}
+        <FieldError>{error}</FieldError>
+      </form>
     </Card>
   );
 }

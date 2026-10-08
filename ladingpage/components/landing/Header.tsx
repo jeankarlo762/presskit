@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Container, GradientButton } from "./ui";
 import { useAuth } from "./AuthProvider";
 import { UserMenu } from "./UserMenu";
+import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
 
 const NAV_LINKS = [
   { label: "Como funciona", href: "#como-funciona" },
@@ -43,7 +44,7 @@ export function Header() {
               >
                 Entrar
               </button>
-              <GradientButton href="#planos" className="px-5 py-2 text-xs">
+              <GradientButton href={DASHBOARD_SIGNUP_URL} className="px-5 py-2 text-xs">
                 Começar agora
               </GradientButton>
             </>

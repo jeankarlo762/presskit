@@ -1,15 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { isBotUserAgent, slugSchema } from "@presskit/shared";
+import { httpUrlSchema, isBotUserAgent, slugSchema } from "@presskit/shared";
 import { findPublicPresskitBySlug, isSlugAvailable } from "../presskit/presskit.service";
 import { recordPageView } from "../analytics/pageView.service";
 
-const slugParamSchema = z.object({ slug: z.string() });
+const slugParamSchema = z.object({ slug: z.string().min(1).max(80) });
 const viewBodySchema = z.object({
-  trackableCode: z.string().optional(),
-  referrerUrl: z.string().url().optional(),
-  sessionId: z.string().min(1),
-  country: z.string().max(2).optional(),
+  trackableCode: z.string().max(40).optional(),
+  referrerUrl: httpUrlSchema.optional(),
+  sessionId: z.string().min(1).max(128),
+  country: z.string().length(2).optional(),
 });
 
 export async function publicRoutes(fastify: FastifyInstance) {
@@ -45,8 +45,14 @@ export async function publicRoutes(fastify: FastifyInstance) {
     return reply.status(204).send();
   });
 
-  fastify.get("/public/slug-available", async (request, reply) => {
-    const { slug } = z.object({ slug: slugSchema }).parse(request.query);
-    return reply.send({ available: await isSlugAvailable(slug) });
-  });
+  fastify.get(
+    "/public/slug-available",
+    // Unauthenticated and hits the DB per call — keep it from being used
+    // to enumerate every slug at speed.
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const { slug } = z.object({ slug: slugSchema }).parse(request.query);
+      return reply.send({ available: await isSlugAvailable(slug) });
+    },
+  );
 }

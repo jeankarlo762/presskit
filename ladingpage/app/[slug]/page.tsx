@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
+import { after } from "next/server";
 import type { Metadata } from "next";
 import { ARTIST_CATEGORY_LABELS, isBotUserAgent } from "@presskit/shared";
 import { PresskitRenderer } from "@presskit/shared/ui";
@@ -47,16 +48,17 @@ export default async function PresskitPage(props: PageProps<"/[slug]">) {
 
   if (!isBotUserAgent(userAgent)) {
     const trackableCode = typeof searchParams.ref === "string" ? searchParams.ref : undefined;
-    await recordPresskitView(
-      slug,
-      {
-        trackableCode,
-        referrerUrl: headerList.get("referer") ?? undefined,
-        sessionId: headerList.get("x-session-id") ?? crypto.randomUUID(),
-        country: headerList.get("x-geo-country") ?? undefined,
-      },
-      userAgent,
-    );
+    // Everything the analytics call needs is read from headers() HERE —
+    // Server Components can't touch request APIs inside after(). The view
+    // is then recorded once the response is out the door, so a slow or
+    // down API never delays the page itself.
+    const view = {
+      trackableCode,
+      referrerUrl: headerList.get("referer") ?? undefined,
+      sessionId: headerList.get("x-session-id") ?? crypto.randomUUID(),
+      country: headerList.get("x-geo-country") ?? undefined,
+    };
+    after(() => recordPresskitView(slug, view, userAgent));
   }
 
   return (

@@ -4,7 +4,7 @@ import type {
   BioSectionData,
   ContactSectionData,
   FontKey,
-  MediaEmbedInput,
+  MediaEmbedCreateInput,
   PresskitUpdateInput,
   PressMentionInput,
   PressSectionData,
@@ -99,7 +99,7 @@ export async function listMedia() {
   const { data } = await api.get<{ media: MediaEmbed[] }>("/presskit/media");
   return data.media;
 }
-export async function createMedia(input: Omit<MediaEmbedInput, "id" | "order">) {
+export async function createMedia(input: MediaEmbedCreateInput) {
   const { data } = await api.post<{ media: MediaEmbed }>("/presskit/media", input);
   return data.media;
 }
@@ -111,16 +111,22 @@ export async function listGalleryPhotos() {
   const { data } = await api.get<{ photos: GalleryPhoto[] }>("/presskit/gallery");
   return data.photos;
 }
+/** What the API hands back for a presigned image upload. `contentType` is
+ * baked into the signature, so the PUT must send exactly that header. */
+export type ImageUploadTicket = {
+  uploadUrl: string;
+  storageKey: string;
+  contentType: string;
+  maxBytes: number;
+  publicUrl: string;
+};
+
 export async function requestGalleryUploadUrl(extension: string) {
-  const { data } = await api.post<{ uploadUrl: string; storageKey: string; publicUrl: string }>(
-    "/presskit/gallery/upload-url",
-    { extension },
-  );
+  const { data } = await api.post<ImageUploadTicket>("/presskit/gallery/upload-url", { extension });
   return data;
 }
 export async function confirmGalleryPhoto(input: {
   storageKey: string;
-  url: string;
   width: number;
   height: number;
   caption?: string;
@@ -157,13 +163,10 @@ export async function deletePressMention(id: string) {
 }
 
 export async function requestThemeBackgroundUploadUrl(extension: string) {
-  const { data } = await api.post<{ uploadUrl: string; storageKey: string; publicUrl: string }>(
-    "/presskit/theme/background-upload-url",
-    { extension },
-  );
+  const { data } = await api.post<ImageUploadTicket>("/presskit/theme/background-upload-url", { extension });
   return data;
 }
-export async function confirmThemeBackground(input: { storageKey: string; url: string }) {
+export async function confirmThemeBackground(input: { storageKey: string }) {
   const { data } = await api.post<{ presskit: Presskit }>("/presskit/theme/background-confirm", input);
   return data.presskit;
 }

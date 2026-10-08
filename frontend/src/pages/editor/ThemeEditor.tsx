@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import axios from "axios";
 import { FONT_FAMILY_CSS, FONT_OPTIONS, PRESET_ACCENT_COLORS, type FontKey } from "@presskit/shared";
 import {
   confirmThemeBackground,
@@ -8,6 +7,8 @@ import {
   updatePresskit,
   type Presskit,
 } from "../../api/presskit";
+import { apiErrorMessage } from "../../api/axios";
+import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
 import { Button, Card, FieldError, Label, Select } from "../../components/ui";
 
 type ThemeValues = Pick<
@@ -54,15 +55,16 @@ export function ThemeEditor({ initial, onChange }: { initial: ThemeValues; onCha
     setError(null);
     setUploadingBg(true);
     try {
-      const extension = file.name.split(".").pop() ?? "jpg";
-      const { uploadUrl, storageKey, publicUrl } = await requestThemeBackgroundUploadUrl(extension);
-      await axios.put(uploadUrl, file, { headers: { "Content-Type": file.type } });
-      const presskit = await confirmThemeBackground({ storageKey, url: publicUrl });
+      const ticket = await requestThemeBackgroundUploadUrl(fileExtension(file));
+      await uploadImageToStorage(ticket, file);
+      const presskit = await confirmThemeBackground({ storageKey: ticket.storageKey });
       const next = { ...theme, themeBackgroundImageUrl: presskit.themeBackgroundImageUrl };
       setTheme(next);
       onChange(next);
-    } catch {
-      setError("Não foi possível enviar a imagem de fundo — verifique se o armazenamento está configurado");
+    } catch (err) {
+      setError(
+        apiErrorMessage(err, "Não foi possível enviar a imagem de fundo — verifique se o armazenamento está configurado"),
+      );
     } finally {
       setUploadingBg(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

@@ -8,7 +8,8 @@ import {
   ARTIST_CATEGORY_LABELS,
   type PresskitOnboardingInput,
 } from "@presskit/shared";
-import { api } from "../api/axios";
+import { api, apiErrorMessage } from "../api/axios";
+import { SITE_HOST } from "../config";
 import { Button, Card, FieldError, GrainOverlay, Label, Logo, Select } from "../components/ui";
 
 export function OnboardingPage() {
@@ -30,10 +31,7 @@ export function OnboardingPage() {
       await api.post("/presskit/onboarding", input);
       navigate("/");
     } catch (error) {
-      setServerError(
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Não foi possível criar o presskit",
-      );
+      setServerError(apiErrorMessage(error, "Não foi possível criar o presskit"));
     }
   }
 
@@ -62,7 +60,7 @@ export function OnboardingPage() {
           <div>
             <Label>Endereço do seu presskit</Label>
             <div className="flex w-full items-center rounded-2xl border border-white/10 bg-bg-elevated px-4 py-2.5 transition focus-within:border-violet/60 focus-within:ring-4 focus-within:ring-violet/15">
-              <span className="text-sm text-fg-muted">presskit.com.br/</span>
+              <span className="text-sm text-fg-muted">{SITE_HOST}/</span>
               <input
                 className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-fg-muted/60"
                 placeholder="seu-nome"

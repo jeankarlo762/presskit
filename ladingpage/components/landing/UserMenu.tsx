@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
-
-const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "http://localhost:5173";
+import { DASHBOARD_URL } from "../../lib/urls";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);

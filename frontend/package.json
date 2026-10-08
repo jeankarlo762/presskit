@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-4173}",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
+    "serve": "^14.2.6",
     "tailwindcss": "^4",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"

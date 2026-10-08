@@ -11,7 +11,7 @@ type AuthResponse = { user: SiteUser; accessToken: string; refreshToken: string 
 // calls the API directly from the browser (cross-origin — the landing page
 // and the API run on different Railway services), unlike lib/api.ts which
 // runs server-side for the public presskit page.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
+import { PUBLIC_API_URL as API_URL } from "./urls";
 
 async function readErrorMessage(res: Response) {
   try {

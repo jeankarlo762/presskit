@@ -1,65 +1,32 @@
 import type { MediaProvider } from "../schemas/collections";
 import type { PublicMediaEmbed } from "../types/publicPresskit";
+import { parseMediaUrl } from "../media/parseMediaUrl";
 import { SectionHeading } from "./SectionHeading";
 
 export const AUDIO_PROVIDERS: MediaProvider[] = ["SPOTIFY", "SOUNDCLOUD"];
 export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO"];
 
-function toEmbedSrc(embed: PublicMediaEmbed): string | null {
-  try {
-    const url = new URL(embed.url);
-
-    switch (embed.provider) {
-      case "SPOTIFY": {
-        const [, type, id] = url.pathname.split("/");
-        if (!type || !id) return null;
-        return `https://open.spotify.com/embed/${type}/${id}`;
-      }
-      case "YOUTUBE": {
-        const id = url.hostname.includes("youtu.be")
-          ? url.pathname.slice(1)
-          : url.searchParams.get("v");
-        return id ? `https://www.youtube.com/embed/${id}` : null;
-      }
-      case "VIMEO": {
-        const id = url.pathname.split("/").filter(Boolean).pop();
-        return id ? `https://player.vimeo.com/video/${id}` : null;
-      }
-      case "SOUNDCLOUD":
-        return `https://w.soundcloud.com/player/?url=${encodeURIComponent(embed.url)}`;
-      default:
-        return null;
-    }
-  } catch {
-    return null;
-  }
-}
-
 function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
-  const src = toEmbedSrc(embed);
+  // Links are validated against parseMediaUrl on write, so this only fails
+  // for rows that predate the validation — and even then we never put the
+  // raw stored URL into an href (http(s) isn't guaranteed for old rows).
+  const parsed = parseMediaUrl(embed.url);
   const isVideo = VIDEO_PROVIDERS.includes(embed.provider);
 
-  if (!src) {
-    return (
-      <a
-        href={embed.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-[var(--presskit-accent)] underline underline-offset-2"
-      >
-        {embed.title ?? embed.url}
-      </a>
-    );
+  if (!parsed) {
+    return <p className="text-sm text-[var(--presskit-muted)]">{embed.title ?? "Mídia indisponível"}</p>;
   }
 
   return (
     <div className="overflow-hidden rounded-3xl shadow-sm">
       {embed.title && <p className="mb-1 text-sm font-medium">{embed.title}</p>}
       <iframe
-        src={src}
+        src={parsed.embedSrc}
         title={embed.title ?? embed.provider}
         loading="lazy"
-        allow="autoplay; encrypted-media; picture-in-picture"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
         className={isVideo ? "aspect-video w-full border-0" : "h-[152px] w-full border-0"}
       />
     </div>

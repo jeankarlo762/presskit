@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
-import axios from "axios";
 import { confirmGalleryPhoto, deleteGalleryPhoto, requestGalleryUploadUrl, type GalleryPhoto } from "../../api/presskit";
+import { apiErrorMessage } from "../../api/axios";
+import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
 import { Card, FieldError } from "../../components/ui";
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -35,18 +36,16 @@ export function GalleryManager({
     setError(null);
     setUploading(true);
     try {
-      const extension = file.name.split(".").pop() ?? "jpg";
-      const { uploadUrl, storageKey, publicUrl } = await requestGalleryUploadUrl(extension);
       const { width, height } = await readImageDimensions(file);
-
-      await axios.put(uploadUrl, file, { headers: { "Content-Type": file.type } });
-      const photo = await confirmGalleryPhoto({ storageKey, url: publicUrl, width, height });
+      const ticket = await requestGalleryUploadUrl(fileExtension(file));
+      await uploadImageToStorage(ticket, file);
+      const photo = await confirmGalleryPhoto({ storageKey: ticket.storageKey, width, height });
 
       const next = [...items, photo];
       setItems(next);
       onChange(next);
-    } catch {
-      setError("Não foi possível enviar a foto — verifique se o armazenamento está configurado");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível enviar a foto — verifique se o armazenamento está configurado"));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -69,6 +68,7 @@ export function GalleryManager({
             <div key={item.id} className="group relative aspect-square overflow-hidden rounded-2xl">
               <img src={item.url} alt={item.caption ?? ""} className="h-full w-full object-cover" />
               <button
+                type="button"
                 onClick={() => handleDelete(item.id)}
                 className="absolute right-1.5 top-1.5 hidden rounded-full bg-black/70 px-2.5 py-1 text-xs text-white backdrop-blur group-hover:block"
               >

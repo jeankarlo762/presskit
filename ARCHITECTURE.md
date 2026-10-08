@@ -129,6 +129,71 @@ erDiagram
 > existem no schema mas ainda não têm nenhum código que os popule — billing (cobrança
 > via Asaas) é a próxima fase de produto, não uma feature já ativa.
 
+## Links de mídia (YouTube, Vimeo, Spotify, SoundCloud)
+
+`packages/shared/src/media/parseMediaUrl.ts` é a única fonte de verdade para "esse link é
+embedável, de qual provedor, e qual `src` vai no iframe". É usado em três lugares com o mesmo
+resultado: o backend (`mediaEmbedCreateSchema`) rejeita links que não viram player; o editor
+(`EmbedManager`) detecta o provedor a partir do link colado (sem dropdown); e o renderizador
+público (`MediaEmbedBlock`) monta o iframe a partir do `embedSrc` — nunca da URL crua. YouTube
+é embedado via `youtube-nocookie.com`.
+
+## Segurança — decisões que não são óbvias no código
+
+- **Toda URL que chega do cliente passa por `httpUrlSchema`** (`packages/shared/src/schemas/url.ts`),
+  não por `z.string().url()` — este último aceita `javascript:` e `data:`, que viram XSS em
+  qualquer `href`. Links de mídia são a exceção controlada: passam por `parseMediaUrl`.
+- **Chaves de storage (R2) são sempre verificadas contra o prefixo do próprio presskit**
+  (`assertOwnedStorageKey`) antes de confirmar ou apagar. Sem isso, confirmar a chave de outro
+  artista e depois apagar a linha faria a API deletar o objeto dele. A URL pública é derivada no
+  servidor (`publicUrlFor`), nunca aceita do cliente. Por isso `themeBackgroundImageUrl/Key`
+  não existem em `presskitUpdateSchema` — só mudam via as rotas de upload.
+- **Refresh token**: rotação a cada uso; apresentar um token já revogado é tratado como roubo
+  e revoga todas as sessões do usuário. Login sempre executa um `bcrypt.compare` (contra um
+  hash fictício se o e-mail não existe) para não vazar quais e-mails têm conta via timing.
+- **Rate limit**: bucket global generoso (600/min/IP) porque a página pública é renderizada
+  pelo serviço `landing`, logo todo o tráfego de visitantes chega à API de um único IP. Rotas de
+  credencial (`/auth/login`, `/auth/signup`) têm bucket próprio de 10/min. `trustProxy: true`
+  é obrigatório no Railway para que `request.ip` seja o cliente, não o proxy.
+- **Headers de segurança/CSP**: landing em `next.config.ts` (`headers()`), dashboard em
+  `frontend/public/serve.json` (lido pelo `serve` em produção), API via `@fastify/helmet`.
+  A CSP da landing ainda usa `'unsafe-inline'` em scripts (Next injeta bootstrap inline); migrar
+  para nonce via `proxy.ts` é o próximo passo.
+- **Tokens no `localStorage`** (dashboard e landing) é a troca consciente atual: três origens
+  diferentes tornam cookies `httpOnly` cross-site + CSRF um projeto à parte. O access token dura
+  15 min e a CSP reduz a superfície de XSS enquanto isso.
+
+## Deploy (Railway)
+
+Projeto `presskit`, quatro serviços a partir do mesmo repositório (root = raiz do monorepo):
+
+| Serviço   | Build                                        | Start                                        | Health   |
+|-----------|----------------------------------------------|----------------------------------------------|----------|
+| backend   | `npm run build --workspace=@presskit/api`    | `npm run start --workspace=@presskit/api`    | `/health`|
+| frontend  | `npm run build --workspace=@presskit/dashboard` | `npm run start --workspace=@presskit/dashboard` (`serve -s dist`) | `/` |
+| landing   | `npm run build --workspace=@presskit/site`   | `npm run start --workspace=@presskit/site`   | `/`      |
+| Postgres  | template oficial                             | —                                            | —        |
+
+- `backend` roda `npm run prisma:deploy --workspace=@presskit/api` como **pre-deploy command**
+  (uma vez por deploy, antes do start — não a cada restart de réplica).
+- Watch paths por serviço (`backend/**`, `frontend/**`, `ladingpage/**`, cada um + `packages/**`
+  e os `package*.json` da raiz), para um push só redeployar o que mudou.
+- `railway.json` (config-as-code) está **deprecado** no Railway — a configuração vive nas
+  settings de cada serviço (aplicadas via API/dashboard).
+
+Variáveis por serviço (além das injetadas pelo Railway):
+
+- **backend**: `NODE_ENV=production`, `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+  `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (frontend + landing, separados por vírgula). Para upload de
+  imagens: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`,
+  `R2_PUBLIC_BASE_URL`.
+- **frontend**: `VITE_API_URL` (backend), `VITE_SITE_URL` (landing) — inlined no build.
+- **landing**: `NEXT_PUBLIC_API_URL` (backend), `NEXT_PUBLIC_DASHBOARD_URL` (frontend) — inlined no
+  build; opcionalmente `API_URL` para o SSR falar com o backend pela rede privada.
+
+Ao trocar para domínios próprios, atualizar essas variáveis (e `CORS_ORIGINS`) e redeployar
+frontend e landing, já que as `VITE_*`/`NEXT_PUBLIC_*` são resolvidas em build.
+
 ## Frontend do dashboard
 
 `frontend/src/components/layout/DashboardLayout.tsx` é o layout de toda a área

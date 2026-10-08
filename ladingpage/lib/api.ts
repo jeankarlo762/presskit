@@ -1,6 +1,5 @@
 import type { PublicPresskit } from "@presskit/shared";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3333";
+import { SERVER_API_URL as API_URL } from "./urls";
 
 export type PresskitLookup =
   | { status: "found"; presskit: PublicPresskit }

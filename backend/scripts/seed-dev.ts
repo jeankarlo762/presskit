@@ -7,6 +7,10 @@ import { createPresskitForUser } from "../src/modules/presskit/presskit.service"
 import { upsertSectionData } from "../src/modules/sections/section.service";
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("seed-dev cria um login com senha fraca — nunca rode em produção");
+  }
+
   const email = "admin@gmail.com";
 
   let user = await prisma.user.findUnique({ where: { email } });

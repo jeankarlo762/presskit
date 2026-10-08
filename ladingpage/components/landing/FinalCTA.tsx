@@ -1,5 +1,6 @@
 import { Container, GradientButton } from "./ui";
 import { GlitchText } from "./GlitchText";
+import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
 
 export function FinalCTA() {
   return (
@@ -16,7 +17,7 @@ export function FinalCTA() {
         <p className="mt-6 max-w-md font-[family-name:var(--font-body)] text-base text-fg-muted">
           Cria seu press kit agora e manda pra próxima oportunidade hoje mesmo.
         </p>
-        <GradientButton href="#planos" className="mt-10">
+        <GradientButton href={DASHBOARD_SIGNUP_URL} className="mt-10">
           Criar meu press kit
         </GradientButton>
       </Container>

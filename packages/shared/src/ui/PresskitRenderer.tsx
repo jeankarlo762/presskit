@@ -60,6 +60,15 @@ function renderSection(section: PublicSection, presskit: PublicPresskit) {
  * preview applies a plain CSS font-family from FONT_FAMILY_CSS). Mixing a
  * hardcoded font-family here would fight whichever mechanism the host app
  * uses. */
+/** CSS url() with a quoted string — JSON.stringify escapes `"` and `\`,
+ * which is exactly the set CSS string literals need escaped, so a URL
+ * containing `)` or quotes can't close the url() early and inject
+ * declarations. The URL itself is server-built (R2 base + key), this is
+ * defence in depth for anything already stored. */
+function cssUrl(url: string): string {
+  return `url(${JSON.stringify(url)})`;
+}
+
 function themeStyle(presskit: PublicPresskit): CSSProperties {
   return {
     ["--presskit-bg" as string]: presskit.themeBackgroundColor,
@@ -70,7 +79,7 @@ function themeStyle(presskit: PublicPresskit): CSSProperties {
     backgroundColor: "var(--presskit-bg)",
     color: "var(--presskit-text)",
     backgroundImage: presskit.themeBackgroundImageUrl
-      ? `linear-gradient(color-mix(in srgb, var(--presskit-bg) 55%, transparent), var(--presskit-bg)), url(${presskit.themeBackgroundImageUrl})`
+      ? `linear-gradient(color-mix(in srgb, var(--presskit-bg) 55%, transparent), var(--presskit-bg)), ${cssUrl(presskit.themeBackgroundImageUrl)}`
       : undefined,
     backgroundSize: "cover",
     backgroundPosition: "center",

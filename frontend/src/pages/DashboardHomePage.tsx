@@ -25,6 +25,7 @@ import {
   type TrackableLink,
 } from "../api/presskit";
 import { useAuthStore } from "../store/auth.store";
+import { publicPresskitUrl, SITE_HOST } from "../config";
 import { Button, Logo } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
@@ -144,10 +145,27 @@ export function DashboardHomePage() {
           <Logo className="hidden text-lg sm:block" />
           <div>
             <h1 className="font-semibold text-fg">Olá, {user?.name}</h1>
-            <p className="text-sm text-fg-muted">presskit.com.br/{presskit.slug}</p>
+            <a
+              href={publicPresskitUrl(presskit.slug)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+            >
+              {SITE_HOST}/{presskit.slug}
+            </a>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {presskit.published && (
+            <a
+              href={publicPresskitUrl(presskit.slug)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline-block"
+            >
+              Ver página
+            </a>
+          )}
           <span
             className={
               "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +

@@ -4,6 +4,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 
 import { env, corsOrigins } from "./config/env";
+import { prisma } from "./config/prisma";
 import { errorHandler } from "./middlewares/errorHandler";
 import authenticatePlugin from "./middlewares/authenticate";
 import { authRoutes } from "./modules/auth/auth.routes";
@@ -20,7 +21,17 @@ async function buildServer() {
   const fastify = Fastify({
     logger: {
       level: env.NODE_ENV === "production" ? "info" : "debug",
+      // Bearer tokens must never end up in the log stream.
+      redact: ["req.headers.authorization", "req.headers.cookie"],
     },
+    // Railway terminates TLS and forwards through its edge proxy — without
+    // this, request.ip is the proxy's address, which makes per-IP rate
+    // limiting a single shared bucket and stores the wrong IP on refresh
+    // tokens.
+    trustProxy: true,
+    // No file bytes ever travel through this API (uploads go straight to R2
+    // via presigned URLs), so the only legitimate bodies are small JSON.
+    bodyLimit: 512 * 1024,
   });
 
   await fastify.register(helmet);
@@ -32,8 +43,18 @@ async function buildServer() {
     // silently (the request never leaves the browser), even though curl/the
     // server itself has no problem with those verbs.
     methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE"],
+    maxAge: 600,
   });
-  await fastify.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+  // The global bucket is deliberately generous: the public presskit page is
+  // server-rendered by the landing service, so ALL visitor traffic to
+  // /public/* arrives from that one IP. Sensitive routes (login, signup,
+  // refresh) tighten this per-route via `config.rateLimit`.
+  await fastify.register(rateLimit, {
+    global: true,
+    max: 600,
+    timeWindow: "1 minute",
+    allowList: (request) => request.url === "/health",
+  });
   await fastify.register(authenticatePlugin);
 
   fastify.setErrorHandler(errorHandler);
@@ -53,9 +74,33 @@ async function buildServer() {
   return fastify;
 }
 
-buildServer()
-  .then((fastify) => fastify.listen({ port: env.PORT, host: "0.0.0.0" }))
-  .catch((error) => {
-    console.error("Falha ao iniciar o servidor:", error);
-    process.exit(1);
-  });
+async function main() {
+  const fastify = await buildServer();
+
+  // Railway sends SIGTERM on every redeploy; finishing in-flight requests
+  // and closing the Prisma pool cleanly avoids half-written rows and noisy
+  // "connection terminated" logs on each release.
+  let shuttingDown = false;
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    fastify.log.info({ signal }, "Encerrando servidor");
+    try {
+      await fastify.close();
+      await prisma.$disconnect();
+      process.exit(0);
+    } catch (error) {
+      fastify.log.error(error, "Falha ao encerrar com graça");
+      process.exit(1);
+    }
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+
+  await fastify.listen({ port: env.PORT, host: "0.0.0.0" });
+}
+
+main().catch((error) => {
+  console.error("Falha ao iniciar o servidor:", error);
+  process.exit(1);
+});

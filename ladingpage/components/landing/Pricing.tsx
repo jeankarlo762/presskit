@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Container, Eyebrow, GradientButton, SectionHeading } from "./ui";
+import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
 
 // Preços de exemplo — o usuário precisa definir os valores reais antes de publicar.
 const PLANS = [
@@ -88,7 +89,7 @@ export function Pricing() {
                 ))}
               </ul>
               <GradientButton
-                href="#"
+                href={`${DASHBOARD_SIGNUP_URL}?plano=${plan.cycle.toLowerCase()}`}
                 variant={plan.popular ? "solid" : "outline"}
                 className="mt-8 w-full"
               >

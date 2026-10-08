@@ -9,16 +9,19 @@ import {
   requestGalleryUpload,
 } from "./gallery.service";
 
-const idParamSchema = z.object({ id: z.string() });
+const idParamSchema = z.object({ id: z.string().min(1).max(64) });
 const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
+// No `url` here on purpose — the public URL is derived server-side from the
+// storage key (see storage.service publicUrlFor).
 const confirmSchema = z.object({
-  storageKey: z.string().min(1),
-  url: z.string().url(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
+  storageKey: z.string().min(1).max(512),
+  width: z.number().int().positive().max(20000),
+  height: z.number().int().positive().max(20000),
   caption: z.string().trim().max(200).optional(),
 });
-const reorderSchema = z.object({ order: z.array(z.object({ id: z.string(), order: z.number().int().min(0) })) });
+const reorderSchema = z.object({
+  order: z.array(z.object({ id: z.string().min(1).max(64), order: z.number().int().min(0) })).max(100),
+});
 
 export async function galleryRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -43,7 +46,7 @@ export async function galleryRoutes(fastify: FastifyInstance) {
   fastify.post("/presskit/gallery/confirm", async (request, reply) => {
     const input = confirmSchema.parse(request.body);
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
-    const photo = await confirmGalleryPhoto(presskit.id, input);
+    const photo = await confirmGalleryPhoto(presskit.id, request.currentUser.planKey, presskit.category, input);
     return reply.status(201).send({ photo });
   });
 

@@ -1,6 +1,12 @@
 import { prisma } from "../../config/prisma";
 import { maxGalleryPhotosFor, requireWithinGalleryLimit, type ArtistCategory, type PlanKey } from "@presskit/shared";
-import { assertImageObjectExists, createImageUploadUrl, deleteImageObject } from "../../shared/storage.service";
+import {
+  assertImageObjectExists,
+  assertOwnedStorageKey,
+  createImageUploadUrl,
+  deleteImageObject,
+  publicUrlFor,
+} from "../../shared/storage.service";
 
 export async function listGalleryPhotos(presskitId: string) {
   return prisma.galleryPhoto.findMany({ where: { presskitId }, orderBy: { order: "asc" } });
@@ -19,8 +25,18 @@ export async function requestGalleryUpload(
 
 export async function confirmGalleryPhoto(
   presskitId: string,
-  input: { storageKey: string; url: string; width: number; height: number; caption?: string },
+  plan: PlanKey,
+  category: ArtistCategory,
+  input: { storageKey: string; width: number; height: number; caption?: string },
 ) {
+  assertOwnedStorageKey(presskitId, "gallery", input.storageKey);
+
+  // The limit is checked at presign time too, but presigned URLs can be
+  // requested in bulk before any of them is confirmed — the row count only
+  // moves here, so this is the check that actually holds the line.
+  const currentCount = await prisma.galleryPhoto.count({ where: { presskitId } });
+  requireWithinGalleryLimit(plan, currentCount, maxGalleryPhotosFor(plan, category));
+
   await assertImageObjectExists(input.storageKey);
 
   const lastPhoto = await prisma.galleryPhoto.findFirst({
@@ -29,7 +45,15 @@ export async function confirmGalleryPhoto(
   });
 
   return prisma.galleryPhoto.create({
-    data: { presskitId, order: (lastPhoto?.order ?? -1) + 1, ...input },
+    data: {
+      presskitId,
+      order: (lastPhoto?.order ?? -1) + 1,
+      storageKey: input.storageKey,
+      url: publicUrlFor(input.storageKey),
+      width: input.width,
+      height: input.height,
+      caption: input.caption,
+    },
   });
 }
 

@@ -28,10 +28,8 @@ export async function findPresskitByUserId(userId: string) {
 }
 
 /** Every authenticated presskit route starts here instead of a tenant-wide
- * middleware — the ArenaHub AsyncLocalStorage tenant-context solves a
- * many-tables problem this product doesn't have; a single ownership check
- * per route is simpler to audit at this scale (everything hangs off
- * presskitId, one hop from userId). */
+ * middleware — a single ownership check per route is simpler to audit at
+ * this scale (everything hangs off presskitId, one hop from userId). */
 export async function getOwnedPresskitOrThrow(userId: string) {
   const presskit = await prisma.presskit.findUnique({ where: { userId } });
   if (!presskit) throw new PresskitNotFoundError();
@@ -91,6 +89,20 @@ export async function updatePresskit(userId: string, input: PresskitUpdateInput)
   }
 }
 
+/** Only reachable from the upload-confirm / remove routes, after the key
+ * has been proven to belong to this presskit — never from the generic
+ * PATCH (its schema doesn't carry these fields). */
+export async function setThemeBackgroundImage(userId: string, image: { url: string; key: string } | null) {
+  const current = await getOwnedPresskitOrThrow(userId);
+  return prisma.presskit.update({
+    where: { id: current.id },
+    data: {
+      themeBackgroundImageUrl: image?.url ?? null,
+      themeBackgroundImageKey: image?.key ?? null,
+    },
+  });
+}
+
 export async function publishPresskit(userId: string) {
   const presskit = await getOwnedPresskitOrThrow(userId);
   return prisma.presskit.update({ where: { id: presskit.id }, data: { published: true } });
@@ -120,7 +132,9 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
   });
   if (!presskit) return null;
 
-  const { user, ...rest } = presskit;
+  // Internal identifiers stay internal: the owner's user id and the R2 key
+  // have no business on a public page.
+  const { user, userId: _userId, themeBackgroundImageKey: _key, ...rest } = presskit;
   return { ...rest, artistName: user.name };
 }
 

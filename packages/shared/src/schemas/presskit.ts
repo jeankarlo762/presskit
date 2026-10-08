@@ -18,6 +18,14 @@ export const slugSchema = z
 
 export const artistCategorySchema = z.enum(ARTIST_CATEGORIES);
 
+/**
+ * What the dashboard may change through PATCH /presskit. The theme
+ * background image is deliberately NOT here: its URL and storage key are
+ * only ever set by the server after a verified upload
+ * (POST /presskit/theme/background-confirm), otherwise a client could point
+ * `themeBackgroundImageKey` at another artist's object and have the
+ * backend delete it on their behalf.
+ */
 export const presskitUpdateSchema = z.object({
   slug: slugSchema.optional(),
   category: artistCategorySchema.optional(),
@@ -30,8 +38,6 @@ export const presskitUpdateSchema = z.object({
   themeTextColor: hexColorSchema.optional(),
   themeAccentColor: hexColorSchema.optional(),
   themeFontKey: z.enum(FONT_KEYS).optional(),
-  themeBackgroundImageUrl: z.string().trim().url().nullable().optional(),
-  themeBackgroundImageKey: z.string().trim().nullable().optional(),
 });
 export type PresskitUpdateInput = z.infer<typeof presskitUpdateSchema>;
 

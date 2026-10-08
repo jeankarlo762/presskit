@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SECTION_TYPES } from "../constants/category";
+import { httpUrlSchema } from "./url";
 
 const bioDataSchema = z.object({
   shortBio: z.string().trim().max(280),
@@ -17,7 +18,7 @@ const contactDataSchema = z.object({
     .array(
       z.object({
         platform: z.enum(["INSTAGRAM", "TIKTOK", "YOUTUBE", "SPOTIFY", "X", "IMDB", "SITE", "OUTRO"]),
-        url: z.string().trim().url(),
+        url: httpUrlSchema,
       }),
     )
     .max(10)
@@ -26,7 +27,7 @@ const contactDataSchema = z.object({
 
 const techRiderDataSchema = z.object({
   text: z.string().trim().max(6000).optional(),
-  pdfUrl: z.string().trim().url().optional(),
+  pdfUrl: httpUrlSchema.optional(),
 });
 
 // CUSTOM used to carry its own title in `data` — now redundant since every
@@ -54,7 +55,7 @@ export const sectionDataSchemaByType = {
 } as const satisfies Record<(typeof SECTION_TYPES)[number], z.ZodTypeAny>;
 
 const sectionBaseFields = {
-  id: z.string().cuid2().optional(),
+  id: z.string().cuid().optional(),
   title: z.string().trim().min(1).max(60).optional(),
   order: z.number().int().min(0),
   visible: z.boolean().default(true),
