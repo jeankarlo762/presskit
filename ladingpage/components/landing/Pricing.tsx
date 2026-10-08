@@ -1,45 +1,7 @@
 import { Check } from "lucide-react";
+import { BILLING_PLAN_LIST, cycleTotalCents, formatBRL } from "@presskit/shared";
 import { Container, Eyebrow, GradientButton, SectionHeading } from "./ui";
 import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
-
-// Preços de exemplo — o usuário precisa definir os valores reais antes de publicar.
-const PLANS = [
-  {
-    cycle: "Trimestral",
-    period: "3 meses",
-    price: 59,
-    popular: false,
-    features: ["Press kits limitados", "1 template", "Marca d'água leve", "Exportação em PDF"],
-  },
-  {
-    cycle: "Semestral",
-    period: "6 meses",
-    price: 49,
-    popular: true,
-    savings: "economize 17%",
-    features: [
-      "Mais press kits",
-      "Múltiplos templates",
-      "Domínio próprio",
-      "Analytics básico",
-      "Sem marca d'água",
-    ],
-  },
-  {
-    cycle: "Anual",
-    period: "12 meses",
-    price: 39,
-    popular: false,
-    savings: "economize 34%",
-    features: [
-      "Press kits ilimitados",
-      "Todos os templates",
-      "Domínio próprio",
-      "Analytics avançado",
-      "Suporte prioritário",
-    ],
-  },
-];
 
 export function Pricing() {
   return (
@@ -50,12 +12,12 @@ export function Pricing() {
           Quanto mais tempo, <span className="text-gradient-brand">mais barato</span>
         </SectionHeading>
         <p className="mt-4 max-w-lg font-[family-name:var(--font-body)] text-sm text-fg-muted">
-          Sem taxa escondida. Renovação automática, cancelamento simples, e você decide o que acontece com
-          seu press kit se o plano expirar.
+          Sem taxa escondida. Renovação automática pelo Mercado Pago, cancelamento simples, e você decide o que
+          acontece com seu press kit se o plano expirar.
         </p>
 
         <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {PLANS.map((plan) => (
+          {BILLING_PLAN_LIST.map((plan) => (
             <div
               key={plan.cycle}
               className={`relative rounded-2xl border p-8 ${
@@ -70,21 +32,24 @@ export function Pricing() {
                 </span>
               )}
               <h3 className="font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
-                {plan.cycle}
+                {plan.label}
               </h3>
-              <p className="mt-1 text-sm text-fg-muted">Ciclo de {plan.period}</p>
+              <p className="mt-1 text-sm text-fg-muted">Ciclo de {plan.months} meses</p>
               <div className="mt-6 flex items-baseline gap-1">
-                <span className="font-[family-name:var(--font-display)] text-5xl">R${plan.price}</span>
+                <span className="font-[family-name:var(--font-display)] text-5xl">
+                  {formatBRL(plan.monthlyPriceCents)}
+                </span>
                 <span className="text-sm text-fg-muted">/mês</span>
               </div>
-              {plan.savings && (
-                <p className="mt-1 text-sm font-semibold text-yellow">{plan.savings}</p>
-              )}
+              <p className="mt-1 text-xs text-fg-muted">
+                {formatBRL(cycleTotalCents(plan.cycle))} a cada {plan.months} meses
+              </p>
+              {plan.savingsLabel && <p className="mt-1 text-sm font-semibold text-yellow">{plan.savingsLabel}</p>}
               <ul className="mt-6 flex flex-col gap-3">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-fg-muted">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-fg-muted">
                     <Check size={16} className="mt-0.5 shrink-0 text-violet" />
-                    {f}
+                    {feature}
                   </li>
                 ))}
               </ul>
@@ -93,7 +58,7 @@ export function Pricing() {
                 variant={plan.popular ? "solid" : "outline"}
                 className="mt-8 w-full"
               >
-                Escolher {plan.cycle.toLowerCase()}
+                Escolher {plan.label.toLowerCase()}
               </GradientButton>
             </div>
           ))}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema, type SignupInput } from "@presskit/shared";
@@ -7,10 +7,26 @@ import { signup } from "../api/auth";
 import { useAuthStore } from "../store/auth.store";
 import { Button, Card, FieldError, GrainOverlay, Input, Label, Logo } from "../components/ui";
 
+/** sessionStorage key carrying the plan chosen on the landing page through
+ * signup → onboarding → /assinatura, so the pricing CTA ends in a checkout. */
+export const CHOSEN_PLAN_KEY = "presskit-plano";
+
 export function SignupPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const setSession = useAuthStore((state) => state.setSession);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const plano = params.get("plano");
+    if (plano) {
+      try {
+        sessionStorage.setItem(CHOSEN_PLAN_KEY, plano);
+      } catch {
+        // storage blocked — the user simply picks the plan again later
+      }
+    }
+  }, [params]);
 
   const {
     register,

@@ -1,5 +1,20 @@
 import { useEffect } from "react";
-import { FileEdit, FolderKanban, LayoutTemplate, LogOut, ShieldCheck, Sparkles, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  CreditCard,
+  FileEdit,
+  FolderKanban,
+  LayoutDashboard,
+  LayoutTemplate,
+  LogOut,
+  MessageSquare,
+  Receipt,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+  UserCircle,
+  Users,
+} from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { fetchMe, logout } from "../../api/auth";
 import { isSuperadmin, useAuthStore } from "../../store/auth.store";
@@ -9,13 +24,25 @@ type NavItem = { to: string; label: string; icon: typeof FileEdit; end?: boolean
 
 const EDITOR_ITEM: NavItem = { to: "/", label: "Editar Presskit", icon: FileEdit, end: true };
 
+const CONTA_ITEMS: NavItem[] = [
+  { to: "/assinatura", label: "Assinatura", icon: CreditCard },
+  { to: "/feedback", label: "Feedback", icon: MessageSquare },
+];
+
 const PROJETO_ITEMS: NavItem[] = [
   { to: "/projeto/crie-com-ia", label: "Crie com IA", icon: Sparkles },
   { to: "/projeto/uploads", label: "Uploads", icon: Upload },
   { to: "/projeto/modelos-prontos", label: "Modelos prontos", icon: LayoutTemplate },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [{ to: "/admin/usuarios", label: "Usuários", icon: ShieldCheck }];
+const ADMIN_ITEMS: NavItem[] = [
+  { to: "/admin", label: "Visão geral", icon: LayoutDashboard, end: true },
+  { to: "/admin/usuarios", label: "Usuários", icon: Users },
+  { to: "/admin/assinaturas", label: "Assinaturas", icon: CreditCard },
+  { to: "/admin/pagamentos", label: "Pagamentos", icon: Receipt },
+  { to: "/admin/inadimplencia", label: "Inadimplência", icon: AlertTriangle },
+  { to: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+];
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
   return (
@@ -24,12 +51,29 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
   );
 }
 
+function NavGroup({ icon: Icon, label, items }: { icon: typeof FileEdit; label: string; items: NavItem[] }) {
+  return (
+    <>
+      <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/70">
+        <Icon size={14} className="mr-1.5 inline-block align-text-bottom" />
+        {label}
+      </p>
+      {items.map((item) => (
+        <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClassName}>
+          <item.icon size={18} />
+          {item.label}
+        </NavLink>
+      ))}
+    </>
+  );
+}
+
 export function DashboardLayout() {
   const navigate = useNavigate();
   const { user, refreshToken, clearSession, setUser } = useAuthStore();
 
   // Re-read the profile on mount: role/plan may have changed server-side
-  // (e.g. promoted to superadmin) since the session was stored.
+  // (promoted to superadmin, subscription approved) since it was stored.
   useEffect(() => {
     fetchMe()
       .then(setUser)
@@ -56,37 +100,18 @@ export function DashboardLayout() {
               {EDITOR_ITEM.label}
             </NavLink>
 
-            <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/70">
-              <FolderKanban size={14} className="mr-1.5 inline-block align-text-bottom" />
-              Projeto
-            </p>
-            {PROJETO_ITEMS.map((item) => (
-              <NavLink key={item.to} to={item.to} className={navLinkClassName}>
-                <item.icon size={18} />
-                {item.label}
-              </NavLink>
-            ))}
-
-            {isSuperadmin(user) && (
-              <>
-                <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/70">
-                  <ShieldCheck size={14} className="mr-1.5 inline-block align-text-bottom" />
-                  Administração
-                </p>
-                {ADMIN_ITEMS.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={navLinkClassName}>
-                    <item.icon size={18} />
-                    {item.label}
-                  </NavLink>
-                ))}
-              </>
-            )}
+            <NavGroup icon={UserCircle} label="Conta" items={CONTA_ITEMS} />
+            <NavGroup icon={FolderKanban} label="Projeto" items={PROJETO_ITEMS} />
+            {isSuperadmin(user) && <NavGroup icon={ShieldCheck} label="Administração" items={ADMIN_ITEMS} />}
           </nav>
         </div>
 
         <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
           <p className="truncate px-3 text-sm text-fg-muted">
             {user?.name}
+            <span className={"ml-2 text-[11px] " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
+              {user?.planKey}
+            </span>
             {isSuperadmin(user) && <span className="ml-2 text-[11px] text-violet">superadmin</span>}
           </p>
           <button

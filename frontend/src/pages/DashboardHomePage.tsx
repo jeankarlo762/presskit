@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FONT_FAMILY_CSS,
   SECTION_DEFAULT_TITLES,
@@ -156,6 +156,15 @@ export function DashboardHomePage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            to="/assinatura"
+            className={
+              "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +
+              (user?.planKey === "PRO" ? "bg-violet/15 text-violet" : "bg-white/5 text-fg-muted hover:text-fg")
+            }
+          >
+            {user?.planKey === "PRO" ? "Plano PRO" : "Plano gratuito · assinar"}
+          </Link>
           {presskit.published && (
             <a
               href={publicPresskitUrl(presskit.slug)}

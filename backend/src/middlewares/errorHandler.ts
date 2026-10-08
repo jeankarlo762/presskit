@@ -24,15 +24,22 @@ import { PlanLimitError } from "@presskit/shared";
 import { InvalidAccessTokenError } from "../shared/jwt";
 import { ForbiddenError } from "./authenticate";
 import { CannotChangeOwnRoleError, LastSuperadminError, UserNotFoundError } from "../modules/admin/admin.service";
+import { BillingNotConfiguredError, BillingProviderError, WebhookSignatureError } from "../modules/billing/mercadopago";
+import { AlreadySubscribedError, SubscriptionNotFoundError } from "../modules/billing/billing.service";
+import { FeedbackNotFoundError } from "../modules/feedback/feedback.service";
 
 const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [InvalidCredentialsError, 401],
   [InvalidRefreshTokenError, 401],
   [InvalidAccessTokenError, 401],
+  [WebhookSignatureError, 401],
   [ForbiddenError, 403],
   [UserNotFoundError, 404],
+  [SubscriptionNotFoundError, 404],
+  [FeedbackNotFoundError, 404],
   [CannotChangeOwnRoleError, 400],
   [LastSuperadminError, 409],
+  [AlreadySubscribedError, 409],
   [EmailAlreadyInUseError, 409],
   [PresskitNotFoundError, 404],
   [SlugAlreadyInUseError, 409],
@@ -47,6 +54,8 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [UnsupportedImageExtensionError, 400],
   [ForeignStorageKeyError, 403],
   [StorageNotConfiguredError, 503],
+  [BillingNotConfiguredError, 503],
+  [BillingProviderError, 502],
 ]);
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
@@ -60,6 +69,7 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
 
   for (const [ErrorClass, status] of KNOWN_ERROR_STATUS) {
     if (error instanceof ErrorClass) {
+      if (status >= 500) request.log.error(error);
       return reply.status(status).send({ error: error.name, message: error.message });
     }
   }

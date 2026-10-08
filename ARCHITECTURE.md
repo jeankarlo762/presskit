@@ -125,9 +125,62 @@ erDiagram
   }
 ```
 
-> `AsaasWebhookEvent` e os campos `asaasCustomerId`/`subscriptionStatus` em `User` já
-> existem no schema mas ainda não têm nenhum código que os popule — billing (cobrança
-> via Asaas) é a próxima fase de produto, não uma feature já ativa.
+> Cobrança: `Subscription` (um por preapproval do Mercado Pago), `Payment` (uma por cobrança),
+> `PaymentWebhookEvent` (dedup/auditoria dos webhooks) e `Feedback` — ver seção "Cobrança".
+
+## Papéis e painel de administração
+
+`User.role` é `USER` ou `SUPERADMIN`. Toda rota `/admin/*` passa por `authenticate` +
+`requireSuperadmin` (o papel é relido do banco a cada request, nunca do JWT). O primeiro
+operador nasce pela env `SUPERADMIN_EMAILS` (promovido no próximo login/cadastro); depois
+disso a promoção é feita no próprio painel. Ninguém altera o próprio papel e o último
+superadmin não pode ser rebaixado.
+
+O painel (`frontend/src/pages/admin/`) cobre: visão geral (MRR, receita, assinaturas,
+usuários ativos, visitas, feedback, séries de 30 dias), usuários (+ detalhe), assinaturas,
+pagamentos (+ webhooks recebidos), inadimplência e feedback.
+
+## Cobrança (Mercado Pago)
+
+Modelo: **assinatura recorrente via Preapproval**, checkout hospedado pelo Mercado Pago
+(`init_point`) — nenhum dado de cartão passa pela nossa stack. Preços vivem em
+`packages/shared/src/constants/billing.ts` (`BILLING_PLANS`); o backend cobra sempre
+`cycleTotalCents(cycle)`, o cliente só escolhe o ciclo.
+
+Fluxo em `backend/src/modules/billing/`:
+
+1. `POST /billing/checkout` cria a `Subscription` local (PENDING) e o preapproval no MP com
+   `external_reference = subscription.id` e `back_url = PUBLIC_DASHBOARD_URL/assinatura?retorno=mp`.
+   O painel redireciona para o `init_point`.
+2. Ao voltar, o painel chama `POST /billing/sync`, que relê o preapproval — assim a confirmação
+   não depende do webhook ter chegado.
+3. `POST /webhooks/mercadopago` recebe `payment`, `subscription_preapproval` e
+   `subscription_authorized_payment`. O corpo **nunca é confiado**: só o id é usado para
+   re-consultar o recurso na API do MP. `x-signature` é validada quando
+   `MERCADOPAGO_WEBHOOK_SECRET` existe. Cada evento vira uma linha em `PaymentWebhookEvent`
+   (dedup + erro visível no painel); falha de processamento responde 500 para o MP retentar.
+4. `runBillingHousekeeping` roda a cada hora (e via "Reconciliar" no painel): expira checkouts
+   abandonados, ressincroniza assinaturas abertas e rebaixa quem teve o período pago encerrado.
+
+Regras de estado (`billing.service.ts`):
+
+- `User.planKey` é **derivado** por `syncEntitlement`: PRO enquanto houver assinatura AUTHORIZED
+  sem atraso, ou CANCELLED/PAUSED ainda dentro do período pago. Usuário sem nenhuma
+  `Subscription` não é tocado — é assim que um override manual do superadmin sobrevive.
+- Inadimplência = assinatura AUTHORIZED com `failedCharges > 0` ou período pago vencido há
+  mais de `BILLING_GRACE_DAYS` (3). Pagamento aprovado zera `failedCharges`, limpa `pastDue` e
+  abre um novo período (`currentPeriodEnd = paidAt + meses do ciclo`).
+- Cancelar mantém o PRO até `currentPeriodEnd`.
+
+Configuração no MP: criar a aplicação, pegar o access token (teste → produção) e, em
+"Suas integrações › Webhooks", apontar para `https://<api>/webhooks/mercadopago` com os três
+tópicos acima; a chave secreta gerada vai em `MERCADOPAGO_WEBHOOK_SECRET`.
+
+## Feedback
+
+`POST /feedback` (usuário autenticado, 5/min) grava tipo, nota 1–5 opcional e mensagem;
+`GET /feedback/mine` mostra o histórico com a resposta do admin (`adminNote`). O superadmin
+triagem em `/admin/feedback` (status NOVO → EM_ANALISE → RESOLVIDO).
 
 ## Links de mídia (YouTube, Vimeo, Spotify, SoundCloud)
 
@@ -184,9 +237,10 @@ Projeto `presskit`, quatro serviços a partir do mesmo repositório (root = raiz
 Variáveis por serviço (além das injetadas pelo Railway):
 
 - **backend**: `NODE_ENV=production`, `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
-  `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (frontend + landing, separados por vírgula). Para upload de
-  imagens: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`,
-  `R2_PUBLIC_BASE_URL`.
+  `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (frontend + landing, separados por vírgula),
+  `SUPERADMIN_EMAILS`, `PUBLIC_DASHBOARD_URL` (frontend). Cobrança: `MERCADOPAGO_ACCESS_TOKEN`,
+  `MERCADOPAGO_WEBHOOK_SECRET`. Upload de imagens: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL`.
 - **frontend**: `VITE_API_URL` (backend), `VITE_SITE_URL` (landing) — inlined no build.
 - **landing**: `NEXT_PUBLIC_API_URL` (backend), `NEXT_PUBLIC_DASHBOARD_URL` (frontend) — inlined no
   build; opcionalmente `API_URL` para o SSR falar com o backend pela rede privada.

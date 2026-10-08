@@ -27,6 +27,10 @@ const envSchema = z
     // a fresh deploy, where there is no shell to run promote-superadmin.
     SUPERADMIN_EMAILS: z.string().optional(),
 
+    // Where the dashboard lives — Mercado Pago sends the buyer back here
+    // after authorising a subscription.
+    PUBLIC_DASHBOARD_URL: z.string().url().default("http://localhost:5173"),
+
     R2_ACCOUNT_ID: z.string().optional(),
     R2_ACCESS_KEY_ID: z.string().optional(),
     R2_SECRET_ACCESS_KEY: z.string().optional(),
@@ -40,9 +44,12 @@ const envSchema = z
     STORAGE_ENDPOINT: z.string().optional(),
     STORAGE_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
 
-    ASAAS_API_KEY: z.string().optional(),
-    ASAAS_BASE_URL: z.string().default("https://api-sandbox.asaas.com/v3"),
-    ASAAS_WEBHOOK_TOKEN: z.string().optional(),
+    // Mercado Pago (assinaturas recorrentes). Without the access token the
+    // API still boots — checkout just reports itself unavailable.
+    MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
+    // Secret from "Suas integrações > Webhooks"; when set, every webhook
+    // must carry a valid x-signature or it's rejected with 401.
+    MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.CORS_ORIGINS) {

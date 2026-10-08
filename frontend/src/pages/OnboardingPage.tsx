@@ -10,6 +10,17 @@ import {
 } from "@presskit/shared";
 import { api, apiErrorMessage } from "../api/axios";
 import { SITE_HOST } from "../config";
+import { CHOSEN_PLAN_KEY } from "./SignupPage";
+
+function consumeChosenPlan(): string | null {
+  try {
+    const plano = sessionStorage.getItem(CHOSEN_PLAN_KEY);
+    if (plano) sessionStorage.removeItem(CHOSEN_PLAN_KEY);
+    return plano;
+  } catch {
+    return null;
+  }
+}
 import { Button, Card, FieldError, GrainOverlay, Label, Logo, Select } from "../components/ui";
 
 export function OnboardingPage() {
@@ -29,7 +40,8 @@ export function OnboardingPage() {
     setServerError(null);
     try {
       await api.post("/presskit/onboarding", input);
-      navigate("/");
+      const plano = consumeChosenPlan();
+      navigate(plano ? `/assinatura?plano=${encodeURIComponent(plano)}` : "/");
     } catch (error) {
       setServerError(apiErrorMessage(error, "Não foi possível criar o presskit"));
     }

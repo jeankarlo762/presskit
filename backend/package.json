@@ -8,7 +8,7 @@
     "dev:storage": "tsx scripts/dev-storage.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "admin:promote": "tsx scripts/promote-superadmin.ts",
-    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.js --external:@aws-sdk/* --external:@fastify/* --external:@prisma/client --external:bcryptjs --external:dotenv --external:fastify --external:fastify-plugin --external:jose --external:zod",
+    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.js --external:@aws-sdk/* --external:@fastify/* --external:@prisma/client --external:bcryptjs --external:dotenv --external:fastify --external:fastify-plugin --external:jose --external:mercadopago --external:zod",
     "start": "node dist/server.js",
     "prisma:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit",
@@ -28,6 +28,7 @@
     "fastify": "^5.12.1",
     "fastify-plugin": "^6.0.0",
     "jose": "^6.2.10",
+    "mercadopago": "^3.6.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

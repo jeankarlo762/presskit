@@ -17,6 +17,13 @@ import { pressRoutes } from "./modules/press/press.routes";
 import { linkRoutes } from "./modules/links/link.routes";
 import { publicRoutes } from "./modules/public/public.routes";
 import { adminRoutes } from "./modules/admin/admin.routes";
+import { billingRoutes } from "./modules/billing/billing.routes";
+import { webhookRoutes } from "./modules/billing/webhook.routes";
+import { feedbackRoutes } from "./modules/feedback/feedback.routes";
+import { runBillingHousekeeping } from "./modules/billing/billing.service";
+
+const HOUSEKEEPING_INTERVAL_MS = 60 * 60 * 1000;
+const HOUSEKEEPING_INITIAL_DELAY_MS = 30 * 1000;
 
 async function buildServer() {
   const fastify = Fastify({
@@ -49,14 +56,18 @@ async function buildServer() {
   // The global bucket is deliberately generous: the public presskit page is
   // server-rendered by the landing service, so ALL visitor traffic to
   // /public/* arrives from that one IP. Sensitive routes (login, signup,
-  // refresh) tighten this per-route via `config.rateLimit`.
+  // refresh, checkout) tighten this per-route via `config.rateLimit`.
   await fastify.register(rateLimit, {
     global: true,
     max: 600,
     timeWindow: "1 minute",
-    allowList: (request) => request.url === "/health",
+    allowList: (request) => request.url === "/health" || request.url.startsWith("/webhooks/"),
   });
   await fastify.register(authenticatePlugin);
+
+  // Small helper so routes that mutate the user (billing sync/cancel) can
+  // re-read the row instead of answering with the stale pre-handler copy.
+  fastify.decorate("prismaUser", (id: string) => prisma.user.findUnique({ where: { id } }));
 
   fastify.setErrorHandler(errorHandler);
 
@@ -72,12 +83,27 @@ async function buildServer() {
   await fastify.register(linkRoutes);
   await fastify.register(publicRoutes);
   await fastify.register(adminRoutes);
+  await fastify.register(billingRoutes);
+  await fastify.register(webhookRoutes);
+  await fastify.register(feedbackRoutes);
 
   return fastify;
 }
 
 async function main() {
   const fastify = await buildServer();
+
+  // Billing reconciliation: hourly pull from Mercado Pago so subscriptions
+  // stay correct even if a webhook never arrives. Single-replica friendly;
+  // with several replicas every one would run it — harmless (idempotent),
+  // just redundant.
+  let housekeepingTimer: NodeJS.Timeout | null = null;
+  const housekeeping = () =>
+    runBillingHousekeeping(fastify.log).catch((error) => fastify.log.error(error, "Billing housekeeping falhou"));
+  const initialTimer = setTimeout(() => {
+    void housekeeping();
+    housekeepingTimer = setInterval(() => void housekeeping(), HOUSEKEEPING_INTERVAL_MS);
+  }, HOUSEKEEPING_INITIAL_DELAY_MS);
 
   // Railway sends SIGTERM on every redeploy; finishing in-flight requests
   // and closing the Prisma pool cleanly avoids half-written rows and noisy
@@ -87,6 +113,8 @@ async function main() {
     if (shuttingDown) return;
     shuttingDown = true;
     fastify.log.info({ signal }, "Encerrando servidor");
+    clearTimeout(initialTimer);
+    if (housekeepingTimer) clearInterval(housekeepingTimer);
     try {
       await fastify.close();
       await prisma.$disconnect();

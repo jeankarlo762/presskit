@@ -36,13 +36,17 @@ export class InvalidRefreshTokenError extends Error {
   }
 }
 
-/** First-operator bootstrap: an e-mail listed in SUPERADMIN_EMAILS becomes
- * SUPERADMIN on its next successful signup/login. Only ever promotes — the
- * list is a floor, removing an address from it never demotes anyone (that
- * is an explicit admin action, see modules/admin). */
+/** Runs on every successful signup/login: stamps lastLoginAt (the "active
+ * users" signal in the admin overview) and applies the first-operator
+ * bootstrap — an e-mail listed in SUPERADMIN_EMAILS becomes SUPERADMIN.
+ * The list only ever promotes; removing an address never demotes anyone
+ * (that is an explicit admin action, see modules/admin). */
 async function applySuperadminBootstrap(user: User): Promise<User> {
-  if (user.role === "SUPERADMIN" || !superadminEmails.has(user.email.toLowerCase())) return user;
-  return prisma.user.update({ where: { id: user.id }, data: { role: "SUPERADMIN" } });
+  const promote = user.role !== "SUPERADMIN" && superadminEmails.has(user.email.toLowerCase());
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date(), ...(promote ? { role: "SUPERADMIN" } : {}) },
+  });
 }
 
 export async function createUser(input: { name: string; email: string; password: string }) {

@@ -46,24 +46,166 @@ enum MediaProvider {
   VIMEO
 }
 
+enum BillingCycle {
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
+}
+
+/// Mirrors Mercado Pago's preapproval statuses (pending / authorized /
+/// paused / cancelled). Delinquency is NOT a status here — it's the
+/// `pastDue` flag on an AUTHORIZED subscription, because MP keeps the
+/// subscription authorized while it retries a failed charge.
+enum SubscriptionStatus {
+  PENDING
+  AUTHORIZED
+  PAUSED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  IN_PROCESS
+  APPROVED
+  REJECTED
+  REFUNDED
+  CHARGED_BACK
+  CANCELLED
+}
+
+enum FeedbackType {
+  BUG
+  SUGESTAO
+  ELOGIO
+  DUVIDA
+  OUTRO
+}
+
+enum FeedbackStatus {
+  NOVO
+  EM_ANALISE
+  RESOLVIDO
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   passwordHash String
   name      String
+  /// Entitlement, derived from the active subscription by
+  /// billing.service syncEntitlement — billing code never edits it any
+  /// other way (a superadmin may still override manually).
   planKey   PlanKey  @default(FREE)
   role      UserRole @default(USER)
-
-  asaasCustomerId     String?
-  asaasSubscriptionId String?
-  subscriptionStatus  String?
-  currentPeriodEnd    DateTime?
+  lastLoginAt DateTime?
 
   presskit      Presskit?
   refreshTokens RefreshToken[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  feedbacks     Feedback[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// One row per Mercado Pago preapproval. A user may accumulate several
+/// over time (cancel → resubscribe); at most one is AUTHORIZED/PENDING.
+model Subscription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cycle       BillingCycle
+  status      SubscriptionStatus @default(PENDING)
+  amountCents Int
+  currency    String             @default("BRL")
+
+  mpPreapprovalId String? @unique
+  mpPayerId       String?
+  mpInitPoint     String?
+  /// MP's own status string, kept verbatim for debugging mismatches.
+  mpRawStatus     String?
+
+  nextPaymentDate  DateTime?
+  currentPeriodEnd DateTime?
+  lastChargedAt    DateTime?
+  /// Consecutive failed/retrying charges reported by MP; reset on an
+  /// approved payment. Drives the "inadimplência" view.
+  failedCharges Int     @default(0)
+  pastDue       Boolean @default(false)
+  cancelledAt   DateTime?
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status, pastDue])
+}
+
+model Payment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  mpPaymentId           String  @unique
+  mpAuthorizedPaymentId String?
+
+  status        PaymentStatus
+  statusDetail  String?
+  amountCents   Int
+  currency      String  @default("BRL")
+  paymentMethod String?
+  paidAt        DateTime?
+  payload       Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([subscriptionId])
+}
+
+/// Dedup + audit for payment-provider webhooks (at-least-once delivery, so
+/// retries are expected). `processedAt` null + `error` set = needs a retry.
+model PaymentWebhookEvent {
+  id         String    @id @default(cuid())
+  provider   String
+  externalId String
+  type       String
+  action     String?
+  payload    Json
+  processedAt DateTime?
+  error      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([provider, externalId])
+  @@index([createdAt])
+}
+
+model Feedback {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  type      FeedbackType
+  rating    Int?
+  message   String
+  pageUrl   String?
+  status    FeedbackStatus @default(NOVO)
+  adminNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
 }
 
 /// Replaces the in-memory Map used in the sibling ArenaHub project — must
@@ -247,13 +389,3 @@ model PageView {
   @@index([presskitId, trackableLinkId])
 }
 
-/// Dedup key for Asaas webhook delivery (at-least-once, so retries are expected).
-model AsaasWebhookEvent {
-  id           String    @id @default(cuid())
-  asaasEventId String    @unique
-  eventType    String
-  payload      Json
-  processedAt  DateTime?
-  error        String?
-  createdAt    DateTime  @default(now())
-}
