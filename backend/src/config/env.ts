@@ -22,6 +22,11 @@ const envSchema = z
 
     CORS_ORIGINS: z.string().optional(),
 
+    // Comma-separated e-mails that are promoted to SUPERADMIN the next time
+    // they sign up or log in. The bootstrap path for the first operator on
+    // a fresh deploy, where there is no shell to run promote-superadmin.
+    SUPERADMIN_EMAILS: z.string().optional(),
+
     R2_ACCOUNT_ID: z.string().optional(),
     R2_ACCESS_KEY_ID: z.string().optional(),
     R2_SECRET_ACCESS_KEY: z.string().optional(),
@@ -64,3 +69,10 @@ export const env = loadEnv();
 export const corsOrigins = env.CORS_ORIGINS
   ? env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
   : ["http://localhost:5173", "http://localhost:3000"];
+
+export const superadminEmails = new Set(
+  (env.SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);

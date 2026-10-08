@@ -22,11 +22,17 @@ import {
 } from "../shared/storage.service";
 import { PlanLimitError } from "@presskit/shared";
 import { InvalidAccessTokenError } from "../shared/jwt";
+import { ForbiddenError } from "./authenticate";
+import { CannotChangeOwnRoleError, LastSuperadminError, UserNotFoundError } from "../modules/admin/admin.service";
 
 const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [InvalidCredentialsError, 401],
   [InvalidRefreshTokenError, 401],
   [InvalidAccessTokenError, 401],
+  [ForbiddenError, 403],
+  [UserNotFoundError, 404],
+  [CannotChangeOwnRoleError, 400],
+  [LastSuperadminError, 409],
   [EmailAlreadyInUseError, 409],
   [PresskitNotFoundError, 404],
   [SlugAlreadyInUseError, 409],

@@ -12,6 +12,14 @@ enum PlanKey {
   PRO
 }
 
+/// SUPERADMIN is the platform operator (sees/edits every account); USER is
+/// an artist. Deliberately just two values — there is no per-presskit
+/// collaborator model yet, so finer roles would be speculation.
+enum UserRole {
+  USER
+  SUPERADMIN
+}
+
 enum ArtistCategory {
   MUSICO_BANDA
   DJ
@@ -44,6 +52,7 @@ model User {
   passwordHash String
   name      String
   planKey   PlanKey  @default(FREE)
+  role      UserRole @default(USER)
 
   asaasCustomerId     String?
   asaasSubscriptionId String?

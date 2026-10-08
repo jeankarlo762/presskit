@@ -6,6 +6,7 @@ import { DashboardHomePage } from "./pages/DashboardHomePage";
 import { CreateWithAiPage } from "./pages/projeto/CreateWithAiPage";
 import { UploadsPage } from "./pages/projeto/UploadsPage";
 import { ReadyTemplatesPage } from "./pages/projeto/ReadyTemplatesPage";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 
@@ -34,6 +35,14 @@ export default function App() {
           <Route path="/projeto/crie-com-ia" element={<CreateWithAiPage />} />
           <Route path="/projeto/uploads" element={<UploadsPage />} />
           <Route path="/projeto/modelos-prontos" element={<ReadyTemplatesPage />} />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <ProtectedRoute role="SUPERADMIN">
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

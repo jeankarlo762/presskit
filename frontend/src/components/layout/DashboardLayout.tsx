@@ -1,7 +1,8 @@
-import { FileEdit, FolderKanban, LayoutTemplate, LogOut, Sparkles, Upload } from "lucide-react";
+import { useEffect } from "react";
+import { FileEdit, FolderKanban, LayoutTemplate, LogOut, ShieldCheck, Sparkles, Upload } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { logout } from "../../api/auth";
-import { useAuthStore } from "../../store/auth.store";
+import { fetchMe, logout } from "../../api/auth";
+import { isSuperadmin, useAuthStore } from "../../store/auth.store";
 import { GrainOverlay, Logo } from "../ui";
 
 type NavItem = { to: string; label: string; icon: typeof FileEdit; end?: boolean };
@@ -14,6 +15,8 @@ const PROJETO_ITEMS: NavItem[] = [
   { to: "/projeto/modelos-prontos", label: "Modelos prontos", icon: LayoutTemplate },
 ];
 
+const ADMIN_ITEMS: NavItem[] = [{ to: "/admin/usuarios", label: "Usuários", icon: ShieldCheck }];
+
 function navLinkClassName({ isActive }: { isActive: boolean }) {
   return (
     "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition " +
@@ -23,7 +26,15 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 
 export function DashboardLayout() {
   const navigate = useNavigate();
-  const { user, refreshToken, clearSession } = useAuthStore();
+  const { user, refreshToken, clearSession, setUser } = useAuthStore();
+
+  // Re-read the profile on mount: role/plan may have changed server-side
+  // (e.g. promoted to superadmin) since the session was stored.
+  useEffect(() => {
+    fetchMe()
+      .then(setUser)
+      .catch(() => undefined);
+  }, [setUser]);
 
   async function handleLogout() {
     if (refreshToken) await logout(refreshToken).catch(() => undefined);
@@ -55,11 +66,29 @@ export function DashboardLayout() {
                 {item.label}
               </NavLink>
             ))}
+
+            {isSuperadmin(user) && (
+              <>
+                <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/70">
+                  <ShieldCheck size={14} className="mr-1.5 inline-block align-text-bottom" />
+                  Administração
+                </p>
+                {ADMIN_ITEMS.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={navLinkClassName}>
+                    <item.icon size={18} />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </>
+            )}
           </nav>
         </div>
 
         <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
-          <p className="truncate px-3 text-sm text-fg-muted">{user?.name}</p>
+          <p className="truncate px-3 text-sm text-fg-muted">
+            {user?.name}
+            {isSuperadmin(user) && <span className="ml-2 text-[11px] text-violet">superadmin</span>}
+          </p>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-fg-muted transition hover:bg-white/5 hover:text-fg"

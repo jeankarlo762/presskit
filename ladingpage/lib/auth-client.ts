@@ -3,6 +3,7 @@ export type SiteUser = {
   name: string;
   email: string;
   planKey: "FREE" | "PRO";
+  role: "USER" | "SUPERADMIN";
 };
 
 type AuthResponse = { user: SiteUser; accessToken: string; refreshToken: string };

@@ -20,6 +20,10 @@ async function main() {
   } else {
     console.log("Usuário já existia:", email);
   }
+  if (user.role !== "SUPERADMIN") {
+    user = await prisma.user.update({ where: { id: user.id }, data: { role: "SUPERADMIN" } });
+    console.log("Usuário promovido a SUPERADMIN (dev)");
+  }
 
   let presskit = await prisma.presskit.findUnique({ where: { userId: user.id } });
   if (!presskit) {

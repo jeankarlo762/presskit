@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:storage": "tsx scripts/dev-storage.ts",
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "admin:promote": "tsx scripts/promote-superadmin.ts",
     "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.js --external:@aws-sdk/* --external:@fastify/* --external:@prisma/client --external:bcryptjs --external:dotenv --external:fastify --external:fastify-plugin --external:jose --external:zod",
     "start": "node dist/server.js",
     "prisma:deploy": "prisma migrate deploy",

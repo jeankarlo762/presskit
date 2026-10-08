@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
+import type { User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
-import { env } from "../../config/env";
+import { env, superadminEmails } from "../../config/env";
 import { generateOpaqueToken, hashToken } from "../../shared/crypto";
 
 const BCRYPT_ROUNDS = 12;
@@ -35,14 +36,24 @@ export class InvalidRefreshTokenError extends Error {
   }
 }
 
+/** First-operator bootstrap: an e-mail listed in SUPERADMIN_EMAILS becomes
+ * SUPERADMIN on its next successful signup/login. Only ever promotes — the
+ * list is a floor, removing an address from it never demotes anyone (that
+ * is an explicit admin action, see modules/admin). */
+async function applySuperadminBootstrap(user: User): Promise<User> {
+  if (user.role === "SUPERADMIN" || !superadminEmails.has(user.email.toLowerCase())) return user;
+  return prisma.user.update({ where: { id: user.id }, data: { role: "SUPERADMIN" } });
+}
+
 export async function createUser(input: { name: string; email: string; password: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new EmailAlreadyInUseError();
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: { name: input.name, email: input.email, passwordHash },
   });
+  return applySuperadminBootstrap(user);
 }
 
 export async function verifyCredentials(email: string, password: string) {
@@ -55,7 +66,7 @@ export async function verifyCredentials(email: string, password: string) {
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new InvalidCredentialsError();
 
-  return user;
+  return applySuperadminBootstrap(user);
 }
 
 type RefreshMeta = { userAgent?: string; ip?: string };

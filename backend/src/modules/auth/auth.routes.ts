@@ -3,8 +3,8 @@ import { loginSchema, refreshSchema, signupSchema } from "@presskit/shared";
 import { createUser, issueRefreshToken, revokeRefreshToken, rotateRefreshToken, verifyCredentials } from "./auth.service";
 import { signAccessToken } from "../../shared/jwt";
 
-function toPublicUser(user: { id: string; name: string; email: string; planKey: string }) {
-  return { id: user.id, name: user.name, email: user.email, planKey: user.planKey };
+function toPublicUser(user: { id: string; name: string; email: string; planKey: string; role: string }) {
+  return { id: user.id, name: user.name, email: user.email, planKey: user.planKey, role: user.role };
 }
 
 // Credential endpoints get their own, much smaller bucket than the global
