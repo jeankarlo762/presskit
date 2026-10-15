@@ -14,7 +14,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { fetchMe, logout } from "../../api/auth";
 import { isSuperadmin, useAuthStore } from "../../store/auth.store";
 import { Logo } from "../ui";
@@ -35,6 +35,27 @@ const CONTA_ITEMS: NavItem[] = [
   { to: "/conta", label: "Minha conta", icon: UserCircle },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
 ];
+
+const TRIAL_DAYS = 14;
+
+/** Sidebar card while the free PRO trial runs: days left and the way out. */
+function TrialCard({ trialEndsAt }: { trialEndsAt: string }) {
+  const daysLeft = Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000));
+  const used = Math.min(1, Math.max(0, (TRIAL_DAYS - daysLeft) / TRIAL_DAYS));
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-bg-elevated-2 p-3.5">
+      <p className="text-[13px] font-extrabold text-fg">
+        Teste PRO · {daysLeft} {daysLeft === 1 ? "dia" : "dias"}
+      </p>
+      <div className="h-1.5 rounded-full bg-white/10" aria-hidden>
+        <div className="h-1.5 rounded-full bg-primary" style={{ width: `${used * 100}%` }} />
+      </div>
+      <Link to="/assinatura" className="text-[13px] font-bold text-primary-text hover:underline">
+        Escolher plano
+      </Link>
+    </div>
+  );
+}
 
 const ADMIN_ITEMS: NavItem[] = [
   { to: "/admin", label: "Visão geral", icon: LayoutDashboard, end: true },
@@ -105,6 +126,7 @@ export function DashboardLayout() {
         </div>
 
         <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
+          {user?.trialEndsAt && <TrialCard trialEndsAt={user.trialEndsAt} />}
           <p className="truncate px-3 text-sm text-fg-muted">
             {user?.name}
             <span className={"ml-2 text-[11px] font-bold " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>

@@ -97,13 +97,24 @@ export function SubscriptionPage() {
   const hasOpenSubscription = subscription !== null && subscription.status !== "CANCELLED";
   const isActive = subscription?.status === "AUTHORIZED";
 
+  const trialDaysLeft = billing?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(billing.trialEndsAt).getTime() - Date.now()) / 86_400_000))
+    : null;
+
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 px-5 py-6 sm:px-8">
       <PageHeader
         icon={CreditCard}
         title="Assinatura"
         description="Escolha um ciclo, pague pelo Mercado Pago e seu presskit fica no plano PRO."
       />
+
+      {trialDaysLeft !== null && (
+        <p className="rounded-2xl border border-amber-400/30 bg-amber-950/60 px-4 py-3 text-[15px] font-semibold text-amber-200">
+          Seu teste PRO termina em {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}. Depois disso seu link continua no
+          ar, mas volta a ter marca d'água e só 1 link rastreável. Assine abaixo para continuar no PRO.
+        </p>
+      )}
 
       {notice && <p className="rounded-2xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">{notice}</p>}
       <FieldError>{error}</FieldError>
@@ -115,8 +126,9 @@ export function SubscriptionPage() {
           <Card className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="font-medium text-fg">Seu plano</h2>
+                <h2 className="font-extrabold text-fg">Seu plano</h2>
                 <Badge tone={billing?.planKey === "PRO" ? "success" : "neutral"}>{billing?.planKey ?? "FREE"}</Badge>
+                {trialDaysLeft !== null && <Badge tone="neutral">Teste grátis</Badge>}
                 {subscription && <SubscriptionBadge status={subscription.status} pastDue={subscription.pastDue} />}
               </div>
               {hasOpenSubscription && (
@@ -132,7 +144,7 @@ export function SubscriptionPage() {
               )}
             </div>
 
-            {!subscription && (
+            {!subscription && trialDaysLeft === null && (
               <p className="text-sm text-fg-muted">
                 Você está no plano gratuito. Assine abaixo para liberar todos os recursos do presskit.
               </p>
@@ -198,11 +210,11 @@ export function SubscriptionPage() {
               return (
                 <Card
                   key={plan.cycle}
-                  className={`relative flex flex-col gap-4 ${emphasized ? "border-magenta/60 shadow-[0_0_60px_-20px_rgba(225,29,156,0.5)]" : ""}`}
+                  className={`relative flex flex-col gap-4 ${emphasized ? "border-2 border-primary" : ""}`}
                 >
                   {plan.popular && (
-                    <span className="absolute -top-3 left-6 rounded-full bg-gradient-to-r from-violet to-magenta px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
-                      Mais popular
+                    <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-0.5 text-[12px] font-extrabold text-white">
+                      Mais escolhido
                     </span>
                   )}
                   <div>
@@ -220,7 +232,7 @@ export function SubscriptionPage() {
                   <ul className="flex flex-col gap-2 text-sm text-fg-muted">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
-                        <Check size={16} className="mt-0.5 shrink-0 text-violet" />
+                        <Check size={16} className="mt-0.5 shrink-0 text-primary-text" />
                         {feature}
                       </li>
                     ))}
@@ -247,7 +259,7 @@ export function SubscriptionPage() {
           </div>
 
           <Card className="flex flex-col gap-3">
-            <h2 className="font-medium text-fg">Histórico de pagamentos</h2>
+            <h2 className="font-extrabold text-fg">Histórico de pagamentos</h2>
             {billing && billing.payments.length > 0 ? (
               <TableShell>
                 <thead>

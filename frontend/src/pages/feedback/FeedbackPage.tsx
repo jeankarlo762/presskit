@@ -134,7 +134,7 @@ export function FeedbackPage() {
                 </div>
                 <p className="whitespace-pre-line text-fg-muted">{item.message}</p>
                 {item.adminNote && (
-                  <p className="rounded-xl bg-violet/10 px-3 py-2 text-xs text-violet">Resposta: {item.adminNote}</p>
+                  <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-primary-text">Resposta: {item.adminNote}</p>
                 )}
               </li>
             ))}

@@ -23,9 +23,9 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex items-center gap-3">
-        <Icon className="text-violet" size={24} />
+        <Icon className="text-primary-text" size={24} />
         <div>
-          <h1 className="text-lg font-semibold text-fg">{title}</h1>
+          <h1 className="text-[26px] font-extrabold text-fg">{title}</h1>
           {description && <p className="text-sm text-fg-muted">{description}</p>}
         </div>
       </div>

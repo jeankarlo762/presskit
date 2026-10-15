@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { CheckCircle2, Circle, ExternalLink, Monitor, Palette, Smartphone } from "lucide-react";
 import {
   FONT_FAMILY_CSS,
   SECTION_DEFAULT_TITLES,
@@ -11,7 +12,6 @@ import { AUDIO_PROVIDERS, PresskitRenderer, VIDEO_PROVIDERS } from "@presskit/sh
 import {
   getMyPresskit,
   listGalleryPhotos,
-  listLinks,
   listMedia,
   listSections,
   listTourDates,
@@ -22,18 +22,15 @@ import {
   type Presskit,
   type Section,
   type TourDate,
-  type TrackableLink,
 } from "../api/presskit";
 import { useAuthStore } from "../store/auth.store";
 import { publicPresskitUrl, SITE_HOST } from "../config";
-import { Button, Logo } from "../components/ui";
+import { Button } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
 import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
 import { GalleryManager } from "./editor/GalleryManager";
 import { TourDatesManager } from "./editor/TourDatesManager";
-import { LinksManager } from "./editor/LinksManager";
-import { ThemeEditor } from "./editor/ThemeEditor";
 
 const EMPTY_BIO: BioSectionData = { shortBio: "", longBio: "" };
 const EMPTY_CONTACT: ContactSectionData = { email: "", socialLinks: [] };
@@ -55,9 +52,9 @@ export function DashboardHomePage() {
   const [media, setMedia] = useState<MediaEmbed[]>([]);
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [tourDates, setTourDates] = useState<TourDate[]>([]);
-  const [links, setLinks] = useState<TrackableLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishBusy, setPublishBusy] = useState(false);
+  const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
 
   useEffect(() => {
     let cancelled = false;
@@ -70,12 +67,11 @@ export function DashboardHomePage() {
       }
       setPresskit(found);
 
-      const [sectionsRes, mediaRes, galleryRes, tourDatesRes, linksRes] = await Promise.all([
+      const [sectionsRes, mediaRes, galleryRes, tourDatesRes] = await Promise.all([
         listSections(),
         listMedia(),
         listGalleryPhotos(),
         listTourDates(),
-        listLinks(),
       ]);
       if (cancelled) return;
 
@@ -83,7 +79,6 @@ export function DashboardHomePage() {
       setMedia(mediaRes);
       setGallery(galleryRes);
       setTourDates(tourDatesRes);
-      setLinks(linksRes);
       setLoading(false);
     });
 
@@ -116,21 +111,13 @@ export function DashboardHomePage() {
   const bioData = (bioSection?.data as BioSectionData) ?? EMPTY_BIO;
   const contactData = (contactSection?.data as ContactSectionData) ?? EMPTY_CONTACT;
 
+  // Spread the presskit so every theme field it carries (template, heading
+  // font, button style…) reaches the preview without listing each one here.
   const previewPresskit: PublicPresskit = {
-    id: presskit.id,
-    slug: presskit.slug,
+    ...presskit,
     artistName: user?.name ?? "",
-    category: presskit.category,
-    templateKey: presskit.templateKey,
-    city: presskit.city,
-    state: presskit.state,
     ogTitleOverride: null,
     ogDescriptionOverride: null,
-    themeBackgroundColor: presskit.themeBackgroundColor,
-    themeTextColor: presskit.themeTextColor,
-    themeAccentColor: presskit.themeAccentColor,
-    themeFontKey: presskit.themeFontKey,
-    themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
     sections: previewSections.map((s) => ({ ...s, data: s.data ?? {} })),
     mediaEmbeds: media,
     galleryPhotos: gallery,
@@ -138,81 +125,112 @@ export function DashboardHomePage() {
     pressMentions: [],
   };
 
+  // "Ready to send to a booker": the minimum a contractor expects to find.
+  const checklist = [
+    { label: "Bio curta", done: bioData.shortBio.trim().length > 0 },
+    { label: "Música ou set", done: media.some((m) => AUDIO_PROVIDERS.includes(m.provider)) },
+    { label: "Contato para shows", done: !!contactData.email?.trim() },
+    { label: "3 fotos na galeria", done: gallery.length >= 3 },
+    { label: "Próximas datas", done: tourDates.length > 0 },
+    { label: "Página publicada", done: presskit.published },
+  ];
+  const doneCount = checklist.filter((item) => item.done).length;
+
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-bg/80 px-6 py-4 backdrop-blur-lg">
-        <div className="flex items-center gap-6">
-          <Logo className="hidden text-lg sm:block" />
-          <div>
-            <h1 className="font-semibold text-fg">Olá, {user?.name}</h1>
-            <a
-              href={publicPresskitUrl(presskit.slug)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-fg-muted underline-offset-2 hover:text-fg hover:underline"
-            >
-              {SITE_HOST}/{presskit.slug}
-            </a>
-          </div>
+    <div className="flex min-h-screen flex-col gap-6 px-5 py-6 sm:px-8">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[26px] font-extrabold text-fg">Meu presskit</h1>
+          <p className="text-sm text-fg-muted">
+            {SITE_HOST}/{presskit.slug} ·{" "}
+            <span className={presskit.published ? "font-bold text-emerald-400" : "font-semibold"}>
+              {presskit.published ? "Publicado" : "Rascunho"}
+            </span>
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/assinatura"
-            className={
-              "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +
-              (user?.planKey === "PRO" ? "bg-violet/15 text-violet" : "bg-white/5 text-fg-muted hover:text-fg")
-            }
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href={publicPresskitUrl(presskit.slug)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 px-4 text-[15px] font-bold text-fg transition hover:bg-white/5"
           >
-            {user?.planKey === "PRO" ? "Plano PRO" : "Plano gratuito · assinar"}
-          </Link>
-          {presskit.published && (
-            <a
-              href={publicPresskitUrl(presskit.slug)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline-block"
-            >
-              Ver página
-            </a>
+            <ExternalLink size={16} /> Ver como contratante
+          </a>
+          {presskit.published ? (
+            <>
+              <Button variant="ghost" onClick={handleTogglePublish} disabled={publishBusy}>
+                Despublicar
+              </Button>
+              <Link
+                to="/compartilhar"
+                className="inline-flex min-h-11 items-center rounded-xl bg-primary px-5 text-[15px] font-bold text-white transition hover:bg-primary-hover"
+              >
+                Compartilhar
+              </Link>
+            </>
+          ) : (
+            <Button onClick={handleTogglePublish} disabled={publishBusy}>
+              {publishBusy ? "Publicando..." : "Publicar"}
+            </Button>
           )}
-          <span
-            className={
-              "hidden rounded-full px-3 py-1 text-xs font-medium sm:inline-block " +
-              (presskit.published ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-fg-muted")
-            }
-          >
-            {presskit.published ? "Publicado" : "Rascunho"}
-          </span>
-          <Button onClick={handleTogglePublish} disabled={publishBusy} size="sm">
-            {presskit.published ? "Despublicar" : "Publicar"}
-          </Button>
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-6 p-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <ThemeEditor
-            initial={{
-              themeBackgroundColor: presskit.themeBackgroundColor,
-              themeTextColor: presskit.themeTextColor,
-              themeAccentColor: presskit.themeAccentColor,
-              themeFontKey: presskit.themeFontKey,
-              themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
-            }}
-            onChange={(theme) => setPresskit((prev) => (prev ? { ...prev, ...theme } : prev))}
-          />
+      <div className="flex flex-col gap-6 xl:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-elevated p-5" aria-labelledby="checklist-title">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="checklist-title" className="font-extrabold text-fg">
+                Pronto para enviar a contratantes
+              </h2>
+              <span className="font-extrabold text-primary-text">
+                {doneCount} de {checklist.length}
+              </span>
+            </div>
+            <div
+              className="h-2 rounded-full bg-white/10"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={checklist.length}
+              aria-valuenow={doneCount}
+              aria-label="Progresso do presskit"
+            >
+              <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(doneCount / checklist.length) * 100}%` }} />
+            </div>
+            <ul className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+              {checklist.map((item) => (
+                <li key={item.label} className={"flex items-center gap-2.5 " + (item.done ? "text-fg-muted" : "text-fg")}>
+                  {item.done ? (
+                    <CheckCircle2 size={18} className="shrink-0 text-emerald-400" aria-hidden />
+                  ) : (
+                    <Circle size={18} className="shrink-0 text-fg-muted/60" aria-hidden />
+                  )}
+                  <span className={item.done ? "line-through decoration-white/20" : ""}>{item.label}</span>
+                  <span className="sr-only">{item.done ? "(feito)" : "(pendente)"}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <Link
+            to="/personalizar"
+            className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
+              <Palette size={20} />
+            </span>
+            <span className="flex flex-col">
+              <span className="font-bold text-fg">Personalizar visual</span>
+              <span className="text-[13px] text-fg-muted">Modelo, cores, fontes e ordem das seções</span>
+            </span>
+          </Link>
 
           <BioForm
             initial={bioData}
             initialTitle={bioSection?.title ?? SECTION_DEFAULT_TITLES.BIO}
             onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "BIO", data, title))}
             onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
-          />
-          <ContactForm
-            initial={contactData}
-            initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
-            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CONTACT", data, title))}
-            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
           />
           <EmbedManager
             sectionType="MUSIC"
@@ -226,14 +244,6 @@ export function DashboardHomePage() {
             onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
           />
-          <GalleryManager initial={gallery} onChange={setGallery} />
-          <TourDatesManager
-            initial={tourDates}
-            initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
-            onChange={setTourDates}
-            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
-            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
-          />
           <EmbedManager
             sectionType="VIDEO"
             providers={VIDEO_PROVIDERS}
@@ -246,18 +256,67 @@ export function DashboardHomePage() {
             onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
           />
-          <LinksManager initial={links} slug={presskit.slug} />
+          <GalleryManager initial={gallery} onChange={setGallery} />
+          <TourDatesManager
+            initial={tourDates}
+            initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
+            onChange={setTourDates}
+            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
+            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
+          />
+          <ContactForm
+            initial={contactData}
+            initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
+            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CONTACT", data, title))}
+            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
+          />
         </div>
 
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-muted">Preview</p>
-          <div
-            className="max-h-[85vh] overflow-y-auto rounded-3xl border border-white/10"
-            style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
-          >
-            <PresskitRenderer presskit={previewPresskit} />
+        <aside
+          className={"flex flex-col items-center gap-3 xl:sticky xl:top-6 xl:self-start " + (device === "mobile" ? "xl:w-[380px]" : "xl:w-[560px]")}
+          aria-label="Prévia"
+        >
+          <div className="flex gap-1 rounded-xl bg-bg-elevated p-1" role="group" aria-label="Tamanho da prévia">
+            <button
+              type="button"
+              onClick={() => setDevice("mobile")}
+              aria-pressed={device === "mobile"}
+              className={
+                "flex min-h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm font-bold transition " +
+                (device === "mobile" ? "bg-bg-elevated-2 text-fg" : "text-fg-muted hover:text-fg")
+              }
+            >
+              <Smartphone size={15} /> Celular
+            </button>
+            <button
+              type="button"
+              onClick={() => setDevice("desktop")}
+              aria-pressed={device === "desktop"}
+              className={
+                "flex min-h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm font-bold transition " +
+                (device === "desktop" ? "bg-bg-elevated-2 text-fg" : "text-fg-muted hover:text-fg")
+              }
+            >
+              <Monitor size={15} /> Computador
+            </button>
           </div>
-        </div>
+          <div
+            className={
+              device === "mobile"
+                ? "w-full max-w-[340px] rounded-[34px] border border-white/10 bg-bg-elevated p-3"
+                : "w-full rounded-2xl border border-white/10 bg-bg-elevated p-2"
+            }
+          >
+            <div
+              className={
+                "overflow-y-auto " + (device === "mobile" ? "max-h-[70vh] rounded-[24px]" : "max-h-[75vh] rounded-xl")
+              }
+              style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
+            >
+              <PresskitRenderer presskit={previewPresskit} />
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

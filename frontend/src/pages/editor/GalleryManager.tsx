@@ -88,7 +88,7 @@ export function GalleryManager({
             const file = e.target.files?.[0];
             if (file) void handleFileSelected(file);
           }}
-          className="text-sm text-fg-muted file:mr-3 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-violet file:to-magenta file:px-4 file:py-2 file:text-xs file:font-medium file:text-white hover:file:opacity-90"
+          className="text-sm text-fg-muted file:mr-3 file:rounded-xl file:border-0 file:bg-primary file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white hover:file:bg-primary-hover"
         />
         {uploading && <p className="mt-2 text-sm text-fg-muted">Enviando...</p>}
         <FieldError>{error}</FieldError>
