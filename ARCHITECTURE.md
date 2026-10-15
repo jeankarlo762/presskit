@@ -245,6 +245,13 @@ Projeto `presskit`, quatro serviços a partir do mesmo repositório (root = raiz
   e os `package*.json` da raiz), para um push só redeployar o que mudou.
 - `railway.json` (config-as-code) está **deprecado** no Railway — a configuração vive nas
   settings de cada serviço (aplicadas via API/dashboard).
+- **E-mail**: o Railway bloqueia SMTP de saída, então entrega real só por API HTTPS
+  (`RESEND_API_KEY`). Enquanto o Resend não está configurado, o serviço `mailpit`
+  (template oficial, volume em `/data`) recebe tudo pela rede privada
+  (`SMTP_HOST=${{mailpit.SMTP_HOST}}`, porta 1025, usuário `smtp`, senha em
+  `MP_SMTP_PASSWORD`) e mostra na UI em `mailpit-production-*.up.railway.app` (login na
+  variável `MP_UI_AUTH` do serviço). O mailer dá prioridade ao Resend: basta adicionar a
+  chave no backend que o Mailpit deixa de receber — nada mais precisa mudar.
 
 Variáveis por serviço (além das injetadas pelo Railway):
 
