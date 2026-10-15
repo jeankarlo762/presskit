@@ -90,7 +90,12 @@ enum FeedbackStatus {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  passwordHash String
+  /// Null for accounts created through "Continuar com Google" that never
+  /// set a password; login by password is then refused, not crashed.
+  passwordHash String?
+  /// Google's stable account id (the ID token's `sub`), set on the first
+  /// Google sign-in and used to find the account on later ones.
+  googleId  String?  @unique
   name      String
   /// Entitlement, derived from the active subscription by
   /// billing.service syncEntitlement — billing code never edits it any
@@ -98,6 +103,11 @@ model User {
   planKey   PlanKey  @default(FREE)
   role      UserRole @default(USER)
   lastLoginAt DateTime?
+  /// End of the free PRO trial. New accounts get now() + 14 days from the
+  /// database default; accounts that existed before the trial launched stay
+  /// null. While it is in the future a FREE user is treated as PRO (see
+  /// middlewares/authenticate.ts) — planKey itself is never touched.
+  trialEndsAt DateTime? @default(dbgenerated("(now() + '14 days'::interval)"))
 
   presskit      Presskit?
   refreshTokens RefreshToken[]
@@ -250,6 +260,10 @@ model Presskit {
   themeTextColor          String  @default("#fafafa")
   themeAccentColor        String  @default("#f43f5e")
   themeFontKey            String  @default("inter")
+  /// Font for headings and the artist name; null = same as themeFontKey.
+  themeHeadingFontKey     String?
+  /// Corner style of buttons on the public page: SQUARE | ROUNDED | PILL.
+  themeButtonStyle        String  @default("ROUNDED")
   themeBackgroundImageUrl String?
   themeBackgroundImageKey String?
 

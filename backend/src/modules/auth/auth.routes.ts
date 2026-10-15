@@ -3,8 +3,25 @@ import { loginSchema, refreshSchema, signupSchema } from "@presskit/shared";
 import { createUser, issueRefreshToken, revokeRefreshToken, rotateRefreshToken, verifyCredentials } from "./auth.service";
 import { signAccessToken } from "../../shared/jwt";
 
-function toPublicUser(user: { id: string; name: string; email: string; planKey: string; role: string }) {
-  return { id: user.id, name: user.name, email: user.email, planKey: user.planKey, role: user.role };
+function toPublicUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  planKey: string;
+  role: string;
+  trialEndsAt: Date | null;
+}) {
+  // Inside the trial a FREE account is reported as PRO, matching what
+  // authenticate.ts grants on every request.
+  const inTrial = user.planKey === "FREE" && !!user.trialEndsAt && user.trialEndsAt > new Date();
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    planKey: inTrial ? "PRO" : user.planKey,
+    role: user.role,
+    trialEndsAt: inTrial ? user.trialEndsAt!.toISOString() : null,
+  };
 }
 
 // Credential endpoints get their own, much smaller bucket than the global

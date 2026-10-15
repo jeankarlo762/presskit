@@ -8,12 +8,20 @@
    applied to the app's own chrome (not the artist's public presskit, which
    has its own independent per-artist theme in packages/shared/src/ui). */
 :root {
-  --bg: #08070a;
-  --bg-elevated: #121016;
-  --bg-elevated-2: #1a1620;
-  --fg: #f5f5f5;
-  --fg-muted: #a8a3ad;
-  --border: rgba(255, 255, 255, 0.1);
+  --bg: #0b0a0d;
+  --bg-elevated: #15131a;
+  --bg-elevated-2: #1e1b24;
+  --bg-sidebar: #111014;
+  --fg: #f4f2f7;
+  --fg-muted: #a9a3b3;
+  --border: rgba(255, 255, 255, 0.09);
+
+  /* Redesign 2026-10: one solid action color instead of gradients. #c8128a
+     keeps 5.4:1 against white text; --primary-text is the same hue lifted
+     for links and highlights on the dark ground. */
+  --primary: #c8128a;
+  --primary-hover: #b00f79;
+  --primary-text: #f472c8;
 
   --violet: #8b5cf6;
   --magenta: #e11d9c;
@@ -31,6 +39,11 @@
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
   --color-border: var(--border);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-text: var(--primary-text);
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --color-violet: var(--violet);
   --color-magenta: var(--magenta);
   --color-orange: var(--orange);

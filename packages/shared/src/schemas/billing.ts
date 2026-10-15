@@ -35,6 +35,8 @@ export type MyPayment = {
 
 export type MyBilling = {
   planKey: "FREE" | "PRO";
+  /** ISO date while the free PRO trial runs and no subscription exists. */
+  trialEndsAt: string | null;
   subscription: MySubscription | null;
   payments: MyPayment[];
   /** False when MERCADOPAGO_ACCESS_TOKEN isn't configured — the UI shows a

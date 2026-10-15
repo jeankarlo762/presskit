@@ -13,11 +13,11 @@ function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-// Shared design language for the whole dashboard — same brand identity as
-// ladingpage (dark, gradient-accented): generously rounded fields
-// (rounded-2xl), pill buttons (rounded-full), no square corners anywhere.
+// Shared design language for the whole dashboard (redesign 2026-10): dark
+// ground, one solid magenta for the action the artist came to do, 12px
+// radii on fields and buttons, 16px on cards, 44px minimum touch targets.
 const fieldBase =
-  "w-full rounded-2xl border border-white/10 bg-bg-elevated px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-muted/60 focus:border-violet/60 focus:ring-4 focus:ring-violet/15 disabled:opacity-50";
+  "w-full min-h-11 rounded-xl border border-white/15 bg-bg px-4 py-3 text-[15px] text-fg outline-none transition placeholder:text-fg-muted/70 focus:border-primary-text focus:ring-2 focus:ring-primary/30 disabled:opacity-50";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
   { className, ...props },
@@ -42,16 +42,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-gradient-to-r from-violet to-magenta text-white shadow-[0_0_30px_-10px_rgba(225,29,156,0.6)] hover:scale-[1.02]",
-  secondary: "bg-white/5 text-fg hover:bg-white/10",
-  danger: "bg-red-500/10 text-red-400 hover:bg-red-500/20",
-  ghost: "text-fg-muted hover:text-fg",
+  primary: "bg-primary text-white hover:bg-primary-hover",
+  secondary: "border border-white/20 bg-transparent text-fg hover:bg-white/5",
+  danger: "border border-red-400/30 bg-transparent text-red-300 hover:bg-red-500/10",
+  ghost: "text-fg-muted hover:bg-white/5 hover:text-fg",
 };
 
 const buttonSizes = {
-  md: "px-5 py-2.5 text-sm",
-  sm: "px-3.5 py-1.5 text-xs",
+  md: "min-h-11 px-5 py-2.5 text-[15px]",
+  sm: "min-h-9 px-3.5 py-1.5 text-sm",
 };
 
 export function Button({
@@ -63,7 +62,7 @@ export function Button({
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-text disabled:cursor-not-allowed disabled:opacity-50",
         buttonVariants[variant],
         buttonSizes[size],
         className,
@@ -73,7 +72,7 @@ export function Button({
   );
 }
 
-const cardClassName = "rounded-3xl border border-white/10 bg-bg-elevated p-6";
+const cardClassName = "rounded-2xl border border-border bg-bg-elevated p-6";
 
 type CardDivProps = { as?: "div"; className?: string; children: ReactNode } & Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -103,7 +102,7 @@ export function Card(props: CardDivProps | CardFormProps) {
 }
 
 export function Label({ children, className }: { children: ReactNode; className?: string }) {
-  return <label className={cx("mb-1.5 block text-sm font-medium text-fg-muted", className)}>{children}</label>;
+  return <label className={cx("mb-2 block text-sm font-bold text-fg", className)}>{children}</label>;
 }
 
 export function FieldError({ children }: { children?: ReactNode }) {
@@ -118,7 +117,7 @@ export function GrainOverlay() {
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cx("font-display uppercase tracking-tight", className)}>
-      presskit<span className="text-gradient-brand">.ai</span>
+      presskit<span className="text-primary-text">.ai</span>
     </span>
   );
 }

@@ -22,7 +22,14 @@ export default fp(async function authenticatePlugin(fastify: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new InvalidAccessTokenError();
 
-    request.currentUser = user;
+    // Free trial: a FREE account inside its trial window gets PRO limits
+    // everywhere downstream. Only this in-memory copy changes — the stored
+    // planKey stays what billing says, so the trial ends by itself.
+    if (user.planKey === "FREE" && user.trialEndsAt && user.trialEndsAt > new Date()) {
+      request.currentUser = { ...user, planKey: "PRO" };
+    } else {
+      request.currentUser = user;
+    }
   });
 
   fastify.decorate("requireSuperadmin", async (request: FastifyRequest, reply: FastifyReply) => {

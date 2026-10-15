@@ -1,38 +1,39 @@
 import { useEffect } from "react";
 import {
   AlertTriangle,
+  BarChart3,
   CreditCard,
   FileEdit,
-  FolderKanban,
   LayoutDashboard,
-  LayoutTemplate,
   LogOut,
   MessageSquare,
+  Palette,
   Receipt,
+  Send,
   ShieldCheck,
-  Sparkles,
-  Upload,
   UserCircle,
   Users,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { fetchMe, logout } from "../../api/auth";
 import { isSuperadmin, useAuthStore } from "../../store/auth.store";
-import { GrainOverlay, Logo } from "../ui";
+import { Logo } from "../ui";
 
 type NavItem = { to: string; label: string; icon: typeof FileEdit; end?: boolean };
 
-const EDITOR_ITEM: NavItem = { to: "/", label: "Editar Presskit", icon: FileEdit, end: true };
+// The artist's journey, in order: build it, make it theirs, send it, see
+// who opened it, then the account chores.
+const MAIN_ITEMS: NavItem[] = [
+  { to: "/", label: "Meu presskit", icon: FileEdit, end: true },
+  { to: "/personalizar", label: "Personalizar", icon: Palette },
+  { to: "/compartilhar", label: "Compartilhar", icon: Send },
+  { to: "/quem-abriu", label: "Quem abriu", icon: BarChart3 },
+];
 
 const CONTA_ITEMS: NavItem[] = [
   { to: "/assinatura", label: "Assinatura", icon: CreditCard },
+  { to: "/conta", label: "Minha conta", icon: UserCircle },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
-];
-
-const PROJETO_ITEMS: NavItem[] = [
-  { to: "/projeto/crie-com-ia", label: "Crie com IA", icon: Sparkles },
-  { to: "/projeto/uploads", label: "Uploads", icon: Upload },
-  { to: "/projeto/modelos-prontos", label: "Modelos prontos", icon: LayoutTemplate },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
@@ -46,18 +47,15 @@ const ADMIN_ITEMS: NavItem[] = [
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
   return (
-    "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition " +
-    (isActive ? "bg-white/10 text-fg" : "text-fg-muted hover:bg-white/5 hover:text-fg")
+    "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition " +
+    (isActive ? "bg-bg-elevated-2 font-bold text-fg" : "font-semibold text-fg-muted hover:bg-white/5 hover:text-fg")
   );
 }
 
-function NavGroup({ icon: Icon, label, items }: { icon: typeof FileEdit; label: string; items: NavItem[] }) {
+function NavGroup({ label, items }: { label?: string; items: NavItem[] }) {
   return (
     <>
-      <p className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-fg-muted/70">
-        <Icon size={14} className="mr-1.5 inline-block align-text-bottom" />
-        {label}
-      </p>
+      {label && <p className="mt-5 mb-1 px-3 text-[11px] font-bold uppercase tracking-widest text-fg-muted/80">{label}</p>}
       {items.map((item) => (
         <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClassName}>
           <item.icon size={18} />
@@ -87,36 +85,36 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="relative flex min-h-screen bg-bg">
-      <GrainOverlay />
+    <div className="flex min-h-screen flex-col bg-bg md:flex-row">
+      <aside className="flex shrink-0 flex-col justify-between border-b border-border bg-bg-sidebar p-4 md:w-60 md:border-r md:border-b-0">
+        <div className="flex flex-col gap-5">
+          <Logo className="px-2 text-[22px]" />
 
-      <aside className="flex w-64 shrink-0 flex-col justify-between border-r border-white/5 bg-bg-elevated p-4">
-        <div className="flex flex-col gap-6">
-          <Logo className="px-2 text-lg" />
-
-          <nav className="flex flex-col gap-1">
-            <NavLink to={EDITOR_ITEM.to} end={EDITOR_ITEM.end} className={navLinkClassName}>
-              <EDITOR_ITEM.icon size={18} />
-              {EDITOR_ITEM.label}
-            </NavLink>
-
-            <NavGroup icon={UserCircle} label="Conta" items={CONTA_ITEMS} />
-            <NavGroup icon={FolderKanban} label="Projeto" items={PROJETO_ITEMS} />
-            {isSuperadmin(user) && <NavGroup icon={ShieldCheck} label="Administração" items={ADMIN_ITEMS} />}
+          <nav aria-label="Menu" className="flex flex-col gap-1">
+            <NavGroup items={MAIN_ITEMS} />
+            <NavGroup label="Conta" items={CONTA_ITEMS} />
+            {isSuperadmin(user) && (
+              <>
+                <p className="mt-5 mb-1 flex items-center gap-1.5 px-3 text-[11px] font-bold uppercase tracking-widest text-fg-muted/80">
+                  <ShieldCheck size={13} /> Administração
+                </p>
+                <NavGroup items={ADMIN_ITEMS} />
+              </>
+            )}
           </nav>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
           <p className="truncate px-3 text-sm text-fg-muted">
             {user?.name}
-            <span className={"ml-2 text-[11px] " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
+            <span className={"ml-2 text-[11px] font-bold " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
               {user?.planKey}
             </span>
-            {isSuperadmin(user) && <span className="ml-2 text-[11px] text-violet">superadmin</span>}
+            {isSuperadmin(user) && <span className="ml-2 text-[11px] font-bold text-primary-text">superadmin</span>}
           </p>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-fg-muted transition hover:bg-white/5 hover:text-fg"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-left text-[15px] font-semibold text-fg-muted transition hover:bg-white/5 hover:text-fg"
           >
             <LogOut size={18} />
             Sair

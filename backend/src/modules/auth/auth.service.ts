@@ -67,8 +67,10 @@ export async function verifyCredentials(email: string, password: string) {
     throw new InvalidCredentialsError();
   }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new InvalidCredentialsError();
+  // A Google-only account has no password: compare against the dummy hash
+  // so it fails in the same time as a wrong password.
+  const valid = await bcrypt.compare(password, user.passwordHash ?? DUMMY_PASSWORD_HASH);
+  if (!valid || !user.passwordHash) throw new InvalidCredentialsError();
 
   return applySuperadminBootstrap(user);
 }

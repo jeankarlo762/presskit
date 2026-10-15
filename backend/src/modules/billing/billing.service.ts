@@ -509,7 +509,7 @@ function toMySubscription(subscription: Subscription): MySubscription {
   };
 }
 
-export async function getMyBilling(user: Pick<User, "id" | "planKey">): Promise<MyBilling> {
+export async function getMyBilling(user: Pick<User, "id" | "planKey" | "trialEndsAt">): Promise<MyBilling> {
   const [subscription, payments] = await Promise.all([
     prisma.subscription.findFirst({
       where: { userId: user.id },
@@ -521,8 +521,10 @@ export async function getMyBilling(user: Pick<User, "id" | "planKey">): Promise<
 
   const current = await pickCurrentSubscription(user.id, subscription);
 
+  const trialActive = !current && !!user.trialEndsAt && user.trialEndsAt > new Date();
   return {
     planKey: user.planKey,
+    trialEndsAt: trialActive ? user.trialEndsAt!.toISOString() : null,
     subscription: current ? toMySubscription(current) : null,
     payments: payments.map(
       (payment): MyPayment => ({

@@ -2,7 +2,15 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { PlanKey, UserRole } from "@presskit/shared";
 
-export type AuthUser = { id: string; name: string; email: string; planKey: PlanKey; role: UserRole };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  planKey: PlanKey;
+  role: UserRole;
+  /** ISO date while the free PRO trial runs, else null. */
+  trialEndsAt?: string | null;
+};
 
 type AuthState = {
   user: AuthUser | null;
