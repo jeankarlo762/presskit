@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import type { User } from "@prisma/client";
+import { createRemoteJWKSet, jwtVerify } from "jose";
+import { Prisma, type User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { env, superadminEmails } from "../../config/env";
 import { generateOpaqueToken, hashToken } from "../../shared/crypto";
@@ -33,6 +34,39 @@ export class InvalidRefreshTokenError extends Error {
   constructor() {
     super("Refresh token inválido ou expirado");
     this.name = "InvalidRefreshTokenError";
+  }
+}
+
+// The errors below carry their own statusCode/code, which errorHandler.ts
+// already honours (its fastifyError.statusCode branch) — no need to grow the
+// KNOWN_ERROR_STATUS map for auth-only cases.
+
+export class GoogleLoginNotConfiguredError extends Error {
+  statusCode = 503;
+  code = "GoogleLoginNotConfiguredError";
+  constructor() {
+    super("Login com Google não configurado");
+    this.name = "GoogleLoginNotConfiguredError";
+  }
+}
+
+export class InvalidGoogleCredentialError extends Error {
+  statusCode = 401;
+  code = "InvalidGoogleCredentialError";
+  constructor() {
+    super("Não foi possível confirmar sua conta Google. Tente de novo.");
+    this.name = "InvalidGoogleCredentialError";
+  }
+}
+
+/** 400, not 401: a wrong *current* password on the account page must not
+ * look like an expired session to the dashboard's refresh interceptor. */
+export class WrongCurrentPasswordError extends Error {
+  statusCode = 400;
+  code = "WrongCurrentPasswordError";
+  constructor() {
+    super("Senha atual incorreta");
+    this.name = "WrongCurrentPasswordError";
   }
 }
 
@@ -73,6 +107,100 @@ export async function verifyCredentials(email: string, password: string) {
   if (!valid || !user.passwordHash) throw new InvalidCredentialsError();
 
   return applySuperadminBootstrap(user);
+}
+
+// Google's signing keys, fetched lazily and cached/rotated by jose.
+const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
+const GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"];
+
+type GoogleIdentity = { sub: string; email: string; emailVerified: boolean; name?: string };
+
+/** Verifies a Google Identity Services ID token: signature against Google's
+ * JWKS, issuer, audience (our client ID) and expiry. Anything off is the
+ * same opaque error — the client can only retry. */
+async function verifyGoogleCredential(credential: string): Promise<GoogleIdentity> {
+  if (!env.GOOGLE_CLIENT_ID) throw new GoogleLoginNotConfiguredError();
+
+  let payload;
+  try {
+    ({ payload } = await jwtVerify(credential, GOOGLE_JWKS, {
+      issuer: GOOGLE_ISSUERS,
+      audience: env.GOOGLE_CLIENT_ID,
+    }));
+  } catch {
+    throw new InvalidGoogleCredentialError();
+  }
+
+  const { sub, email, email_verified: emailVerified, name } = payload as Record<string, unknown>;
+  if (typeof sub !== "string" || !sub || typeof email !== "string" || !email) {
+    throw new InvalidGoogleCredentialError();
+  }
+  return {
+    sub,
+    email: email.trim().toLowerCase(),
+    emailVerified: emailVerified === true || emailVerified === "true",
+    name: typeof name === "string" ? name : undefined,
+  };
+}
+
+function nameFromGoogle(identity: GoogleIdentity) {
+  const candidate = (identity.name ?? identity.email.split("@")[0] ?? "").trim().slice(0, 120);
+  return candidate.length >= 2 ? candidate : "Artista";
+}
+
+/** "Continuar com Google": an account already linked to this Google user
+ * wins; otherwise an existing account with the same e-mail is linked — but
+ * only when Google vouches for the address (email_verified), or anyone
+ * could take over an account by registering its e-mail at Google first;
+ * otherwise a password-less account is created. */
+export async function loginWithGoogle(credential: string): Promise<{ user: User; isNewUser: boolean }> {
+  const identity = await verifyGoogleCredential(credential);
+
+  const linked = await prisma.user.findUnique({ where: { googleId: identity.sub } });
+  if (linked) return { user: await applySuperadminBootstrap(linked), isNewUser: false };
+
+  const byEmail = await prisma.user.findUnique({ where: { email: identity.email } });
+  if (byEmail) {
+    // Unverified address, or the account is already tied to a different
+    // Google user: never merge.
+    if (!identity.emailVerified || byEmail.googleId) throw new EmailAlreadyInUseError();
+    const user = await prisma.user.update({ where: { id: byEmail.id }, data: { googleId: identity.sub } });
+    return { user: await applySuperadminBootstrap(user), isNewUser: false };
+  }
+
+  try {
+    const user = await prisma.user.create({
+      data: { name: nameFromGoogle(identity), email: identity.email, googleId: identity.sub, passwordHash: null },
+    });
+    return { user: await applySuperadminBootstrap(user), isNewUser: true };
+  } catch (error) {
+    // Double-submitted credential racing itself: the other request created it.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new EmailAlreadyInUseError();
+    }
+    throw error;
+  }
+}
+
+export async function updateProfile(userId: string, input: { name: string }) {
+  return prisma.user.update({ where: { id: userId }, data: { name: input.name } });
+}
+
+/** Sets the first password (Google-only account) or changes the existing
+ * one — then the current password is required. Every other session is
+ * signed out; the caller hands the requester a fresh pair. */
+export async function changePassword(userId: string, input: { currentPassword?: string; newPassword: string }) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+  if (user.passwordHash) {
+    const valid = await bcrypt.compare(input.currentPassword ?? "", user.passwordHash);
+    if (!valid || !input.currentPassword) throw new WrongCurrentPasswordError();
+  }
+
+  const passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
+  const updated = await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  await revokeAllUserSessions(user.id);
+  return updated;
 }
 
 type RefreshMeta = { userAgent?: string; ip?: string };

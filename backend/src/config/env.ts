@@ -50,6 +50,11 @@ const envSchema = z
     // Secret from "Suas integrações > Webhooks"; when set, every webhook
     // must carry a valid x-signature or it's rejected with 401.
     MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
+
+    // OAuth client ID (Web) from Google Cloud Console — the audience every
+    // "Continuar com Google" ID token must carry. Unset: /auth/google
+    // answers 503 and the rest of the API works normally.
+    GOOGLE_CLIENT_ID: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.CORS_ORIGINS) {

@@ -24,6 +24,8 @@ type AuthContextValue = {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   login: (email: string, password: string) => Promise<void>;
+  /** Adopts a session obtained elsewhere (e.g. "Continuar com Google"). */
+  signInWithSession: (session: { user: SiteUser; accessToken: string; refreshToken: string }) => void;
   logout: () => void;
 };
 
@@ -100,6 +102,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signInWithSession = useCallback(
+    (session: { user: SiteUser; accessToken: string; refreshToken: string }) => {
+      const nextTokens = { accessToken: session.accessToken, refreshToken: session.refreshToken };
+      setUser(session.user);
+      setTokens(nextTokens);
+      writeStoredTokens(nextTokens);
+      setLoginError(null);
+      setStatus("authenticated");
+      setLoginModalOpen(false);
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     if (tokens) logoutRequest(tokens.refreshToken);
     setUser(null);
@@ -120,9 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       closeLoginModal: () => setLoginModalOpen(false),
       login,
+      signInWithSession,
       logout,
     }),
-    [status, user, loginError, loginModalOpen, login, logout],
+    [status, user, loginError, loginModalOpen, login, signInWithSession, logout],
   );
 
   return (
