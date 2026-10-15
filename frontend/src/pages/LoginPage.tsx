@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@presskit/shared";
@@ -48,6 +48,9 @@ export function LoginPage() {
           <Label>Senha</Label>
           <Input type="password" autoComplete="current-password" {...register("password")} />
           <FieldError>{errors.password?.message}</FieldError>
+          <Link to="/esqueci-senha" className="mt-2 inline-block text-sm font-bold text-fg-muted hover:text-fg">
+            Esqueci minha senha
+          </Link>
         </div>
         <FieldError>{serverError}</FieldError>
         <Button type="submit" disabled={isSubmitting} className="w-full py-3.5 text-base font-extrabold">

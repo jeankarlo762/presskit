@@ -17,6 +17,7 @@ import {
   type Paginated,
 } from "@presskit/shared";
 import { isBillingConfigured, isWebhookSecretConfigured } from "../billing/mercadopago";
+import { isEmailConfigured } from "../../shared/mailer";
 
 export class UserNotFoundError extends Error {
   constructor() {
@@ -368,6 +369,7 @@ export async function getOverview(): Promise<AdminOverview> {
       last30Days: feedbackLast30,
       averageRating: feedbackRating._avg.rating ? Math.round(feedbackRating._avg.rating * 10) / 10 : null,
     },
+    system: { emailConfigured: isEmailConfigured() },
     series: {
       signupsLast30Days: toSeries(signupRows, since30, 30),
       revenueLast30Days: toSeries(revenueRows, since30, 30),

@@ -19,14 +19,19 @@ function tabClassName({ isActive }: { isActive: boolean }) {
 }
 
 type Props = {
-  onGoogleSuccess: Parameters<typeof GoogleSignInButton>[0]["onSuccess"];
-  onGoogleError: (message: string) => void;
+  /** Omit both Google handlers to hide the Google button (e.g. the
+   * password-recovery screen, where signing in with Google makes no sense). */
+  onGoogleSuccess?: Parameters<typeof GoogleSignInButton>[0]["onSuccess"];
+  onGoogleError?: (message: string) => void;
+  /** Hides the "Criar conta / Entrar" tabs for flows that are neither. */
+  hideTabs?: boolean;
   children: ReactNode;
 };
 
-/** Split screen shared by /login and /signup: brand panel on the left (on
- * top on phones), tabs + Google + e-mail form on the right. */
-export function AuthLayout({ onGoogleSuccess, onGoogleError, children }: Props) {
+/** Split screen shared by /login, /signup and /esqueci-senha: brand panel
+ * on the left (on top on phones), tabs + Google + e-mail form on the right. */
+export function AuthLayout({ onGoogleSuccess, onGoogleError, hideTabs = false, children }: Props) {
+  const showGoogle = Boolean(GOOGLE_CLIENT_ID && onGoogleSuccess && onGoogleError);
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg lg:flex-row">
       <aside className="flex flex-col justify-between gap-8 bg-[#2A1B2E] px-6 py-8 sm:px-12 sm:py-12 lg:w-[45%] lg:max-w-[620px]">
@@ -46,16 +51,18 @@ export function AuthLayout({ onGoogleSuccess, onGoogleError, children }: Props) 
 
       <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-12">
         <div className="flex w-full max-w-[400px] flex-col gap-5">
-          <nav className="flex gap-1.5 rounded-xl bg-bg-elevated p-1" aria-label="Entrar ou criar conta">
-            <NavLink to="/signup" className={tabClassName}>
-              Criar conta
-            </NavLink>
-            <NavLink to="/login" className={tabClassName}>
-              Entrar
-            </NavLink>
-          </nav>
+          {!hideTabs && (
+            <nav className="flex gap-1.5 rounded-xl bg-bg-elevated p-1" aria-label="Entrar ou criar conta">
+              <NavLink to="/signup" className={tabClassName}>
+                Criar conta
+              </NavLink>
+              <NavLink to="/login" className={tabClassName}>
+                Entrar
+              </NavLink>
+            </nav>
+          )}
 
-          {GOOGLE_CLIENT_ID && (
+          {showGoogle && onGoogleSuccess && onGoogleError && (
             <>
               <GoogleSignInButton onSuccess={onGoogleSuccess} onError={onGoogleError} />
               <div className="flex items-center gap-3 text-[13px] text-fg-muted">

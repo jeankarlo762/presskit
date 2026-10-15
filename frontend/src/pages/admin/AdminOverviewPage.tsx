@@ -148,8 +148,14 @@ export function AdminOverviewPage() {
         <p className="text-sm text-fg-muted">{error ? "" : "Carregando..."}</p>
       ) : (
         <>
-          {(!data.billing.checkoutConfigured || !data.billing.webhookSecretConfigured) && (
+          {(!data.billing.checkoutConfigured || !data.billing.webhookSecretConfigured || !data.system.emailConfigured) && (
             <div className="flex flex-col gap-1 rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+              {!data.system.emailConfigured && (
+                <p className="flex items-center gap-2">
+                  <AlertTriangle size={16} /> E-mail sem transporte configurado (RESEND_API_KEY ou SMTP_*) — "esqueci
+                  minha senha" não consegue enviar o código.
+                </p>
+              )}
               {!data.billing.checkoutConfigured && (
                 <p className="flex items-center gap-2">
                   <AlertTriangle size={16} /> Mercado Pago sem access token — ninguém consegue assinar ainda.

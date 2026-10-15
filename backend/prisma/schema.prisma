@@ -114,6 +114,7 @@ model User {
   subscriptions Subscription[]
   payments      Payment[]
   feedbacks     Feedback[]
+  passwordResetCodes PasswordResetCode[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -403,3 +404,20 @@ model PageView {
   @@index([presskitId, trackableLinkId])
 }
 
+
+/// One-time 6-digit codes for "esqueci minha senha". Only the hash is
+/// stored; the code itself exists in the e-mail and nowhere else. A new
+/// request consumes any previous unconsumed code for that user.
+model PasswordResetCode {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, consumedAt])
+}

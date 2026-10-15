@@ -8,6 +8,7 @@ import { prisma } from "./config/prisma";
 import { errorHandler } from "./middlewares/errorHandler";
 import authenticatePlugin from "./middlewares/authenticate";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { passwordResetRoutes } from "./modules/auth/passwordReset.routes";
 import { presskitRoutes } from "./modules/presskit/presskit.routes";
 import { sectionRoutes } from "./modules/sections/section.routes";
 import { mediaRoutes } from "./modules/media/media.routes";
@@ -75,6 +76,7 @@ async function buildServer() {
   fastify.get("/health", async () => ({ status: "ok" }));
 
   await fastify.register(authRoutes);
+  await fastify.register(passwordResetRoutes);
   await fastify.register(presskitRoutes);
   await fastify.register(sectionRoutes);
   await fastify.register(mediaRoutes);

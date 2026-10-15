@@ -36,3 +36,15 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres").max(72),
 });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  code: z.string().trim().regex(/^\d{6}$/, "o código tem 6 dígitos"),
+  password: z.string().min(8, "mínimo de 8 caracteres").max(72),
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

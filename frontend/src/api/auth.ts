@@ -51,3 +51,11 @@ export async function changePassword(input: { currentPassword?: string; newPassw
   const { data } = await api.post<AuthResponse>("/auth/password", input);
   return data;
 }
+
+export async function requestPasswordReset(email: string) {
+  await api.post("/auth/forgot-password", { email });
+}
+
+export async function resetPassword(input: { email: string; code: string; password: string }) {
+  await api.post("/auth/reset-password", input);
+}

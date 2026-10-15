@@ -55,6 +55,17 @@ const envSchema = z
     // "Continuar com Google" ID token must carry. Unset: /auth/google
     // answers 503 and the rest of the API works normally.
     GOOGLE_CLIENT_ID: z.string().optional(),
+
+    // E-mail (código de "esqueci minha senha"). Either Resend (preferred,
+    // plain HTTPS) or any SMTP server; neither set = console in dev, error
+    // in production.
+    RESEND_API_KEY: z.string().optional(),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: z.coerce.boolean().default(false),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    EMAIL_FROM: z.string().default("PressKit.AI <no-reply@presskitai.com.br>"),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.CORS_ORIGINS) {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PUBLIC_API_URL } from "../../lib/urls";
 import type { SiteUser } from "../../lib/auth-client";
 import { useAuth } from "./AuthProvider";
+import { DASHBOARD_URL } from "../../lib/urls";
 
 // --- Google Identity Services (minimal typing + one-time loader) ----------
 
@@ -202,6 +203,10 @@ export function LoginModal() {
           </label>
 
           {loginError && <p className="text-sm text-accent">{loginError}</p>}
+
+          <a href={`${DASHBOARD_URL}/esqueci-senha`} className="text-xs text-fg-muted hover:text-fg">
+            Esqueci minha senha
+          </a>
 
           <button
             type="submit"

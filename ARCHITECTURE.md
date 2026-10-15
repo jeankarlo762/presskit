@@ -176,6 +176,18 @@ Configuração no MP: criar a aplicação, pegar o access token (teste → produ
 "Suas integrações › Webhooks", apontar para `https://<api>/webhooks/mercadopago` com os três
 tópicos acima; a chave secreta gerada vai em `MERCADOPAGO_WEBHOOK_SECRET`.
 
+## Esqueci minha senha
+
+`POST /auth/forgot-password` (3/min/IP) responde **202 sempre** — exista a conta ou não, tenha
+o e-mail saído ou não — para não revelar quais e-mails estão cadastrados. Quando a conta
+existe, gera um código de 6 dígitos (`crypto.randomInt`), guarda só o hash
+(`sha256(userId:code)`) em `PasswordResetCode` com validade de 15 min, invalida códigos
+anteriores e ignora novos pedidos por 60 s. `POST /auth/reset-password` compara o hash em
+tempo constante, permite 5 tentativas por código, troca a senha e **revoga todos os refresh
+tokens** do usuário. Envio via `shared/mailer.ts`: Resend (`RESEND_API_KEY`) ou SMTP
+(`SMTP_*`); sem nenhum dos dois, dev imprime no console e produção loga erro (o painel admin
+avisa). Tela: `/esqueci-senha` no dashboard; a landing só linka para ela.
+
 ## Feedback
 
 `POST /feedback` (usuário autenticado, 5/min) grava tipo, nota 1–5 opcional e mensagem;

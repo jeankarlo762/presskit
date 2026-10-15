@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { DashboardHomePage } from "./pages/DashboardHomePage";
 import { CustomizePage } from "./pages/customize/CustomizePage";
@@ -39,6 +40,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
         <Route
           path="/onboarding"
           element={

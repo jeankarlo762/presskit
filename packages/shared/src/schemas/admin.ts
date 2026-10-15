@@ -125,6 +125,8 @@ export type AdminOverview = {
     webhookSecretConfigured: boolean;
   };
   feedback: { open: number; last30Days: number; averageRating: number | null };
+  /** Operational readiness flags the operator must act on. */
+  system: { emailConfigured: boolean };
   series: {
     signupsLast30Days: DailyPoint[];
     revenueLast30Days: DailyPoint[];
