@@ -22,6 +22,7 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { billingRoutes } from "./modules/billing/billing.routes";
 import { webhookRoutes } from "./modules/billing/webhook.routes";
 import { feedbackRoutes } from "./modules/feedback/feedback.routes";
+import { storageRoutes } from "./modules/storage/storage.routes";
 import { runBillingHousekeeping } from "./modules/billing/billing.service";
 
 const HOUSEKEEPING_INTERVAL_MS = 60 * 60 * 1000;
@@ -63,7 +64,11 @@ async function buildServer() {
     global: true,
     max: 600,
     timeWindow: "1 minute",
-    allowList: (request) => request.url === "/health" || request.url.startsWith("/webhooks/"),
+    // /media/* is excluded too: one presskit page can request dozens of
+    // images at once, and they're immutable/cached — not a resource worth
+    // metering per IP.
+    allowList: (request) =>
+      request.url === "/health" || request.url.startsWith("/webhooks/") || request.url.startsWith("/media/"),
   });
   await fastify.register(authenticatePlugin);
 
@@ -90,6 +95,7 @@ async function buildServer() {
   await fastify.register(billingRoutes);
   await fastify.register(webhookRoutes);
   await fastify.register(feedbackRoutes);
+  await fastify.register(storageRoutes);
 
   return fastify;
 }

@@ -245,6 +245,18 @@ Projeto `presskit`, quatro serviços a partir do mesmo repositório (root = raiz
   e os `package*.json` da raiz), para um push só redeployar o que mudou.
 - `railway.json` (config-as-code) está **deprecado** no Railway — a configuração vive nas
   settings de cada serviço (aplicadas via API/dashboard).
+- **Imagens (galeria e fundo)**: bucket S3 do Railway `presskit-media` (região sjc, criado com
+  `railway bucket create`). As variáveis `STORAGE_ENDPOINT` / `R2_*` do backend vêm de
+  `railway bucket credentials` — o nome `R2_*` é histórico, vale para qualquer S3. Upload é
+  direto do navegador com URL pré-assinada (o bucket tem CORS para `app.presskitai.com.br`,
+  o domínio provisório e `localhost:5173`). **Buckets do Railway são privados** (GET anônimo
+  → 403), então a leitura pública é a rota `GET /media/<chave>` do backend
+  ([storage.routes.ts](backend/src/modules/storage/storage.routes.ts)), que faz stream do
+  objeto com `Cache-Control: immutable`; `R2_PUBLIC_BASE_URL=https://api.presskitai.com.br/media`
+  é o prefixo gravado nas URLs. Só chaves `presskits/<id>/(gallery|theme-bg)/…` são servidas.
+- **Domínios**: `presskitai.com.br` + `www` → landing (página pública em `/<slug>`),
+  `app.presskitai.com.br` → painel, `api.presskitai.com.br` → backend. O plano Hobby permite 2
+  domínios personalizados por serviço.
 - **E-mail**: o Railway bloqueia SMTP de saída, então entrega real só por API HTTPS
   (`RESEND_API_KEY`). Enquanto o Resend não está configurado, o serviço `mailpit`
   (template oficial, volume em `/data`) recebe tudo pela rede privada

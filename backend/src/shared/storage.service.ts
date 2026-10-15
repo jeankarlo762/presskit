@@ -1,4 +1,11 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import type { Readable } from "node:stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../config/env";
 import { generateOpaqueToken } from "./crypto";
@@ -121,6 +128,21 @@ export async function assertImageObjectExists(storageKey: string) {
     await deleteImageObject(storageKey);
     throw new UploadNotFoundError();
   }
+}
+
+/** Streams an object for the public /media route. Throws for a missing key
+ * (callers answer 404) — the bucket is private, this is the only read path. */
+export async function getImageObject(storageKey: string) {
+  const client = getClient();
+  const object = await client.send(new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
+  if (!object.Body) throw new UploadNotFoundError();
+  const extension = storageKey.split(".").pop()?.toLowerCase() ?? "";
+  return {
+    body: object.Body as Readable,
+    contentType: object.ContentType ?? CONTENT_TYPE_BY_EXTENSION[extension] ?? "application/octet-stream",
+    contentLength: object.ContentLength,
+    etag: object.ETag,
+  };
 }
 
 export async function deleteImageObject(storageKey: string) {
