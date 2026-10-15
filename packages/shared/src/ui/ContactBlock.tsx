@@ -14,7 +14,9 @@ const SOCIAL_LABELS: Record<string, string> = {
 };
 
 export function ContactBlock({ title, data }: { title: string; data: ContactSectionData }) {
-  const hasContent = data.email || data.phone || data.socialLinks.length > 0;
+  // A section nobody has filled in yet arrives as data = {}.
+  const socialLinks = data.socialLinks ?? [];
+  const hasContent = data.email || data.phone || socialLinks.length > 0;
   if (!hasContent) return null;
 
   return (
@@ -28,9 +30,9 @@ export function ContactBlock({ title, data }: { title: string; data: ContactSect
         )}
         {data.phone && <span>{data.phone}</span>}
       </div>
-      {data.socialLinks.length > 0 && (
+      {socialLinks.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {data.socialLinks.map((link) => (
+          {socialLinks.map((link) => (
             <a
               key={link.url}
               href={link.url}

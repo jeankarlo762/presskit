@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle, ExternalLink, Monitor, Palette, Smartphone } from "lucide-react";
 import {
@@ -89,6 +89,18 @@ export function DashboardHomePage() {
 
   useEffect(() => setPreviewSections(sections), [sections]);
 
+  // A freshly created section carries data = {}, not null, so fill in the
+  // defaults. Memoized on `sections`: the forms reset() whenever `initial`
+  // changes identity, so a new object per render would wipe what's typed.
+  const bioData = useMemo<BioSectionData>(
+    () => ({ ...EMPTY_BIO, ...(sections.find((s) => s.type === "BIO")?.data as Partial<BioSectionData> | null) }),
+    [sections],
+  );
+  const contactData = useMemo<ContactSectionData>(
+    () => ({ ...EMPTY_CONTACT, ...(sections.find((s) => s.type === "CONTACT")?.data as Partial<ContactSectionData> | null) }),
+    [sections],
+  );
+
   async function handleTogglePublish() {
     if (!presskit) return;
     setPublishBusy(true);
@@ -108,8 +120,6 @@ export function DashboardHomePage() {
   const videoSection = sections.find((s) => s.type === "VIDEO");
   const tourDatesSection = sections.find((s) => s.type === "TOUR_DATES");
 
-  const bioData = (bioSection?.data as BioSectionData) ?? EMPTY_BIO;
-  const contactData = (contactSection?.data as ContactSectionData) ?? EMPTY_CONTACT;
 
   // Spread the presskit so every theme field it carries (template, heading
   // font, button style…) reaches the preview without listing each one here.
