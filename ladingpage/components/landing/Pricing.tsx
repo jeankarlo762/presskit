@@ -1,68 +1,79 @@
 import { Check } from "lucide-react";
-import { BILLING_PLAN_LIST, cycleTotalCents, formatBRL } from "@presskit/shared";
-import { Container, Eyebrow, GradientButton, SectionHeading } from "./ui";
+import { BILLING_PLAN_LIST, cycleTotalCents, type BillingPlan } from "@presskit/shared";
+import { ButtonLink, Container, SectionHeading } from "./ui";
 import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
+
+/** "R$ 59" for whole amounts, "R$ 59,90" otherwise — the cards read cleaner without ",00". */
+function formatPrice(cents: number): string {
+  const whole = cents % 100 === 0;
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  });
+}
+
+function cycleSummary(plan: BillingPlan): string {
+  const total = formatPrice(cycleTotalCents(plan.cycle));
+  const period = plan.months === 12 ? "por ano" : `a cada ${plan.months} meses`;
+  return [`${total} ${period}`, plan.savingsLabel].filter(Boolean).join(" · ");
+}
 
 export function Pricing() {
   return (
-    <section id="planos" className="border-t border-border py-24">
-      <Container>
-        <Eyebrow>planos</Eyebrow>
-        <SectionHeading className="max-w-2xl">
-          Quanto mais tempo, <span className="text-gradient-brand">mais barato</span>
-        </SectionHeading>
-        <p className="mt-4 max-w-lg font-[family-name:var(--font-body)] text-sm text-fg-muted">
-          Sem taxa escondida. Renovação automática pelo Mercado Pago, cancelamento simples, e você decide o que
-          acontece com seu press kit se o plano expirar.
-        </p>
+    <section id="planos" className="border-t border-line bg-band">
+      <Container className="flex flex-col gap-8 py-16 sm:py-[72px]">
+        <div className="flex flex-col gap-2.5">
+          <SectionHeading>Um show paga o ano inteiro</SectionHeading>
+          <p className="text-[17px] text-soft">
+            Comece com 14 dias de PRO grátis. Depois escolha o plano, no Pix ou no cartão.
+          </p>
+        </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {BILLING_PLAN_LIST.map((plan) => (
-            <div
+            <li
               key={plan.cycle}
-              className={`relative rounded-2xl border p-8 ${
-                plan.popular
-                  ? "border-magenta bg-bg-elevated shadow-[0_0_60px_-20px_rgba(225,29,156,0.5)]"
-                  : "border-border bg-bg-elevated/50"
+              className={`flex flex-col gap-3.5 rounded-[18px] bg-surface p-7 ${
+                plan.popular ? "border-2 border-action" : "border border-line"
               }`}
             >
-              {plan.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-violet to-magenta px-4 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                  Mais popular
-                </span>
-              )}
-              <h3 className="font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
-                {plan.label}
-              </h3>
-              <p className="mt-1 text-sm text-fg-muted">Ciclo de {plan.months} meses</p>
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="font-[family-name:var(--font-display)] text-5xl">
-                  {formatBRL(plan.monthlyPriceCents)}
-                </span>
-                <span className="text-sm text-fg-muted">/mês</span>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-extrabold">{plan.label}</h3>
+                {plan.popular && (
+                  <span className="rounded-full bg-action px-2.5 py-1 text-xs font-extrabold text-white">
+                    Mais escolhido
+                  </span>
+                )}
               </div>
-              <p className="mt-1 text-xs text-fg-muted">
-                {formatBRL(cycleTotalCents(plan.cycle))} a cada {plan.months} meses
+              <p className="flex items-baseline gap-1.5">
+                <span className="font-display text-[52px] leading-none">{formatPrice(plan.monthlyPriceCents)}</span>
+                <span className="text-[15px] text-muted">/mês</span>
               </p>
-              {plan.savingsLabel && <p className="mt-1 text-sm font-semibold text-yellow">{plan.savingsLabel}</p>}
-              <ul className="mt-6 flex flex-col gap-3">
+              <p className="text-sm text-muted">{cycleSummary(plan)}</p>
+              <ButtonLink
+                href={`${DASHBOARD_SIGNUP_URL}?plano=${plan.cycle.toLowerCase()}`}
+                variant={plan.popular ? "primary" : "outline"}
+                aria-label={`Começar teste grátis — plano ${plan.label.toLowerCase()}`}
+              >
+                Começar teste grátis
+              </ButtonLink>
+              <ul className="flex flex-col gap-2 text-sm text-soft">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm text-fg-muted">
-                    <Check size={16} className="mt-0.5 shrink-0 text-violet" />
+                  <li key={feature} className="flex items-start gap-2">
+                    <Check size={16} aria-hidden className="mt-0.5 shrink-0 text-accent" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <GradientButton
-                href={`${DASHBOARD_SIGNUP_URL}?plano=${plan.cycle.toLowerCase()}`}
-                variant={plan.popular ? "solid" : "outline"}
-                className="mt-8 w-full"
-              >
-                Escolher {plan.label.toLowerCase()}
-              </GradientButton>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
+
+        <p className="text-sm text-muted">
+          Plano grátis disponível para sempre, com marca d&apos;água e 1 link rastreável.
+        </p>
       </Container>
     </section>
   );

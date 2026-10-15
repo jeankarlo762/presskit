@@ -6,41 +6,62 @@
 @source "../../packages/shared/src";
 
 :root {
-  --bg: #08070a;
-  --bg-elevated: #121016;
-  --bg-elevated-2: #1a1620;
-  --fg: #f5f5f5;
-  --fg-muted: #a8a3ad;
-  --border: rgba(255, 255, 255, 0.08);
+  --bg: #0b0a0d;
+  --band: #111014;
+  --surface: #15131a;
+  --surface-2: #1e1b24;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --fg: #f4f2f7;
+  --muted: #a9a3b3;
+  --soft: #c9c4d1;
+  /* Solid action color: white text on it is 5.4:1. On the dark background it
+     only passes for large text, so small accent text uses --accent instead. */
+  --action: #c8128a;
+  --action-hover: #b00f79;
+  --accent: #f472c8;
 
-  --violet: #8b5cf6;
-  --magenta: #e11d9c;
-  --orange: #f97316;
-  --yellow: #facc15;
-
-  --brand-gradient: linear-gradient(135deg, var(--violet) 0%, var(--magenta) 100%);
-  --brand-gradient-warm: linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+  /* next/font exposes --font-anton / --font-manrope on <html>; these aliases
+     keep `font-[family-name:var(--font-display)]` working for older markup. */
+  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
+  --font-body: var(--font-manrope), system-ui, sans-serif;
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-elevated-2: var(--bg-elevated-2);
+  --color-band: var(--band);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-fg: var(--fg);
-  --color-fg-muted: var(--fg-muted);
-  --color-border: var(--border);
-  --color-violet: var(--violet);
-  --color-magenta: var(--magenta);
-  --color-orange: var(--orange);
-  --color-yellow: var(--yellow);
-  --font-display: var(--font-display);
-  --font-editorial: var(--font-editorial);
-  --font-body: var(--font-body);
+  --color-muted: var(--muted);
+  --color-soft: var(--soft);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-accent: var(--accent);
+
+  /* Legacy aliases still used by LoginModal / UserMenu. */
+  --color-bg-elevated: var(--surface);
+  --color-bg-elevated-2: var(--surface-2);
+  --color-border: var(--line);
+  --color-fg-muted: var(--muted);
+  --color-violet: var(--action);
+  --color-magenta: var(--accent);
+
+  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -48,82 +69,7 @@ body {
   color: var(--fg);
 }
 
-/* Subtle film-grain noise over the whole page — brand texture, not decoration
-   you're meant to consciously notice. SVG feTurbulence beats a bitmap here:
-   no asset to ship, scales to any viewport, ~200 bytes. */
-.grain-overlay {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-}
-
-.text-gradient-brand {
-  background: var(--brand-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient-warm {
-  background: var(--brand-gradient-warm);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.glow-violet {
-  box-shadow: 0 0 80px -20px rgba(139, 92, 246, 0.5);
-}
-
-.glow-magenta {
-  box-shadow: 0 0 80px -20px rgba(225, 29, 156, 0.5);
-}
-
-/* Glitch: two duplicated text layers jitter on independent clip-paths.
-   Triggered by adding .is-glitching (hover or in-view), not permanently
-   animating — constant glitch reads as broken, not stylish. */
-@keyframes glitch-1 {
-  0%, 100% { clip-path: inset(0 0 90% 0); transform: translate(0, 0); }
-  20% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, 1px); }
-  40% { clip-path: inset(40% 0 30% 0); transform: translate(2px, -1px); }
-  60% { clip-path: inset(70% 0 5% 0); transform: translate(-1px, 2px); }
-  80% { clip-path: inset(20% 0 70% 0); transform: translate(1px, -2px); }
-}
-@keyframes glitch-2 {
-  0%, 100% { clip-path: inset(90% 0 0 0); transform: translate(0, 0); }
-  20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
-  40% { clip-path: inset(30% 0 40% 0); transform: translate(-2px, 1px); }
-  60% { clip-path: inset(5% 0 70% 0); transform: translate(1px, -2px); }
-  80% { clip-path: inset(70% 0 20% 0); transform: translate(-1px, 2px); }
-}
-.glitch-hover {
-  position: relative;
-}
-.glitch-hover::before,
-.glitch-hover::after {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-.glitch-hover:hover::before,
-.glitch-hover:hover::after {
-  opacity: 1;
-}
-.glitch-hover:hover::before {
-  color: var(--magenta);
-  animation: glitch-1 420ms steps(2, jump-none) infinite;
-}
-.glitch-hover:hover::after {
-  color: var(--violet);
-  animation: glitch-2 420ms steps(2, jump-none) infinite;
-}
-
-@keyframes waveform-pulse {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }

@@ -1,17 +1,22 @@
-import { Container, Eyebrow, SectionHeading } from "./ui";
+import { Plus } from "lucide-react";
+import { Container, SectionHeading } from "./ui";
 
 const FAQS = [
   {
+    q: "Preciso de cartão pra testar?",
+    a: "Não. Você cria a conta e ganha 14 dias de PRO grátis, sem cadastrar cartão. No fim do teste, escolhe um plano ou continua no plano grátis.",
+  },
+  {
     q: "Preciso saber design pra usar?",
-    a: "Não. Você responde algumas perguntas e a IA monta o texto e o layout — dá pra editar depois se quiser ajustar.",
+    a: "Não. Você escolhe sua categoria, cola seus links e o presskit se monta sozinho — dá pra editar tudo depois se quiser ajustar.",
   },
   {
     q: "Posso cancelar quando quiser?",
     a: "Sim, o cancelamento é simples e direto no painel, sem burocracia e sem multa.",
   },
   {
-    q: "O que acontece com meu press kit se o plano expirar?",
-    a: "Seu material fica salvo. O link público e algumas funções ficam pausados até você reativar um plano.",
+    q: "O que acontece com meu presskit se o plano expirar?",
+    a: "Nada é apagado. Seu presskit continua no ar no plano grátis, com marca d'água e 1 link rastreável, e os recursos PRO voltam assim que você reativar um plano.",
   },
   {
     q: "Meus dados e material ficam seguros?",
@@ -19,30 +24,27 @@ const FAQS = [
   },
   {
     q: "Dá pra usar em mais de um idioma?",
-    a: "Dá. Seu press kit pode ser gerado em português, inglês e espanhol.",
+    a: "Dá. Seu presskit pode ser gerado em português, inglês e espanhol.",
   },
 ];
 
 export function FAQ() {
   return (
-    <section id="faq" className="border-t border-border py-24">
-      <Container className="max-w-3xl">
-        <Eyebrow>perguntas frequentes</Eyebrow>
-        <SectionHeading>
-          Ainda com <span className="text-gradient-brand">dúvida?</span>
-        </SectionHeading>
-        <div className="mt-12 flex flex-col divide-y divide-border">
+    <section id="faq" className="border-t border-line">
+      <Container className="flex max-w-[880px] flex-col gap-8 py-16 sm:py-[72px]">
+        <SectionHeading>Perguntas frequentes</SectionHeading>
+        <div className="flex flex-col gap-3">
           {FAQS.map((item) => (
-            <details key={item.q} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-[family-name:var(--font-display)] text-lg uppercase tracking-tight">
+            <details key={item.q} className="group rounded-2xl border border-line bg-surface">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 text-lg font-extrabold [&::-webkit-details-marker]:hidden">
                 {item.q}
-                <span className="ml-4 shrink-0 text-2xl text-fg-muted transition-transform group-open:rotate-45">
-                  +
-                </span>
+                <Plus
+                  size={22}
+                  aria-hidden
+                  className="shrink-0 text-accent transition-transform group-open:rotate-45"
+                />
               </summary>
-              <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-fg-muted">
-                {item.a}
-              </p>
+              <p className="px-6 pb-6 text-[15px] leading-relaxed text-soft">{item.a}</p>
             </details>
           ))}
         </div>
