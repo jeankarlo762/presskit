@@ -24,13 +24,17 @@ const dmSerifDisplay = DM_Serif_Display({ subsets: ["latin"], weight: ["400"] })
 const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: ["400"] });
 const oswald = Oswald({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-export const FONT_CLASS_NAME: Record<FontKey, string> = {
-  inter: inter.className,
-  poppins: poppins.className,
-  space_grotesk: spaceGrotesk.className,
-  playfair_display: playfairDisplay.className,
-  lora: lora.className,
-  dm_serif_display: dmSerifDisplay.className,
-  bebas_neue: bebasNeue.className,
-  oswald: oswald.className,
+/** Generated font-family names (self-hosted @font-face from next/font),
+ * handed to PresskitRenderer, which applies one to the body text and one to
+ * headings/the artist name. Using the family names rather than a wrapper
+ * className is what lets two different fonts be active on the same page. */
+export const FONT_FAMILY: Record<FontKey, string> = {
+  inter: inter.style.fontFamily,
+  poppins: poppins.style.fontFamily,
+  space_grotesk: spaceGrotesk.style.fontFamily,
+  playfair_display: playfairDisplay.style.fontFamily,
+  lora: lora.style.fontFamily,
+  dm_serif_display: dmSerifDisplay.style.fontFamily,
+  bebas_neue: bebasNeue.style.fontFamily,
+  oswald: oswald.style.fontFamily,
 };

@@ -2,10 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { SECTION_TYPES, sectionDataSchemaByType, sectionTitleSchema, type SectionType } from "@presskit/shared";
 import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
-import { listSections, reorderSections, setSectionVisibility, upsertSectionData } from "./section.service";
+import { listSections, renameSection, reorderSections, setSectionVisibility, upsertSectionData } from "./section.service";
 
 const sectionTypeParamSchema = z.object({ type: z.enum(SECTION_TYPES) });
 const visibilitySchema = z.object({ visible: z.boolean() });
+const titleSchema = z.object({ title: sectionTitleSchema });
 const reorderSchema = z.object({ order: z.array(z.enum(SECTION_TYPES)) });
 const sectionUpdateBodySchema = z.object({ data: z.unknown(), title: sectionTitleSchema.optional() });
 
@@ -34,6 +35,15 @@ export async function sectionRoutes(fastify: FastifyInstance) {
 
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
     const section = await setSectionVisibility(presskit.id, type, visible);
+    return reply.send({ section });
+  });
+
+  fastify.patch("/presskit/sections/:type/title", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const { title } = titleSchema.parse(request.body);
+
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const section = await renameSection(presskit.id, type, title);
     return reply.send({ section });
   });
 

@@ -15,6 +15,7 @@ import { galleryRoutes } from "./modules/gallery/gallery.routes";
 import { tourDateRoutes } from "./modules/tourdates/tourdate.routes";
 import { pressRoutes } from "./modules/press/press.routes";
 import { linkRoutes } from "./modules/links/link.routes";
+import { analyticsRoutes } from "./modules/analytics/analytics.routes";
 import { publicRoutes } from "./modules/public/public.routes";
 import { adminRoutes } from "./modules/admin/admin.routes";
 import { billingRoutes } from "./modules/billing/billing.routes";
@@ -81,6 +82,7 @@ async function buildServer() {
   await fastify.register(tourDateRoutes);
   await fastify.register(pressRoutes);
   await fastify.register(linkRoutes);
+  await fastify.register(analyticsRoutes);
   await fastify.register(publicRoutes);
   await fastify.register(adminRoutes);
   await fastify.register(billingRoutes);

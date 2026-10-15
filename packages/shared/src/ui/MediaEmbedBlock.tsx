@@ -18,7 +18,7 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl shadow-sm">
+    <div className="overflow-hidden rounded-[var(--pk-card-radius)]">
       {embed.title && <p className="mb-1 text-sm font-medium">{embed.title}</p>}
       <iframe
         src={parsed.embedSrc}
@@ -39,7 +39,7 @@ export function MediaEmbedBlock({ title, embeds }: { title: string; embeds: Publ
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading>{title}</SectionHeading>
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
         {embeds.map((embed) => (
           <EmbedFrame key={embed.id} embed={embed} />
         ))}

@@ -1,5 +1,6 @@
 import type { TechRiderSectionData } from "../schemas/section";
 import { SectionHeading } from "./SectionHeading";
+import { presskitButtonClass } from "./templates";
 
 export function TechRiderBlock({ title, data }: { title: string; data: TechRiderSectionData }) {
   if (!data.text && !data.pdfUrl) return null;
@@ -15,7 +16,7 @@ export function TechRiderBlock({ title, data }: { title: string; data: TechRider
           href={data.pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-[var(--presskit-accent)] underline underline-offset-2"
+          className={`w-fit ${presskitButtonClass("outline", "sm")}`}
         >
           Baixar rider em PDF
         </a>

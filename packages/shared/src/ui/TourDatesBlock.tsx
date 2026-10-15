@@ -1,5 +1,6 @@
 import type { PublicTourDate } from "../types/publicPresskit";
 import { SectionHeading } from "./SectionHeading";
+import { presskitButtonClass } from "./templates";
 
 // TourDate.date is a date-only value stored as midnight UTC — formatting it
 // with the viewer's local timezone (as toLocaleDateString does by default)
@@ -26,7 +27,7 @@ export function TourDatesBlock({ title, dates }: { title: string; dates: PublicT
       <SectionHeading>{title}</SectionHeading>
       <ul className="flex flex-col divide-y divide-[var(--presskit-border)]">
         {list.map((date) => (
-          <li key={date.id} className="flex items-center justify-between gap-4 py-2 text-sm">
+          <li key={date.id} className="flex items-center justify-between gap-4 py-3 text-sm">
             <div>
               <p className="font-medium">{date.venueName}</p>
               <p className="text-[var(--presskit-muted)]">{date.city}</p>
@@ -38,7 +39,7 @@ export function TourDatesBlock({ title, dates }: { title: string; dates: PublicT
                   href={date.ticketUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="whitespace-nowrap text-[var(--presskit-accent)] underline underline-offset-2"
+                  className={`whitespace-nowrap ${presskitButtonClass("outline", "sm")}`}
                 >
                   Ingressos
                 </a>

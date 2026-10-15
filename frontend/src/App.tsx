@@ -4,11 +4,12 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { DashboardHomePage } from "./pages/DashboardHomePage";
-import { CreateWithAiPage } from "./pages/projeto/CreateWithAiPage";
-import { UploadsPage } from "./pages/projeto/UploadsPage";
-import { ReadyTemplatesPage } from "./pages/projeto/ReadyTemplatesPage";
+import { CustomizePage } from "./pages/customize/CustomizePage";
 import { SubscriptionPage } from "./pages/billing/SubscriptionPage";
 import { FeedbackPage } from "./pages/feedback/FeedbackPage";
+import { SharePage } from "./pages/share/SharePage";
+import { AnalyticsPage } from "./pages/analytics/AnalyticsPage";
+import { AccountPage } from "./pages/account/AccountPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminSubscriptionsRoute } from "./pages/admin/AdminSubscriptionsPage";
@@ -54,11 +55,13 @@ export default function App() {
           }
         >
           <Route path="/" element={<DashboardHomePage />} />
+          <Route path="/personalizar" element={<CustomizePage />} />
+          <Route path="/projeto/modelos-prontos" element={<Navigate to="/personalizar" replace />} />
           <Route path="/assinatura" element={<SubscriptionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/projeto/crie-com-ia" element={<CreateWithAiPage />} />
-          <Route path="/projeto/uploads" element={<UploadsPage />} />
-          <Route path="/projeto/modelos-prontos" element={<ReadyTemplatesPage />} />
+          <Route path="/compartilhar" element={<SharePage />} />
+          <Route path="/quem-abriu" element={<AnalyticsPage />} />
+          <Route path="/conta" element={<AccountPage />} />
 
           <Route path="/admin" element={admin(<AdminOverviewPage />)} />
           <Route path="/admin/usuarios" element={admin(<AdminUsersPage />)} />

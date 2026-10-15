@@ -1,5 +1,5 @@
 import type { ArtistCategory, SectionType } from "../constants/category";
-import type { FontKey } from "../constants/theme";
+import type { ButtonStyle, FontKey } from "../constants/theme";
 import type { MediaProvider } from "../schemas/collections";
 
 /** Shape of what GET /public/presskits/:slug returns after the HTTP+JSON
@@ -62,6 +62,11 @@ export type PublicPresskit = {
   themeTextColor: string;
   themeAccentColor: string;
   themeFontKey: FontKey;
+  /** null/absent = same as themeFontKey. Optional so older callers that
+   * build a preview object by hand keep compiling. */
+  themeHeadingFontKey?: FontKey | null;
+  /** Absent = DEFAULT_BUTTON_STYLE. */
+  themeButtonStyle?: ButtonStyle;
   themeBackgroundImageUrl: string | null;
   sections: PublicSection[];
   mediaEmbeds: PublicMediaEmbed[];

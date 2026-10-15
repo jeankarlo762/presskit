@@ -11,3 +11,4 @@ export * from "./PressBlock";
 export * from "./TechRiderBlock";
 export * from "./CustomBlock";
 export * from "./PresskitRenderer";
+export * from "./templates";

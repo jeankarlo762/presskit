@@ -2,6 +2,7 @@ import { api } from "./axios";
 import type {
   ArtistCategory,
   BioSectionData,
+  ButtonStyle,
   ContactSectionData,
   FontKey,
   MediaEmbedCreateInput,
@@ -29,6 +30,9 @@ export type Presskit = {
   themeTextColor: string;
   themeAccentColor: string;
   themeFontKey: FontKey;
+  /** null = headings use themeFontKey. */
+  themeHeadingFontKey: FontKey | null;
+  themeButtonStyle: ButtonStyle;
   themeBackgroundImageUrl: string | null;
   themeBackgroundImageKey: string | null;
 };
@@ -84,6 +88,12 @@ export async function updateSectionData(
     data: sectionData,
     ...(title !== undefined ? { title } : {}),
   });
+  return data.section;
+}
+
+/** Renames a section without touching its content (works on empty ones). */
+export async function renameSection(section: Pick<Section, "type">, title: string) {
+  const { data } = await api.patch<{ section: Section }>(`/presskit/sections/${section.type}/title`, { title });
   return data.section;
 }
 
@@ -185,4 +195,15 @@ export async function createLink(input: Omit<TrackableLinkInput, "id">) {
 }
 export async function deleteLink(id: string) {
   await api.delete(`/presskit/links/${id}`);
+}
+
+/** True when the API refused because the plan's link quota is used up
+ * (PlanLimitError → 402). */
+export function isPlanLimitError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    (error as { response?: { status?: number } }).response?.status === 402
+  );
 }

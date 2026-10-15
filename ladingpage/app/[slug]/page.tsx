@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { ARTIST_CATEGORY_LABELS, isBotUserAgent } from "@presskit/shared";
 import { PresskitRenderer } from "@presskit/shared/ui";
 import { fetchPublicPresskit, recordPresskitView } from "../../lib/api";
-import { FONT_CLASS_NAME } from "../../lib/fonts";
+import { FONT_FAMILY } from "../../lib/fonts";
 
 const getLookup = cache(async (slug: string) => fetchPublicPresskit(slug));
 
@@ -61,9 +61,5 @@ export default async function PresskitPage(props: PageProps<"/[slug]">) {
     after(() => recordPresskitView(slug, view, userAgent));
   }
 
-  return (
-    <div className={FONT_CLASS_NAME[presskit.themeFontKey]}>
-      <PresskitRenderer presskit={presskit} />
-    </div>
-  );
+  return <PresskitRenderer presskit={presskit} fontFamilies={FONT_FAMILY} />;
 }

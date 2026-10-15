@@ -14,6 +14,7 @@ export * from "./schemas/auth";
 export * from "./schemas/admin";
 export * from "./schemas/billing";
 export * from "./schemas/feedback";
+export * from "./schemas/analytics";
 
 export * from "./media/parseMediaUrl";
 

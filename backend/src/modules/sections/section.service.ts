@@ -38,6 +38,14 @@ export async function setSectionVisibility(presskitId: string, type: SectionType
   return prisma.section.update({ where: { id: existing.id }, data: { visible } });
 }
 
+/** Title-only rename, so an empty section (no bio yet, no contact yet) can
+ * be renamed without first sending content that passes its data schema. */
+export async function renameSection(presskitId: string, type: SectionType, title: string) {
+  const existing = await prisma.section.findUnique({ where: { presskitId_type: { presskitId, type } } });
+  if (!existing) return null;
+  return prisma.section.update({ where: { id: existing.id }, data: { title } });
+}
+
 export async function reorderSections(presskitId: string, order: SectionType[]) {
   const uniqueTypes = new Set(order);
   if (uniqueTypes.size !== order.length || !order.every((type) => SECTION_TYPES.includes(type))) {

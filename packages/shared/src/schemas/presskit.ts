@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ARTIST_CATEGORIES, RESERVED_SLUGS } from "../constants/category";
-import { FONT_KEYS } from "../constants/theme";
+import { BUTTON_STYLES, FONT_KEYS, TEMPLATE_KEYS } from "../constants/theme";
 
 const hexColorSchema = z
   .string()
@@ -29,7 +29,7 @@ export const artistCategorySchema = z.enum(ARTIST_CATEGORIES);
 export const presskitUpdateSchema = z.object({
   slug: slugSchema.optional(),
   category: artistCategorySchema.optional(),
-  templateKey: z.string().trim().min(1).max(60).optional(),
+  templateKey: z.enum(TEMPLATE_KEYS).optional(),
   city: z.string().trim().max(120).optional(),
   state: z.string().trim().max(60).optional(),
   ogTitleOverride: z.string().trim().max(70).optional(),
@@ -38,6 +38,9 @@ export const presskitUpdateSchema = z.object({
   themeTextColor: hexColorSchema.optional(),
   themeAccentColor: hexColorSchema.optional(),
   themeFontKey: z.enum(FONT_KEYS).optional(),
+  /** null = use the body font (themeFontKey) for headings too. */
+  themeHeadingFontKey: z.enum(FONT_KEYS).nullable().optional(),
+  themeButtonStyle: z.enum(BUTTON_STYLES).optional(),
 });
 export type PresskitUpdateInput = z.infer<typeof presskitUpdateSchema>;
 
