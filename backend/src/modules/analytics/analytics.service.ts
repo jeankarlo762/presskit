@@ -42,7 +42,7 @@ export async function getAnalyticsSummary(
   const presskitId = presskit.id;
   const inWindow = { presskitId, createdAt: { gte: since } };
 
-  const [totalViews, uniqueRows, dailyRows, deviceRows, referrerRows, links, linkAllTime, linkWindow] =
+  const [totalViews, uniqueRows, dailyRows, deviceRows, referrerRows, links, linkAllTime, linkWindow, clickRows] =
     await Promise.all([
       prisma.pageView.count({ where: inWindow }),
       prisma.$queryRaw<RawCount[]>`
@@ -73,6 +73,11 @@ export async function getAnalyticsSummary(
       prisma.pageView.groupBy({
         by: ["trackableLinkId"],
         where: { ...inWindow, trackableLinkId: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.linkClick.groupBy({
+        by: ["target"],
+        where: inWindow,
         _count: { _all: true },
       }),
     ]);
@@ -125,5 +130,8 @@ export async function getAnalyticsSummary(
         lastViewAt: stats?._max.createdAt?.toISOString() ?? null,
       };
     }),
+    clicks: clickRows
+      .map((row) => ({ target: row.target, count: row._count._all }))
+      .sort((a, b) => b.count - a.count),
   };
 }

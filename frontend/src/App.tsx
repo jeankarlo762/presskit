@@ -17,6 +17,7 @@ import { AdminSubscriptionsRoute } from "./pages/admin/AdminSubscriptionsPage";
 import { AdminDelinquencyPage } from "./pages/admin/AdminDelinquencyPage";
 import { AdminPaymentsPage } from "./pages/admin/AdminPaymentsPage";
 import { AdminFeedbackPage } from "./pages/admin/AdminFeedbackPage";
+import { AdminDomainsPage } from "./pages/admin/AdminDomainsPage";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/admin/inadimplencia" element={admin(<AdminDelinquencyPage />)} />
           <Route path="/admin/pagamentos" element={admin(<AdminPaymentsPage />)} />
           <Route path="/admin/feedback" element={admin(<AdminFeedbackPage />)} />
+          <Route path="/admin/dominios" element={admin(<AdminDomainsPage />)} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

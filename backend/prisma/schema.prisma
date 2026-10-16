@@ -267,8 +267,49 @@ model Presskit {
   themeButtonStyle        String  @default("ROUNDED")
   themeBackgroundImageUrl String?
   themeBackgroundImageKey String?
+  /// Background fine-tuning: darkening overlay 0–90 (%), blur 0–20 (px),
+  /// focus point, fixed vs scrolling, tiled pattern, and a CSS preset
+  /// (gradient/texture) drawn with the theme colors — see BACKGROUND_PRESETS.
+  themeBackgroundOverlay    Int     @default(55)
+  themeBackgroundBlur       Int     @default(0)
+  themeBackgroundPosition   String  @default("center")
+  themeBackgroundAttachment String  @default("FIXED")
+  themeBackgroundRepeat     Boolean @default(false)
+  themeBackgroundPreset     String  @default("none")
+
+  /// Identity images, each with its storage key so removal can delete the
+  /// object. Cover = hero/banner (distinct from the page background),
+  /// avatar = round portrait, logo = replaces the artist name as text.
+  coverImageUrl  String?
+  coverImageKey  String?
+  avatarImageUrl String?
+  avatarImageKey String?
+  logoImageUrl   String?
+  logoImageKey   String?
+
+  /// YouTube/Vimeo link rendered muted + looping as the hero background.
+  heroVideoUrl String?
+
+  /// WhatsApp floating button: number in international digits (5511…) and
+  /// the pre-filled message.
+  whatsappNumber  String?
+  whatsappMessage String?
+
+  /// Icon row under the header: [{ platform, url, label? }] (QUICK_LINK_PLATFORMS).
+  quickLinks Json @default("[]")
+
+  /// Languages the public page offers; "pt" is always present. English
+  /// content lives in Section.titleEn / Section.dataEn.
+  languages String[] @default(["pt"])
+
+  /// Artist-owned domain pointing at this presskit. PENDING until the
+  /// operator confirms the DNS/CNAME is live (ACTIVE); the landing resolves
+  /// the request host through GET /public/domains/:host.
+  customDomain       String? @unique
+  customDomainStatus String  @default("NONE")
 
   sections       Section[]
+  linkClicks     LinkClick[]
   mediaEmbeds    MediaEmbed[]
   galleryPhotos  GalleryPhoto[]
   tourDates      TourDate[]
@@ -308,12 +349,31 @@ model Section {
   order      Int
   visible    Boolean     @default(true)
   data       Json        @default("{}")
+  /// English variants (shown when the visitor picks EN). Same shape as
+  /// title/data but every field optional — anything missing falls back to
+  /// the Portuguese value at render time.
+  titleEn    String?
+  dataEn     Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([presskitId, type])
   @@index([presskitId])
+}
+
+/// Clicks on conversion elements of the public page (WhatsApp button,
+/// quick links, header actions) — `target` is a short label such as
+/// "whatsapp" or "quicklink:SPOTIFY". Counted on the "Quem abriu" screen.
+model LinkClick {
+  id         String   @id @default(cuid())
+  presskitId String
+  presskit   Presskit @relation(fields: [presskitId], references: [id], onDelete: Cascade)
+  target     String
+  sessionId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([presskitId, createdAt])
 }
 
 model MediaEmbed {

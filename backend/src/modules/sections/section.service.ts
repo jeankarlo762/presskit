@@ -32,6 +32,26 @@ export async function upsertSectionData(
   });
 }
 
+/** English title/data. A section that doesn't exist yet is created empty so
+ * the translation has somewhere to live (same as upsertSectionData). */
+export async function upsertSectionTranslation(
+  presskitId: string,
+  type: SectionType,
+  input: { dataEn?: unknown; titleEn?: string | null },
+) {
+  const patch = {
+    ...(input.dataEn !== undefined ? { dataEn: input.dataEn as object } : {}),
+    ...(input.titleEn !== undefined ? { titleEn: input.titleEn || null } : {}),
+  };
+  const existing = await prisma.section.findUnique({ where: { presskitId_type: { presskitId, type } } });
+  if (existing) return prisma.section.update({ where: { id: existing.id }, data: patch });
+
+  const last = await prisma.section.findFirst({ where: { presskitId }, orderBy: { order: "desc" } });
+  return prisma.section.create({
+    data: { presskitId, type, order: (last?.order ?? -1) + 1, data: {}, ...patch },
+  });
+}
+
 export async function setSectionVisibility(presskitId: string, type: SectionType, visible: boolean) {
   const existing = await prisma.section.findUnique({ where: { presskitId_type: { presskitId, type } } });
   if (!existing) return null;

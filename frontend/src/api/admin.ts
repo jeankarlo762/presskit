@@ -84,3 +84,28 @@ export async function updateAdminFeedback(id: string, input: AdminFeedbackUpdate
   const { data } = await api.patch<{ feedback: FeedbackRow }>(`/admin/feedback/${id}`, input);
   return data.feedback;
 }
+
+export type AdminDomainRow = {
+  presskitId: string;
+  slug: string;
+  published: boolean;
+  domain: string;
+  status: string;
+  user: { id: string; name: string; email: string };
+  updatedAt: string;
+  cnameTarget: string;
+};
+
+export async function fetchAdminDomains() {
+  const { data } = await api.get<{ domains: AdminDomainRow[]; railwayAutomation: boolean }>("/admin/domains");
+  return data;
+}
+export async function activateAdminDomain(presskitId: string) {
+  await api.post(`/admin/domains/${presskitId}/activate`);
+}
+export async function deactivateAdminDomain(presskitId: string) {
+  await api.post(`/admin/domains/${presskitId}/deactivate`);
+}
+export async function removeAdminDomain(presskitId: string) {
+  await api.delete(`/admin/domains/${presskitId}`);
+}

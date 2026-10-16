@@ -38,7 +38,7 @@ export class ForeignStorageKeyError extends Error {
   }
 }
 
-export type ImageFolder = "gallery" | "theme-bg";
+export type ImageFolder = "gallery" | "theme-bg" | "cover" | "avatar" | "logo";
 
 const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
   jpg: "image/jpeg",

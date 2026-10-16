@@ -20,6 +20,13 @@ import {
 import { listFeedback, updateFeedback } from "../feedback/feedback.service";
 import { cancelSubscription, runBillingHousekeeping, syncSubscriptionFromMp, SubscriptionNotFoundError } from "../billing/billing.service";
 import { prisma } from "../../config/prisma";
+import {
+  activateCustomDomain,
+  deactivateCustomDomain,
+  isRailwayAutomationConfigured,
+  listCustomDomains,
+  removeCustomDomain,
+} from "./domains.service";
 
 const idParamSchema = z.object({ id: z.string().min(1).max(64) });
 
@@ -80,6 +87,29 @@ export async function adminRoutes(fastify: FastifyInstance) {
   fastify.post("/admin/billing/reconcile", async (request, reply) => {
     await runBillingHousekeeping(request.log);
     return reply.send({ ok: true });
+  });
+
+  // Artist custom domains -------------------------------------------------
+  fastify.get("/admin/domains", async (_request, reply) => {
+    return reply.send({ domains: await listCustomDomains(), railwayAutomation: isRailwayAutomationConfigured() });
+  });
+
+  fastify.post("/admin/domains/:id/activate", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    const result = await activateCustomDomain(id);
+    return reply.send({ ok: result !== null, ...result });
+  });
+
+  fastify.post("/admin/domains/:id/deactivate", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    await deactivateCustomDomain(id);
+    return reply.send({ ok: true });
+  });
+
+  fastify.delete("/admin/domains/:id", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    await removeCustomDomain(id);
+    return reply.status(204).send();
   });
 
   // Feedback ----------------------------------------------------------------

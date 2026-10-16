@@ -258,6 +258,14 @@ export function AnalyticsPage() {
               value={viewsFromLinks}
               hint={`${percent(viewsFromLinks, summary.totalViews)}% das visitas`}
             />
+            <Kpi
+              label="Cliques em WhatsApp"
+              value={(summary.clicks ?? []).find((c) => c.target === "whatsapp")?.count ?? 0}
+              hint={(() => {
+                const others = (summary.clicks ?? []).filter((c) => c.target !== "whatsapp").reduce((sum, c) => sum + c.count, 0);
+                return others > 0 ? `+${others} em outros links` : undefined;
+              })()}
+            />
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">

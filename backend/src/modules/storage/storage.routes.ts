@@ -4,7 +4,7 @@ import { getImageObject, StorageNotConfiguredError } from "../../shared/storage.
 
 // Only keys the app itself writes (see createImageUploadUrl) are ever
 // served — anything else in the bucket stays unreachable through here.
-const SERVABLE_KEY = /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/;
+const SERVABLE_KEY = /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg|cover|avatar|logo)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/;
 
 /**
  * Public read path for uploaded images. Railway buckets are private (no

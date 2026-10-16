@@ -1,6 +1,37 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
-import { DEFAULT_SECTIONS_BY_CATEGORY, type ArtistCategory, type PresskitUpdateInput } from "@presskit/shared";
+import { env } from "../../config/env";
+import {
+  DEFAULT_SECTIONS_BY_CATEGORY,
+  type ArtistCategory,
+  type CustomDomainInfo,
+  type CustomDomainStatus,
+  type ImageSlot,
+  type PresskitUpdateInput,
+} from "@presskit/shared";
+import type { ImageFolder } from "../../shared/storage.service";
+
+export class DomainAlreadyInUseError extends Error {
+  constructor() {
+    super("Esse domínio já está ligado a outro presskit");
+    this.name = "DomainAlreadyInUseError";
+  }
+}
+
+export class DomainNotAllowedError extends Error {
+  constructor() {
+    super("Esse domínio não pode ser usado — informe um domínio que seja seu");
+    this.name = "DomainNotAllowedError";
+  }
+}
+
+/** Which storage prefix and which columns each upload slot maps to. */
+export const IMAGE_SLOT_CONFIG: Record<ImageSlot, { folder: ImageFolder; urlField: string; keyField: string }> = {
+  background: { folder: "theme-bg", urlField: "themeBackgroundImageUrl", keyField: "themeBackgroundImageKey" },
+  cover: { folder: "cover", urlField: "coverImageUrl", keyField: "coverImageKey" },
+  avatar: { folder: "avatar", urlField: "avatarImageUrl", keyField: "avatarImageKey" },
+  logo: { folder: "logo", urlField: "logoImageUrl", keyField: "logoImageKey" },
+};
 
 export class PresskitNotFoundError extends Error {
   constructor() {
@@ -93,14 +124,75 @@ export async function updatePresskit(userId: string, input: PresskitUpdateInput)
  * has been proven to belong to this presskit — never from the generic
  * PATCH (its schema doesn't carry these fields). */
 export async function setThemeBackgroundImage(userId: string, image: { url: string; key: string } | null) {
+  return setPresskitImage(userId, "background", image);
+}
+
+/** Same contract as setThemeBackgroundImage for every image slot. */
+export async function setPresskitImage(userId: string, slot: ImageSlot, image: { url: string; key: string } | null) {
   const current = await getOwnedPresskitOrThrow(userId);
+  const { urlField, keyField } = IMAGE_SLOT_CONFIG[slot];
   return prisma.presskit.update({
     where: { id: current.id },
-    data: {
-      themeBackgroundImageUrl: image?.url ?? null,
-      themeBackgroundImageKey: image?.key ?? null,
-    },
+    data: { [urlField]: image?.url ?? null, [keyField]: image?.key ?? null },
   });
+}
+
+export function currentImageKey(presskit: Record<string, unknown>, slot: ImageSlot): string | null {
+  const value = presskit[IMAGE_SLOT_CONFIG[slot].keyField];
+  return typeof value === "string" ? value : null;
+}
+
+// ---------------------------------------------------------------------------
+// Artist custom domain
+// ---------------------------------------------------------------------------
+
+const OUR_DOMAIN_SUFFIXES = ["presskitai.com.br", "railway.app", "railway.internal", "localhost"];
+
+function domainInfo(domain: string | null, status: string): CustomDomainInfo {
+  const resolved: CustomDomainStatus = status === "ACTIVE" || status === "PENDING" ? status : "NONE";
+  return {
+    domain,
+    status: domain ? resolved : "NONE",
+    dns: domain ? { type: "CNAME", name: domain, value: env.CUSTOM_DOMAIN_CNAME_TARGET } : null,
+  };
+}
+
+export async function getCustomDomain(userId: string): Promise<CustomDomainInfo> {
+  const presskit = await getOwnedPresskitOrThrow(userId);
+  return domainInfo(presskit.customDomain, presskit.customDomainStatus);
+}
+
+/** Setting a domain parks it as PENDING; a superadmin flips it to ACTIVE
+ * once the CNAME resolves and the domain is registered on the host.
+ * Changing the domain resets the status — the old one stops routing. */
+export async function setCustomDomain(userId: string, domain: string | null): Promise<CustomDomainInfo> {
+  const presskit = await getOwnedPresskitOrThrow(userId);
+  if (domain && OUR_DOMAIN_SUFFIXES.some((suffix) => domain === suffix || domain.endsWith(`.${suffix}`))) {
+    throw new DomainNotAllowedError();
+  }
+  try {
+    const updated = await prisma.presskit.update({
+      where: { id: presskit.id },
+      data: { customDomain: domain, customDomainStatus: domain ? "PENDING" : "NONE" },
+    });
+    return domainInfo(updated.customDomain, updated.customDomainStatus);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new DomainAlreadyInUseError();
+    }
+    throw error;
+  }
+}
+
+/** Used by the landing's proxy: which published presskit answers for a
+ * host. Only ACTIVE domains route — a PENDING one would let anyone point
+ * a domain here and have it "work" before the operator vetted it. */
+export async function findSlugByCustomDomain(host: string): Promise<string | null> {
+  const presskit = await prisma.presskit.findFirst({
+    where: { customDomain: host.toLowerCase(), customDomainStatus: "ACTIVE", published: true },
+    select: { slug: true },
+  });
+  return presskit?.slug ?? null;
 }
 
 export async function publishPresskit(userId: string) {
@@ -132,9 +224,18 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
   });
   if (!presskit) return null;
 
-  // Internal identifiers stay internal: the owner's user id and the R2 key
-  // have no business on a public page.
-  const { user, userId: _userId, themeBackgroundImageKey: _key, ...rest } = presskit;
+  // Internal identifiers stay internal: the owner's user id and the storage
+  // keys have no business on a public page.
+  const {
+    user,
+    userId: _userId,
+    themeBackgroundImageKey: _bgKey,
+    coverImageKey: _coverKey,
+    avatarImageKey: _avatarKey,
+    logoImageKey: _logoKey,
+    customDomainStatus: _domainStatus,
+    ...rest
+  } = presskit;
   return { ...rest, artistName: user.name };
 }
 

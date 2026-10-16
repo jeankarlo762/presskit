@@ -125,3 +125,90 @@ export const COLOR_PALETTES = [
   { key: "areia", label: "Areia", backgroundColor: "#EFE6DA", textColor: "#2A1E14", accentColor: "#B4532A" },
 ] as const;
 export type ColorPalette = (typeof COLOR_PALETTES)[number];
+
+// ---------------------------------------------------------------------------
+// Background fine-tuning
+// ---------------------------------------------------------------------------
+
+export const BACKGROUND_POSITIONS = ["center", "top", "bottom"] as const;
+export type BackgroundPosition = (typeof BACKGROUND_POSITIONS)[number];
+export const BACKGROUND_POSITION_LABELS: Record<BackgroundPosition, string> = {
+  center: "Centro",
+  top: "Topo",
+  bottom: "Base",
+};
+
+export const BACKGROUND_ATTACHMENTS = ["FIXED", "SCROLL"] as const;
+export type BackgroundAttachment = (typeof BACKGROUND_ATTACHMENTS)[number];
+export const BACKGROUND_ATTACHMENT_LABELS: Record<BackgroundAttachment, string> = {
+  FIXED: "Fixo (parallax)",
+  SCROLL: "Rola com a página",
+};
+
+export const BACKGROUND_OVERLAY_MAX = 90;
+export const BACKGROUND_BLUR_MAX = 20;
+
+const GRAIN_SVG = encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>",
+);
+
+export type BackgroundPreset = {
+  key: string;
+  label: string;
+  /** CSS background-image layer, written with the theme variables so it
+   * recolors itself when the palette changes; null = no preset. */
+  css: string | null;
+  /** background-size for tiled patterns; undefined = cover. */
+  size?: string;
+};
+
+/** Ready-made gradients and textures that need no photo. They sit between
+ * the darkening overlay and the (optional) image, so they also work as a
+ * subtle tint on top of a photo. */
+export const BACKGROUND_PRESETS: readonly BackgroundPreset[] = [
+  { key: "none", label: "Nenhum", css: null },
+  {
+    key: "aurora",
+    label: "Aurora",
+    css: "radial-gradient(70% 60% at 15% 0%, color-mix(in srgb, var(--presskit-accent) 45%, transparent), transparent 70%), radial-gradient(60% 50% at 85% 100%, color-mix(in srgb, var(--presskit-accent) 30%, transparent), transparent 70%)",
+  },
+  {
+    key: "spotlight",
+    label: "Holofote",
+    css: "radial-gradient(80% 55% at 50% -10%, color-mix(in srgb, var(--presskit-accent) 42%, transparent), transparent 72%)",
+  },
+  {
+    key: "sunset",
+    label: "Pôr do sol",
+    css: "linear-gradient(180deg, color-mix(in srgb, var(--presskit-accent) 38%, transparent) 0%, transparent 65%)",
+  },
+  {
+    key: "mesh",
+    label: "Mesh",
+    css: "radial-gradient(40% 35% at 20% 20%, color-mix(in srgb, var(--presskit-accent) 38%, transparent), transparent), radial-gradient(35% 35% at 80% 30%, color-mix(in srgb, var(--presskit-text) 12%, transparent), transparent), radial-gradient(45% 40% at 60% 85%, color-mix(in srgb, var(--presskit-accent) 26%, transparent), transparent)",
+  },
+  {
+    key: "stripes",
+    label: "Listras",
+    css: "repeating-linear-gradient(135deg, color-mix(in srgb, var(--presskit-text) 7%, transparent) 0 2px, transparent 2px 14px)",
+  },
+  {
+    key: "dots",
+    label: "Pontos",
+    css: "radial-gradient(color-mix(in srgb, var(--presskit-text) 14%, transparent) 1.2px, transparent 1.5px)",
+    size: "18px 18px",
+  },
+  {
+    key: "grid",
+    label: "Grade",
+    css: "linear-gradient(color-mix(in srgb, var(--presskit-text) 8%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--presskit-text) 8%, transparent) 1px, transparent 1px)",
+    size: "32px 32px",
+  },
+  { key: "grain", label: "Grão", css: `url("data:image/svg+xml,${GRAIN_SVG}")`, size: "160px 160px" },
+];
+
+export const BACKGROUND_PRESET_KEYS = BACKGROUND_PRESETS.map((preset) => preset.key) as [string, ...string[]];
+
+export function resolveBackgroundPreset(key: string | null | undefined): BackgroundPreset {
+  return BACKGROUND_PRESETS.find((preset) => preset.key === key) ?? BACKGROUND_PRESETS[0]!;
+}

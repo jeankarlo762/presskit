@@ -6,10 +6,13 @@ import {
   InvalidRefreshTokenError,
 } from "../modules/auth/auth.service";
 import {
+  DomainAlreadyInUseError,
+  DomainNotAllowedError,
   PresskitAlreadyExistsError,
   PresskitNotFoundError,
   SlugAlreadyInUseError,
 } from "../modules/presskit/presskit.service";
+import { DomainRegistrationError } from "../modules/admin/domains.service";
 import { MediaEmbedNotFoundError } from "../modules/media/mediaEmbed.service";
 import { TourDateNotFoundError } from "../modules/tourdates/tourDate.service";
 import { PressMentionNotFoundError } from "../modules/press/pressMention.service";
@@ -45,6 +48,9 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [EmailAlreadyInUseError, 409],
   [PresskitNotFoundError, 404],
   [SlugAlreadyInUseError, 409],
+  [DomainAlreadyInUseError, 409],
+  [DomainNotAllowedError, 400],
+  [DomainRegistrationError, 502],
   [PresskitAlreadyExistsError, 409],
   [PlanLimitError, 402],
   [MediaEmbedNotFoundError, 404],

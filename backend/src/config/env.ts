@@ -66,6 +66,16 @@ const envSchema = z
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
     EMAIL_FROM: z.string().default("PressKit.AI <no-reply@presskitai.com.br>"),
+
+    // Artist custom domains. CNAME target the artist must point at (the
+    // landing service hostname). Optional Railway API token + landing service
+    // id let the superadmin "Ativar" button register the domain on Railway
+    // itself; without them activation is a manual step in the Railway
+    // dashboard. RAILWAY_ENVIRONMENT_ID is injected by Railway.
+    CUSTOM_DOMAIN_CNAME_TARGET: z.string().default("landing-production-ecba.up.railway.app"),
+    RAILWAY_API_TOKEN: z.string().optional(),
+    RAILWAY_LANDING_SERVICE_ID: z.string().optional(),
+    RAILWAY_ENVIRONMENT_ID: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.CORS_ORIGINS) {

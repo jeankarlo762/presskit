@@ -4,6 +4,7 @@ import {
   BarChart3,
   CreditCard,
   FileEdit,
+  Globe,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -64,6 +65,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { to: "/admin/pagamentos", label: "Pagamentos", icon: Receipt },
   { to: "/admin/inadimplencia", label: "Inadimplência", icon: AlertTriangle },
   { to: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+  { to: "/admin/dominios", label: "Domínios", icon: Globe },
 ];
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {

@@ -1,6 +1,7 @@
 import type { ArtistCategory, SectionType } from "../constants/category";
-import type { ButtonStyle, FontKey } from "../constants/theme";
+import type { BackgroundAttachment, BackgroundPosition, ButtonStyle, FontKey } from "../constants/theme";
 import type { MediaProvider } from "../schemas/collections";
+import type { QuickLink } from "../schemas/presskit";
 
 /** Shape of what GET /public/presskits/:slug returns after the HTTP+JSON
  * round-trip — dates arrive as ISO strings, not Date instances, which is why
@@ -12,6 +13,9 @@ export type PublicSection = {
   order: number;
   visible: boolean;
   data: unknown;
+  /** English variants; absent/null = fall back to the Portuguese values. */
+  titleEn?: string | null;
+  dataEn?: unknown;
 };
 
 export type PublicMediaEmbed = {
@@ -68,6 +72,22 @@ export type PublicPresskit = {
   /** Absent = DEFAULT_BUTTON_STYLE. */
   themeButtonStyle?: ButtonStyle;
   themeBackgroundImageUrl: string | null;
+  // Every field below is optional for the same reason: hand-built preview
+  // objects and rows that predate the column all render with the defaults.
+  themeBackgroundOverlay?: number;
+  themeBackgroundBlur?: number;
+  themeBackgroundPosition?: BackgroundPosition | string;
+  themeBackgroundAttachment?: BackgroundAttachment | string;
+  themeBackgroundRepeat?: boolean;
+  themeBackgroundPreset?: string;
+  coverImageUrl?: string | null;
+  avatarImageUrl?: string | null;
+  logoImageUrl?: string | null;
+  heroVideoUrl?: string | null;
+  whatsappNumber?: string | null;
+  whatsappMessage?: string | null;
+  quickLinks?: QuickLink[];
+  languages?: string[];
   sections: PublicSection[];
   mediaEmbeds: PublicMediaEmbed[];
   galleryPhotos: PublicGalleryPhoto[];

@@ -1,14 +1,29 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { SECTION_TYPES, sectionDataSchemaByType, sectionTitleSchema, type SectionType } from "@presskit/shared";
+import {
+  SECTION_TYPES,
+  sectionDataSchemaByType,
+  sectionTitleEnSchema,
+  sectionTitleSchema,
+  sectionTranslationSchemaByType,
+  type SectionType,
+} from "@presskit/shared";
 import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
-import { listSections, renameSection, reorderSections, setSectionVisibility, upsertSectionData } from "./section.service";
+import {
+  listSections,
+  renameSection,
+  reorderSections,
+  setSectionVisibility,
+  upsertSectionData,
+  upsertSectionTranslation,
+} from "./section.service";
 
 const sectionTypeParamSchema = z.object({ type: z.enum(SECTION_TYPES) });
 const visibilitySchema = z.object({ visible: z.boolean() });
 const titleSchema = z.object({ title: sectionTitleSchema });
 const reorderSchema = z.object({ order: z.array(z.enum(SECTION_TYPES)) });
 const sectionUpdateBodySchema = z.object({ data: z.unknown(), title: sectionTitleSchema.optional() });
+const translationBodySchema = z.object({ dataEn: z.unknown().optional(), titleEn: sectionTitleEnSchema.optional() });
 
 export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -26,6 +41,19 @@ export async function sectionRoutes(fastify: FastifyInstance) {
 
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
     const section = await upsertSectionData(presskit.id, type, data, title);
+    return reply.send({ section });
+  });
+
+  // English variant of a section: validated against the type's partial
+  // schema, stored separately so the Portuguese content is never touched.
+  fastify.patch("/presskit/sections/:type/translation", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const { dataEn: rawDataEn, titleEn } = translationBodySchema.parse(request.body);
+    const dataEn =
+      rawDataEn === undefined ? undefined : sectionTranslationSchemaByType[type as SectionType].parse(rawDataEn);
+
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const section = await upsertSectionTranslation(presskit.id, type, { dataEn, titleEn });
     return reply.send({ section });
   });
 

@@ -1,8 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { httpUrlSchema, isBotUserAgent, slugSchema } from "@presskit/shared";
-import { findPublicPresskitBySlug, isSlugAvailable } from "../presskit/presskit.service";
-import { recordPageView } from "../analytics/pageView.service";
+import { findPublicPresskitBySlug, findSlugByCustomDomain, isSlugAvailable } from "../presskit/presskit.service";
+import { recordLinkClick, recordPageView } from "../analytics/pageView.service";
+
+const hostParamSchema = z.object({ host: z.string().trim().toLowerCase().min(4).max(253) });
+const clickBodySchema = z.object({
+  target: z.string().trim().min(1).max(60).regex(/^[a-z0-9:_-]+$/i),
+  sessionId: z.string().min(1).max(128).optional(),
+});
 
 const slugParamSchema = z.object({ slug: z.string().min(1).max(80) });
 const viewBodySchema = z.object({
@@ -42,6 +48,27 @@ export async function publicRoutes(fastify: FastifyInstance) {
       userAgent: request.headers["user-agent"],
     });
 
+    return reply.status(204).send();
+  });
+
+  // Landing proxy: "which presskit answers for this hostname?" — cached
+  // on the landing side; only ACTIVE domains resolve.
+  fastify.get("/public/domains/:host", async (request, reply) => {
+    const { host } = hostParamSchema.parse(request.params);
+    const slug = await findSlugByCustomDomain(host.replace(/:\d+$/, ""));
+    if (!slug) return reply.status(404).send({ error: "NOT_FOUND" });
+    reply.header("Cache-Control", "public, max-age=300");
+    return reply.send({ slug });
+  });
+
+  // Conversion clicks (WhatsApp, quick links…) sent by the public page.
+  fastify.post("/public/presskits/:slug/click", async (request, reply) => {
+    if (isBotUserAgent(request.headers["user-agent"])) return reply.status(204).send();
+    const { slug } = slugParamSchema.parse(request.params);
+    const body = clickBodySchema.parse(request.body);
+    const result = await findPublicPresskitBySlug(slug);
+    if (result.status !== "found") return reply.status(204).send();
+    await recordLinkClick({ presskitId: result.presskit.id, target: body.target, sessionId: body.sessionId });
     return reply.status(204).send();
   });
 

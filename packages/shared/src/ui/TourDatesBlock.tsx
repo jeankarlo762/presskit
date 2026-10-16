@@ -15,7 +15,15 @@ function formatDate(iso: string): string {
   });
 }
 
-export function TourDatesBlock({ title, dates }: { title: string; dates: PublicTourDate[] }) {
+export function TourDatesBlock({
+  title,
+  dates,
+  ticketsLabel = "Ingressos",
+}: {
+  title: string;
+  dates: PublicTourDate[];
+  ticketsLabel?: string;
+}) {
   if (dates.length === 0) return null;
 
   const now = Date.now();
@@ -41,7 +49,7 @@ export function TourDatesBlock({ title, dates }: { title: string; dates: PublicT
                   rel="noopener noreferrer"
                   className={`whitespace-nowrap ${presskitButtonClass("outline", "sm")}`}
                 >
-                  Ingressos
+                  {ticketsLabel}
                 </a>
               )}
             </div>

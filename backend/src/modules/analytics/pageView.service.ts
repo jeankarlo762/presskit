@@ -49,3 +49,11 @@ export async function recordPageView(input: RecordViewInput) {
     },
   });
 }
+
+/** Conversion click on the public page (WhatsApp button, quick link…).
+ * Bot filtering happens at the route, same as recordPageView. */
+export async function recordLinkClick(input: { presskitId: string; target: string; sessionId?: string }) {
+  await prisma.linkClick.create({
+    data: { presskitId: input.presskitId, target: input.target.toLowerCase(), sessionId: input.sessionId },
+  });
+}

@@ -194,6 +194,43 @@ avisa). Tela: `/esqueci-senha` no dashboard; a landing só linka para ela.
 `GET /feedback/mine` mostra o histórico com a resposta do admin (`adminNote`). O superadmin
 triagem em `/admin/feedback` (status NOVO → EM_ANALISE → RESOLVIDO).
 
+## Personalização da página pública
+
+Tudo que o artista configura em "Personalizar" vive em colunas de `Presskit` e é renderizado por
+`packages/shared/src/ui/PresskitRenderer.tsx` (Server Component na landing, preview no painel —
+o mesmo componente, sem JS próprio):
+
+- **Fundo**: imagem (`themeBackgroundImage*`) + ajustes `themeBackgroundOverlay/Blur/Position/
+  Attachment/Repeat` + `themeBackgroundPreset` (gradientes/texturas em CSS, desenhados com as
+  variáveis de cor do tema — `BACKGROUND_PRESETS` em `constants/theme.ts`). O "fixo" é feito com
+  uma camada `sticky` de altura zero, não com `background-attachment: fixed` (iOS ignora e quebra
+  dentro do preview escalado do painel).
+- **Identidade**: `coverImage*` (banner/capa), `avatarImage*` (foto redonda), `logoImage*`
+  (substitui o nome; o `<h1>` continua com o texto em `sr-only` para SEO), `heroVideoUrl`
+  (YouTube/Vimeo mudo em loop via `heroVideoEmbedSrc`). Uploads: `POST /presskit/images/:slot/
+  upload-url` → PUT direto no bucket → `.../confirm`; `DELETE /presskit/images/:slot`.
+- **Conversão**: `whatsappNumber/Message` (botão flutuante + CTA no topo, `wa.me`), `quickLinks`
+  (até 8, ícones oficiais via `simple-icons`). Cliques em qualquer `[data-track]` são enviados por
+  `ClickTracker` (landing) para `POST /public/presskits/:slug/click` → `LinkClick`, e aparecem
+  em "Quem abriu".
+- **Idiomas**: `languages` (`["pt"]` ou `["pt","en"]`); inglês em `Section.titleEn/dataEn`
+  (`PATCH /presskit/sections/:type/translation`), mesclado campo a campo sobre o português no
+  render. A landing lê `?lang=en` e expõe `alternates.languages`.
+- **Cor da capa**: `frontend/src/lib/colorFromImage.ts` sugere paleta no navegador (canvas) a
+  partir da capa/fundo — o `/media` responde com `Access-Control-Allow-Origin: *` justamente para
+  o canvas poder ler a imagem.
+
+### Domínio próprio do artista
+
+Artista informa o domínio (`PUT /presskit/domain`, status `PENDING`) e recebe o CNAME
+(`CUSTOM_DOMAIN_CNAME_TARGET`). O superadmin ativa em `/admin/dominios`
+(`POST /admin/domains/:id/activate`): com `RAILWAY_API_TOKEN` + `RAILWAY_LANDING_SERVICE_ID` o
+backend registra o domínio no serviço `landing` via GraphQL do Railway; sem token, o registro é
+manual. A landing (`proxy.ts`) consulta `GET /public/domains/:host` (cache 5 min) para hosts que
+não são nossos e reescreve `/` para `/<slug>` mantendo o domínio do artista na barra.
+**Limite do plano Hobby: 2 domínios personalizados por serviço** — a landing já usa os dois
+(`presskitai.com.br` + `www`); domínios de artistas exigem o plano Pro (20 por serviço).
+
 ## Links de mídia (YouTube, Vimeo, Spotify, SoundCloud)
 
 `packages/shared/src/media/parseMediaUrl.ts` é a única fonte de verdade para "esse link é

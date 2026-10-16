@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ImagePlus, Trash2 } from "lucide-react";
 import {
   BUTTON_STYLE_LABELS,
   BUTTON_STYLE_RADIUS,
@@ -41,7 +40,11 @@ import { Card, FieldError, Select } from "../../components/ui";
 import { TemplatePicker } from "./TemplatePicker";
 import { SectionsOrderCard } from "./SectionsOrderCard";
 import { PreviewPane } from "./PreviewPane";
-import { useThemeBackground } from "./useThemeBackground";
+import { BackgroundCard } from "./BackgroundCard";
+import { IdentityCard } from "./IdentityCard";
+import { ConversionCard } from "./ConversionCard";
+import { LanguagesCard } from "./LanguagesCard";
+import { DomainCard } from "./DomainCard";
 
 const AUTOSAVE_DELAY_MS = 700;
 
@@ -194,22 +197,28 @@ export function CustomizePage() {
     };
   }, [navigate]);
 
-  const {
-    uploading: bgUploading,
-    error: bgError,
-    fileInputRef: bgInputRef,
-    upload: uploadBackground,
-    remove: removeBackground,
-  } = useThemeBackground((url) =>
-    setPresskit((prev) => (prev ? { ...prev, themeBackgroundImageUrl: url } : prev)),
-  );
-
   if (loadError) return <p className="p-8 text-red-400">{loadError}</p>;
   if (!presskit) return <p className="p-8 text-fg-muted">Carregando...</p>;
 
   function change(patch: PresskitUpdateInput & Partial<Presskit>) {
     setPresskit((prev) => (prev ? { ...prev, ...patch } : prev));
     queue(patch);
+  }
+
+  // Image uploads come back with the whole presskit from the server; only
+  // the image fields are taken so an in-flight autosave isn't overwritten.
+  function applyImages(updated: Presskit) {
+    setPresskit((prev) =>
+      prev
+        ? {
+            ...prev,
+            themeBackgroundImageUrl: updated.themeBackgroundImageUrl,
+            coverImageUrl: updated.coverImageUrl,
+            avatarImageUrl: updated.avatarImageUrl,
+            logoImageUrl: updated.logoImageUrl,
+          }
+        : prev,
+    );
   }
 
   function selectTemplate(key: TemplateKey) {
@@ -244,23 +253,13 @@ export function CustomizePage() {
   const templateKey = resolveTemplateKey(presskit.templateKey);
   const colors = { bg: presskit.themeBackgroundColor, fg: presskit.themeTextColor, accent: presskit.themeAccentColor };
 
+  // Spread the presskit so every theme/identity field reaches the preview
+  // without listing each one (same approach as the editor page).
   const previewPresskit: PublicPresskit = {
-    id: presskit.id,
-    slug: presskit.slug,
+    ...presskit,
     artistName: user?.name ?? "Seu nome",
-    category: presskit.category,
-    templateKey: presskit.templateKey,
-    city: presskit.city,
-    state: presskit.state,
     ogTitleOverride: null,
     ogDescriptionOverride: null,
-    themeBackgroundColor: presskit.themeBackgroundColor,
-    themeTextColor: presskit.themeTextColor,
-    themeAccentColor: presskit.themeAccentColor,
-    themeFontKey: presskit.themeFontKey,
-    themeHeadingFontKey: presskit.themeHeadingFontKey,
-    themeButtonStyle: presskit.themeButtonStyle,
-    themeBackgroundImageUrl: presskit.themeBackgroundImageUrl,
     sections: sections.map((s) => ({ ...s, data: s.data ?? {} })),
     mediaEmbeds: media,
     galleryPhotos: gallery,
@@ -364,7 +363,7 @@ export function CustomizePage() {
             </label>
           </SectionCard>
 
-          <SectionCard title="Botões e fundo">
+          <SectionCard title="Botões">
             <div role="radiogroup" aria-label="Estilo dos botões" className="flex gap-1.5">
               {BUTTON_STYLES.map((style) => {
                 const selected = presskit.themeButtonStyle === style;
@@ -388,54 +387,37 @@ export function CustomizePage() {
                 );
               })}
             </div>
-
-            {presskit.themeBackgroundImageUrl ? (
-              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-bg p-2">
-                <img
-                  src={presskit.themeBackgroundImageUrl}
-                  alt="Imagem de fundo atual"
-                  className="h-12 w-12 rounded-lg object-cover"
-                />
-                <span className="flex-1 text-sm text-fg-muted">Imagem de fundo</span>
-                <button
-                  type="button"
-                  onClick={() => void removeBackground()}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-fg-muted hover:bg-white/5 hover:text-fg"
-                >
-                  <Trash2 size={16} />
-                  Remover
-                </button>
-              </div>
-            ) : (
-              <label
-                className={
-                  "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/25 bg-bg px-3 py-3 text-sm font-bold text-fg transition hover:border-white/45 focus-within:border-primary-text " +
-                  (bgUploading ? "pointer-events-none opacity-60" : "")
-                }
-              >
-                <ImagePlus size={17} />
-                {bgUploading ? "Enviando..." : "Enviar imagem de fundo"}
-                <input
-                  ref={bgInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={bgUploading}
-                  className="sr-only"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void uploadBackground(file);
-                  }}
-                />
-              </label>
-            )}
-            {templateKey === "palco" && (
-              <p className="text-xs text-fg-muted">No modelo Palco, a imagem de fundo vira a capa do topo.</p>
-            )}
-            <FieldError>{bgError}</FieldError>
           </SectionCard>
         </div>
 
+        <SectionCard title="Fundo">
+          <BackgroundCard presskit={presskit} onImageChange={applyImages} onChange={change} />
+        </SectionCard>
+
+        <SectionCard title="Identidade: capa, foto, logo e vídeo">
+          <IdentityCard presskit={presskit} onImageChange={applyImages} onChange={change} />
+        </SectionCard>
+
+        <SectionCard title="Contato rápido e links">
+          <ConversionCard presskit={presskit} onChange={change} />
+        </SectionCard>
+
         <SectionsOrderCard sections={sections} onMove={moveSection} onToggle={toggleSection} onRename={handleRename} />
+
+        <SectionCard title="Idiomas">
+          <LanguagesCard
+            presskit={presskit}
+            sections={sections}
+            onChange={change}
+            onSectionSaved={(saved) =>
+              setSections((prev) => prev.map((s) => (s.id === saved.id ? { ...s, titleEn: saved.titleEn, dataEn: saved.dataEn } : s)))
+            }
+          />
+        </SectionCard>
+
+        <SectionCard title="Domínio próprio">
+          <DomainCard />
+        </SectionCard>
       </div>
 
       <aside className="w-full shrink-0 lg:sticky lg:top-6 lg:w-[360px]" aria-label="Prévia">

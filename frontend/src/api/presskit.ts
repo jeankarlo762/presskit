@@ -1,8 +1,15 @@
 import { api } from "./axios";
 import type {
   ArtistCategory,
+  BackgroundAttachment,
+  BackgroundPosition,
   BioSectionData,
   ButtonStyle,
+  CustomDomainInfo,
+  CustomDomainStatus,
+  ImageSlot,
+  PresskitLanguage,
+  QuickLink,
   ContactSectionData,
   FontKey,
   MediaEmbedCreateInput,
@@ -35,6 +42,22 @@ export type Presskit = {
   themeButtonStyle: ButtonStyle;
   themeBackgroundImageUrl: string | null;
   themeBackgroundImageKey: string | null;
+  themeBackgroundOverlay: number;
+  themeBackgroundBlur: number;
+  themeBackgroundPosition: BackgroundPosition;
+  themeBackgroundAttachment: BackgroundAttachment;
+  themeBackgroundRepeat: boolean;
+  themeBackgroundPreset: string;
+  coverImageUrl: string | null;
+  avatarImageUrl: string | null;
+  logoImageUrl: string | null;
+  heroVideoUrl: string | null;
+  whatsappNumber: string | null;
+  whatsappMessage: string | null;
+  quickLinks: QuickLink[];
+  languages: PresskitLanguage[];
+  customDomain: string | null;
+  customDomainStatus: CustomDomainStatus;
 };
 
 export type Section = {
@@ -44,6 +67,8 @@ export type Section = {
   order: number;
   visible: boolean;
   data: unknown;
+  titleEn: string | null;
+  dataEn: unknown;
 };
 // These reuse the *Public types (what the API actually returns — nullable
 // fields serialize as null, not undefined) rather than the write-input
@@ -206,4 +231,37 @@ export function isPlanLimitError(error: unknown): boolean {
     "response" in error &&
     (error as { response?: { status?: number } }).response?.status === 402
   );
+}
+
+// Image slots (background, cover, avatar, logo) share one presign/confirm/
+// remove trio; the older theme/background-* functions above stay for the
+// hook that still calls them.
+export async function requestImageUploadUrl(slot: ImageSlot, extension: string) {
+  const { data } = await api.post<ImageUploadTicket>(`/presskit/images/${slot}/upload-url`, { extension });
+  return data;
+}
+export async function confirmImage(slot: ImageSlot, input: { storageKey: string }) {
+  const { data } = await api.post<{ presskit: Presskit }>(`/presskit/images/${slot}/confirm`, input);
+  return data.presskit;
+}
+export async function removeImage(slot: ImageSlot) {
+  const { data } = await api.delete<{ presskit: Presskit }>(`/presskit/images/${slot}`);
+  return data.presskit;
+}
+
+export async function updateSectionTranslation(
+  type: SectionType,
+  input: { dataEn?: Record<string, unknown>; titleEn?: string | null },
+) {
+  const { data } = await api.patch<{ section: Section }>(`/presskit/sections/${type}/translation`, input);
+  return data.section;
+}
+
+export async function getCustomDomain() {
+  const { data } = await api.get<CustomDomainInfo>("/presskit/domain");
+  return data;
+}
+export async function setCustomDomain(domain: string | null) {
+  const { data } = await api.put<CustomDomainInfo>("/presskit/domain", { domain });
+  return data;
 }

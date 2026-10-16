@@ -12,3 +12,4 @@ export * from "./TechRiderBlock";
 export * from "./CustomBlock";
 export * from "./PresskitRenderer";
 export * from "./templates";
+export * from "./QuickLinksBar";

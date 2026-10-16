@@ -45,4 +45,6 @@ export type AnalyticsSummary = {
   /** `host: null` means no referrer (direct access, apps that strip it). */
   referrers: { host: string | null; views: number }[];
   links: AnalyticsLinkStats[];
+  /** Clicks on conversion elements inside the window, e.g. "whatsapp" or "quicklink:spotify". */
+  clicks: { target: string; count: number }[];
 };

@@ -5,6 +5,8 @@ export * from "./constants/theme";
 export * from "./constants/role";
 export * from "./constants/billing";
 export * from "./constants/feedback";
+export * from "./constants/quickLinks";
+export * from "./constants/i18n";
 
 export * from "./schemas/url";
 export * from "./schemas/section";

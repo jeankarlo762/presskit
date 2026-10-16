@@ -1,12 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { presskitOnboardingSchema, presskitUpdateSchema } from "@presskit/shared";
+import { customDomainSchema, IMAGE_SLOTS, presskitOnboardingSchema, presskitUpdateSchema } from "@presskit/shared";
 import {
   createPresskitForUser,
+  currentImageKey,
   findPresskitByUserId,
+  getCustomDomain,
   getOwnedPresskitOrThrow,
+  IMAGE_SLOT_CONFIG,
   publishPresskit,
-  setThemeBackgroundImage,
+  setCustomDomain,
+  setPresskitImage,
   unpublishPresskit,
   updatePresskit,
 } from "./presskit.service";
@@ -19,7 +23,9 @@ import {
 } from "../../shared/storage.service";
 
 const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
-const confirmBackgroundSchema = z.object({ storageKey: z.string().min(1).max(512) });
+const confirmImageSchema = z.object({ storageKey: z.string().min(1).max(512) });
+const slotParamSchema = z.object({ slot: z.enum(IMAGE_SLOTS) });
+const domainBodySchema = z.object({ domain: customDomainSchema.nullable() });
 
 export async function presskitRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -51,34 +57,74 @@ export async function presskitRoutes(fastify: FastifyInstance) {
     return reply.send({ presskit });
   });
 
-  fastify.post("/presskit/theme/background-upload-url", async (request, reply) => {
+  // Images: one presign/confirm/remove trio for every slot (background,
+  // cover, avatar, logo). The legacy /presskit/theme/background-* routes
+  // below are thin aliases kept for the already-deployed dashboard.
+  fastify.post("/presskit/images/:slot/upload-url", async (request, reply) => {
+    const { slot } = slotParamSchema.parse(request.params);
     const { extension } = uploadUrlSchema.parse(request.body);
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
-    const result = await createImageUploadUrl(presskit.id, extension, "theme-bg");
-    return reply.send(result);
+    return reply.send(await createImageUploadUrl(presskit.id, extension, IMAGE_SLOT_CONFIG[slot].folder));
   });
 
-  fastify.post("/presskit/theme/background-confirm", async (request, reply) => {
-    const { storageKey } = confirmBackgroundSchema.parse(request.body);
+  fastify.post("/presskit/images/:slot/confirm", async (request, reply) => {
+    const { slot } = slotParamSchema.parse(request.params);
+    const { storageKey } = confirmImageSchema.parse(request.body);
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
 
-    assertOwnedStorageKey(presskit.id, "theme-bg", storageKey);
+    assertOwnedStorageKey(presskit.id, IMAGE_SLOT_CONFIG[slot].folder, storageKey);
     await assertImageObjectExists(storageKey);
 
-    const previousKey = presskit.themeBackgroundImageKey;
-    const updated = await setThemeBackgroundImage(request.currentUser.id, {
-      url: publicUrlFor(storageKey),
-      key: storageKey,
-    });
+    const previousKey = currentImageKey(presskit, slot);
+    const updated = await setPresskitImage(request.currentUser.id, slot, { url: publicUrlFor(storageKey), key: storageKey });
     if (previousKey && previousKey !== storageKey) await deleteImageObject(previousKey);
 
     return reply.send({ presskit: updated });
   });
 
+  fastify.delete("/presskit/images/:slot", async (request, reply) => {
+    const { slot } = slotParamSchema.parse(request.params);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const previousKey = currentImageKey(presskit, slot);
+    const updated = await setPresskitImage(request.currentUser.id, slot, null);
+    if (previousKey) await deleteImageObject(previousKey);
+    return reply.send({ presskit: updated });
+  });
+
+  fastify.post("/presskit/theme/background-upload-url", async (request, reply) => {
+    const { extension } = uploadUrlSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    return reply.send(await createImageUploadUrl(presskit.id, extension, "theme-bg"));
+  });
+
+  fastify.post("/presskit/theme/background-confirm", async (request, reply) => {
+    const { storageKey } = confirmImageSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    assertOwnedStorageKey(presskit.id, "theme-bg", storageKey);
+    await assertImageObjectExists(storageKey);
+    const previousKey = presskit.themeBackgroundImageKey;
+    const updated = await setPresskitImage(request.currentUser.id, "background", {
+      url: publicUrlFor(storageKey),
+      key: storageKey,
+    });
+    if (previousKey && previousKey !== storageKey) await deleteImageObject(previousKey);
+    return reply.send({ presskit: updated });
+  });
+
   fastify.delete("/presskit/theme/background", async (request, reply) => {
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
-    const updated = await setThemeBackgroundImage(request.currentUser.id, null);
+    const updated = await setPresskitImage(request.currentUser.id, "background", null);
     if (presskit.themeBackgroundImageKey) await deleteImageObject(presskit.themeBackgroundImageKey);
     return reply.send({ presskit: updated });
+  });
+
+  // Artist custom domain --------------------------------------------------
+  fastify.get("/presskit/domain", async (request, reply) => {
+    return reply.send(await getCustomDomain(request.currentUser.id));
+  });
+
+  fastify.put("/presskit/domain", async (request, reply) => {
+    const { domain } = domainBodySchema.parse(request.body);
+    return reply.send(await setCustomDomain(request.currentUser.id, domain));
   });
 }

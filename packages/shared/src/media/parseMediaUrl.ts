@@ -143,3 +143,31 @@ export function parseMediaUrl(raw: string): ParsedMediaUrl | null {
 export function detectMediaProvider(raw: string): MediaProvider | null {
   return parseMediaUrl(raw)?.provider ?? null;
 }
+
+/** Embed URL for a muted, looping, chrome-less hero video (YouTube or
+ * Vimeo). Null when the link isn't a video the player can loop. */
+export function heroVideoEmbedSrc(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const parsed = parseMediaUrl(raw);
+  if (!parsed) return null;
+  const url = new URL(parsed.embedSrc);
+  if (parsed.provider === "YOUTUBE") {
+    url.searchParams.set("autoplay", "1");
+    url.searchParams.set("mute", "1");
+    url.searchParams.set("loop", "1");
+    url.searchParams.set("playlist", parsed.id);
+    url.searchParams.set("controls", "0");
+    url.searchParams.set("rel", "0");
+    url.searchParams.set("playsinline", "1");
+    url.searchParams.set("modestbranding", "1");
+    return url.toString();
+  }
+  if (parsed.provider === "VIMEO") {
+    url.searchParams.set("autoplay", "1");
+    url.searchParams.set("muted", "1");
+    url.searchParams.set("loop", "1");
+    url.searchParams.set("background", "1");
+    return url.toString();
+  }
+  return null;
+}

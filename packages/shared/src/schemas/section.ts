@@ -84,3 +84,21 @@ export type CustomSectionData = z.infer<typeof customDataSchema>;
 export type PressSectionData = z.infer<typeof pressDataSchema>;
 
 export const sectionTitleSchema = z.string().trim().min(1).max(60);
+
+/** English variants: same shape as the type's data schema but every field
+ * optional, so the artist can translate only what matters — the renderer
+ * falls back to Portuguese field by field. Collection sections carry no
+ * translatable data. */
+export const sectionTranslationSchemaByType = {
+  BIO: bioDataSchema.partial(),
+  MUSIC: collectionDataSchema,
+  VIDEO: collectionDataSchema,
+  GALLERY: collectionDataSchema,
+  PRESS: pressDataSchema.partial(),
+  TOUR_DATES: collectionDataSchema,
+  CONTACT: z.object({}).catchall(z.never()),
+  TECH_RIDER: techRiderDataSchema.pick({ text: true }).partial(),
+  CUSTOM: customDataSchema.partial(),
+} as const satisfies Record<(typeof SECTION_TYPES)[number], z.ZodTypeAny>;
+
+export const sectionTitleEnSchema = z.string().trim().max(60).nullable();

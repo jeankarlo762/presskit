@@ -27,6 +27,7 @@ import { useAuthStore } from "../store/auth.store";
 import { publicPresskitUrl, SITE_HOST } from "../config";
 import { Button } from "../components/ui";
 import { BioForm } from "./editor/BioForm";
+import { BioTranslationForm } from "./editor/BioTranslationForm";
 import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
 import { GalleryManager } from "./editor/GalleryManager";
@@ -242,6 +243,15 @@ export function DashboardHomePage() {
             onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "BIO", data, title))}
             onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
           />
+          {presskit.languages?.includes("en") && (
+            <BioTranslationForm
+              initial={bioSection?.dataEn as Partial<BioSectionData> | null | undefined}
+              onLiveChange={(dataEn) =>
+                setPreviewSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn } : s)))
+              }
+              onSaved={(section) => setSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn: section.dataEn, titleEn: section.titleEn } : s)))}
+            />
+          )}
           <EmbedManager
             sectionType="MUSIC"
             providers={AUDIO_PROVIDERS}
@@ -337,5 +347,5 @@ function upsertSection(sections: Section[], type: Section["type"], data: unknown
   if (existing) {
     return sections.map((s) => (s.type === type ? { ...s, data, ...(title !== undefined ? { title } : {}) } : s));
   }
-  return [...sections, { id: type, type, title: title ?? null, order: sections.length, visible: true, data }];
+  return [...sections, { id: type, type, title: title ?? null, order: sections.length, visible: true, data, titleEn: null, dataEn: null }];
 }
