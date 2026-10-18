@@ -23,6 +23,8 @@ import { apiErrorMessage } from "../../api/axios";
 import { uploadImageToStorage } from "../../lib/uploadImage";
 import { prepareImage } from "../../lib/imageResize";
 import { FieldError, Select } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 
 /** A color that can be "inherit from the page": swatch + clear button. */
 function OptionalColor({
@@ -137,7 +139,10 @@ export function SectionStylePanel({
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-semibold text-fg-muted">Imagem de fundo da seção</span>
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg-muted">
+          Imagem de fundo da seção <span className="font-mono text-[11px] text-fg-muted/70">até 1920 px</span>
+          <InfoTip content={FIELD_HELP.sectionBackground} label="Especificações: fundo da seção" />
+        </span>
         {style.backgroundImageUrl ? (
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-bg p-2">
             <img src={style.backgroundImageUrl} alt="" className="h-12 w-20 rounded-lg object-cover" />

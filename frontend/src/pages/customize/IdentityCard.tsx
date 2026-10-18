@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { heroVideoUrlSchema, type PresskitUpdateInput } from "@presskit/shared";
 import type { Presskit } from "../../api/presskit";
 import { FieldError, Input, Label } from "../../components/ui";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { ImageSlotField } from "./ImageSlotField";
 
 export function IdentityCard({
@@ -62,7 +63,7 @@ export function IdentityCard({
       />
 
       <div>
-        <Label>Vídeo no topo (YouTube ou Vimeo)</Label>
+        <Label hint={FIELD_HELP.heroVideo}>Vídeo no topo (YouTube ou Vimeo)</Label>
         <Input
           value={video}
           onChange={(e) => setVideo(e.target.value)}

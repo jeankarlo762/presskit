@@ -6,6 +6,8 @@ import { apiErrorMessage } from "../../api/axios";
 import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
 import { SectionTitleField } from "./SectionTitleField";
 import { Button, Card, FieldError, Input } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 
 type Item = DownloadsSectionData["items"][number];
 
@@ -106,9 +108,10 @@ export function DownloadsManager({
           onLiveChange(items, value);
         }}
       />
-      <p className="text-xs text-fg-muted">
+      <p className="flex flex-wrap items-center gap-1.5 text-xs text-fg-muted">
         Fotos em alta, release, rider, logo… Envie um arquivo (PDF, ZIP, DOCX, PPTX, MP3 ou imagem, até 50 MB) ou cole um link
         (Drive, WeTransfer).
+        <InfoTip content={FIELD_HELP.downloads} label="Especificações: downloads" />
       </p>
 
       {items.length > 0 && (

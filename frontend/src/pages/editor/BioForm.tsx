@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -65,12 +66,12 @@ export function BioForm({
     <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.BIO} onChange={handleTitleChange} />
       <div>
-        <Label>Bio curta (até 280 caracteres)</Label>
+        <Label hint={FIELD_HELP.bioShort}>Bio curta (até 280 caracteres)</Label>
         <Textarea rows={2} {...register("shortBio")} />
         <FieldError>{errors.shortBio?.message}</FieldError>
       </div>
       <div>
-        <Label>Bio completa</Label>
+        <Label hint={FIELD_HELP.bioLong}>Bio completa</Label>
         <Textarea rows={6} {...register("longBio")} />
         <FieldError>{errors.longBio?.message}</FieldError>
       </div>

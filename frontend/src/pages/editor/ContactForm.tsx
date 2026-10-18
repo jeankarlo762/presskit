@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -84,17 +85,17 @@ export function ContactForm({
     <Card as="form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.CONTACT} onChange={handleTitleChange} />
       <div>
-        <Label>E-mail</Label>
+        <Label hint={FIELD_HELP.contactEmail}>E-mail</Label>
         <Input {...register("email")} />
         <FieldError>{errors.email?.message}</FieldError>
       </div>
       <div>
-        <Label>Telefone</Label>
+        <Label hint={FIELD_HELP.contactPhone}>Telefone</Label>
         <Input {...register("phone")} />
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label>Redes sociais</Label>
+        <Label hint={FIELD_HELP.socialLinks}>Redes sociais</Label>
         {fields.map((field, index) => (
           <div key={field.id} className="flex gap-2">
             <Select className="w-40" {...register(`socialLinks.${index}.platform`)}>

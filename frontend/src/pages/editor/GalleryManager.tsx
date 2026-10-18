@@ -4,6 +4,8 @@ import { apiErrorMessage } from "../../api/axios";
 import { uploadImageToStorage } from "../../lib/uploadImage";
 import { prepareImage } from "../../lib/imageResize";
 import { Card, FieldError } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 
 export function GalleryManager({
   initial,
@@ -46,6 +48,10 @@ export function GalleryManager({
 
   return (
     <Card className="flex flex-col gap-4">
+      <p className="flex items-center gap-1.5 text-xs text-fg-muted">
+        Fotos até 2000 px, JPG/PNG/WebP, 10 MB cada — ajustadas automaticamente.
+        <InfoTip content={FIELD_HELP.gallery} label="Especificações: fotos" />
+      </p>
       <h3 className="font-medium text-fg">Fotos</h3>
       {items.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">

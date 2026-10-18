@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { SECTION_DEFAULT_TITLES } from "@presskit/shared";
 import { createTourDate, deleteTourDate, updateSectionData, type TourDate } from "../../api/presskit";
 import { SectionTitleField } from "./SectionTitleField";
@@ -81,6 +83,7 @@ export function TourDatesManager({
     <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
         <SectionTitleField value={title} defaultTitle={SECTION_DEFAULT_TITLES.TOUR_DATES} onChange={handleTitleChange} />
+        <InfoTip content={FIELD_HELP.tourDates} label="Sobre a agenda" className="mb-2.5" />
         {titleChanged && (
           <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título

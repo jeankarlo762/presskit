@@ -15,6 +15,8 @@ import { usePresskitStore } from "../../store/presskit.store";
 import { publicPresskitUrl, SITE_HOST } from "../../config";
 import { Button, Card, FieldError, Input, Label, Select } from "../../components/ui";
 import { Badge, ConfirmButton, PageHeader } from "../../components/admin/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 
 function slugify(name: string) {
   return name
@@ -111,6 +113,7 @@ export function ArtistsPage() {
         icon={Users}
         title="Artistas"
         description="Cada artista tem a própria página, com o mesmo painel. A página da produtora lista todos os publicados."
+        actions={<InfoTip content={FIELD_HELP.roster} label="Sobre os artistas" />}
       />
       <FieldError>{error}</FieldError>
 

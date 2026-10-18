@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { FileUp, Trash2 } from "lucide-react";
 import type { SectionType } from "@presskit/shared";
 import { confirmFile, requestFileUploadUrl, updateSectionData } from "../../api/presskit";
@@ -103,7 +104,7 @@ export function TextSectionForm({
         }}
       />
       <div>
-        <Label>{label}</Label>
+        <Label hint={withPdf ? FIELD_HELP.rider : FIELD_HELP.custom}>{label}</Label>
         <Textarea
           rows={6}
           value={text}
@@ -122,7 +123,7 @@ export function TextSectionForm({
 
       {withPdf && (
         <div className="flex flex-col gap-2">
-          <Label>PDF do rider</Label>
+          <Label hint={FIELD_HELP.riderPdf}>PDF do rider</Label>
           {pdfUrl ? (
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-bg px-3 py-2 text-sm">
               <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate font-bold text-fg hover:underline">

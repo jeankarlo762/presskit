@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { Plus } from "lucide-react";
 import { SECTION_DEFAULT_TITLES, type PressSectionData } from "@presskit/shared";
 import { createPressMention, deletePressMention, updateSectionData, type PressMention } from "../../api/presskit";
@@ -97,7 +98,7 @@ export function PressManager({
         }}
       />
       <div>
-        <Label>Destaque (uma linha)</Label>
+        <Label hint={FIELD_HELP.press}>Destaque (uma linha)</Label>
         <Input
           value={highlight}
           maxLength={500}

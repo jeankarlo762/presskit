@@ -42,6 +42,8 @@ import { apiErrorMessage } from "../../api/axios";
 import { useAuthStore } from "../../store/auth.store";
 import { publicPresskitUrl } from "../../config";
 import { Card, FieldError, Select } from "../../components/ui";
+import { InfoTip, type InfoTipContent } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { TemplatePicker } from "./TemplatePicker";
 import { SectionsOrderCard } from "./SectionsOrderCard";
 import { PreviewPane } from "./PreviewPane";
@@ -155,10 +157,13 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-function SectionCard({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
+function SectionCard({ title, hint, children, className }: { title: string; hint?: InfoTipContent; children: ReactNode; className?: string }) {
   return (
     <Card className={"flex flex-col gap-3 p-5 " + (className ?? "")}>
-      <h2 className="text-[15px] font-extrabold text-fg">{title}</h2>
+      <h2 className="flex items-center gap-1.5 text-[15px] font-extrabold text-fg">
+        {title}
+        {hint && <InfoTip content={hint} label={`Sobre: ${title}`} />}
+      </h2>
       {children}
     </Card>
   );
@@ -348,11 +353,11 @@ export function CustomizePage() {
         </div>
         {saveError && status === "error" && <FieldError>{saveError}</FieldError>}
 
-        <SectionCard title="Modelo">
+        <SectionCard title="Modelo" hint={FIELD_HELP.template}>
           <TemplatePicker value={templateKey} colors={colors} bodyFont={presskit.themeFontKey} onSelect={selectTemplate} />
         </SectionCard>
 
-        <SectionCard title="Cores">
+        <SectionCard title="Cores" hint={FIELD_HELP.colors}>
           <div className="flex flex-wrap gap-2">
             {COLOR_PALETTES.map((palette) => {
               const selected = samePalette(presskit, palette);
@@ -398,7 +403,7 @@ export function CustomizePage() {
         </SectionCard>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <SectionCard title="Fontes">
+          <SectionCard title="Fontes" hint={FIELD_HELP.fonts}>
             <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-fg-muted">
               Títulos
               <Select
@@ -430,7 +435,7 @@ export function CustomizePage() {
             </label>
           </SectionCard>
 
-          <SectionCard title="Botões">
+          <SectionCard title="Botões" hint={FIELD_HELP.buttons}>
             <div role="radiogroup" aria-label="Estilo dos botões" className="flex gap-1.5">
               {BUTTON_STYLES.map((style) => {
                 const selected = presskit.themeButtonStyle === style;
@@ -457,19 +462,19 @@ export function CustomizePage() {
           </SectionCard>
         </div>
 
-        <SectionCard title="Fundo">
+        <SectionCard title="Fundo" hint={FIELD_HELP.background}>
           <BackgroundCard presskit={presskit} onImageChange={applyImages} onChange={change} />
         </SectionCard>
 
-        <SectionCard title="Identidade: capa, foto, logo e vídeo">
+        <SectionCard title="Identidade: capa, foto, logo e vídeo" hint={FIELD_HELP.identity}>
           <IdentityCard presskit={presskit} onImageChange={applyImages} onChange={change} />
         </SectionCard>
 
-        <SectionCard title="Contato rápido e links">
+        <SectionCard title="Contato rápido e links" hint={FIELD_HELP.conversion}>
           <ConversionCard presskit={presskit} onChange={change} />
         </SectionCard>
 
-        <SectionCard title="Site: frase, menu e abas">
+        <SectionCard title="Site: frase, menu e abas" hint={FIELD_HELP.site}>
           <SiteCard presskit={presskit} onChange={change} />
         </SectionCard>
 
@@ -485,7 +490,7 @@ export function CustomizePage() {
           onSectionChange={replaceSection}
         />
 
-        <SectionCard title="Idiomas">
+        <SectionCard title="Idiomas" hint={FIELD_HELP.languages}>
           <LanguagesCard
             presskit={presskit}
             sections={sections}
@@ -496,7 +501,7 @@ export function CustomizePage() {
           />
         </SectionCard>
 
-        <SectionCard title="Domínio próprio">
+        <SectionCard title="Domínio próprio" hint={FIELD_HELP.domain}>
           <DomainCard />
         </SectionCard>
       </div>

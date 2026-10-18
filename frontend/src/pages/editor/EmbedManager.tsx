@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { MEDIA_PROVIDER_LABELS, parseMediaUrl, type MediaProvider, type SectionType } from "@presskit/shared";
 import { createMedia, deleteMedia, updateSectionData, type MediaEmbed } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
@@ -102,6 +104,7 @@ export function EmbedManager({
     <Card className="flex flex-col gap-4">
       <div className="flex items-end gap-2">
         <SectionTitleField value={sectionTitle} defaultTitle={defaultTitle} onChange={handleTitleChange} />
+        <InfoTip content={sectionType === "MUSIC" ? FIELD_HELP.music : FIELD_HELP.video} label="Sobre esta seção" className="mb-2.5" />
         {titleChanged && (
           <Button onClick={handleSaveTitle} disabled={titleSaving} size="sm">
             Salvar título

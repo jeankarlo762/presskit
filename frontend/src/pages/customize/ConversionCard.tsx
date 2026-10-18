@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { Plus, Trash2 } from "lucide-react";
 import {
   MAX_QUICK_LINKS,
@@ -46,7 +47,7 @@ function WhatsAppFields({ presskit, onChange }: { presskit: Presskit; onChange: 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <Label>Número do WhatsApp (com DDI e DDD)</Label>
+        <Label hint={FIELD_HELP.whatsapp}>Número do WhatsApp (com DDI e DDD)</Label>
         <Input
           value={number}
           onChange={(e) => setNumber(e.target.value)}
@@ -59,7 +60,7 @@ function WhatsAppFields({ presskit, onChange }: { presskit: Presskit; onChange: 
       </div>
       {presskit.whatsappNumber && (
         <div>
-          <Label>Mensagem pronta</Label>
+          <Label hint={FIELD_HELP.whatsappMessage}>Mensagem pronta</Label>
           <Textarea
             rows={2}
             value={message}
@@ -108,7 +109,7 @@ function QuickLinksEditor({ links, onChange }: { links: QuickLink[]; onChange: (
 
   return (
     <div className="flex flex-col gap-3">
-      <Label>Links rápidos (ícones abaixo do nome)</Label>
+      <Label hint={FIELD_HELP.quickLinks}>Links rápidos (ícones abaixo do nome)</Label>
       {links.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {links.map((link, index) => (

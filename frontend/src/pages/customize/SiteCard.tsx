@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { NAV_MODES, NAV_MODE_LABELS, type NavMode, type PresskitUpdateInput } from "@presskit/shared";
 import type { Presskit } from "../../api/presskit";
 import { Input, Label, Select } from "../../components/ui";
@@ -29,7 +30,7 @@ export function SiteCard({ presskit, onChange }: { presskit: Presskit; onChange:
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Label>Nome na página</Label>
+        <Label hint={FIELD_HELP.displayName}>Nome na página</Label>
         <Input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -39,7 +40,7 @@ export function SiteCard({ presskit, onChange }: { presskit: Presskit; onChange:
         />
       </div>
       <div>
-        <Label>Frase abaixo do nome</Label>
+        <Label hint={FIELD_HELP.tagline}>Frase abaixo do nome</Label>
         <Input
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}

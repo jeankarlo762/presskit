@@ -5,6 +5,8 @@ import { updateSectionData } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
 import { SectionTitleField } from "./SectionTitleField";
 import { Button, Card, FieldError, Input, Textarea } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 
 export type ListField = {
   key: string;
@@ -92,7 +94,15 @@ export function ListSectionForm({
           onLiveChange(items, value);
         }}
       />
-      {description && <p className="text-xs text-fg-muted">{description}</p>}
+      {description && (
+        <p className="flex items-center gap-1.5 text-xs text-fg-muted">
+          {description}
+          <InfoTip
+            content={sectionType === "STATS" ? FIELD_HELP.stats : sectionType === "FAQ" ? FIELD_HELP.faq : FIELD_HELP.testimonials}
+            label="Sobre esta seção"
+          />
+        </p>
+      )}
 
       <ul className="flex flex-col gap-3">
         {items.map((item, index) => (

@@ -2,6 +2,9 @@ import { ImagePlus, Trash2 } from "lucide-react";
 import type { ImageSlot } from "@presskit/shared";
 import type { Presskit } from "../../api/presskit";
 import { FieldError } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { imageHelp } from "../../lib/fieldHelp";
+import { IMAGE_SPECS } from "../../lib/imageResize";
 import { useImageSlot } from "./useImageSlot";
 
 /** One upload tile: current image (or dashed drop target), upload / remove. */
@@ -32,7 +35,13 @@ export function ImageSlotField({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[13px] font-semibold text-fg-muted">{label}</span>
+      <span className="flex items-center gap-1.5 text-[13px] font-semibold text-fg-muted">
+        {label}
+        <span className="font-mono text-[11px] text-fg-muted/70">
+          {IMAGE_SPECS[slot].fit === "cover" ? `${IMAGE_SPECS[slot].width}×${IMAGE_SPECS[slot].height}` : `até ${IMAGE_SPECS[slot].width}`} px
+        </span>
+        <InfoTip content={imageHelp(slot)} label={`Especificações: ${label.toLowerCase()}`} />
+      </span>
       {url ? (
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-bg p-2">
           <img src={url} alt="" className={`${frame} shrink-0 object-cover ${shape === "logo" ? "object-contain bg-white/5 p-1" : ""}`} />

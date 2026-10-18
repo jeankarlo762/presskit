@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { Globe } from "lucide-react";
 import { customDomainSchema, type CustomDomainInfo } from "@presskit/shared";
 import { getCustomDomain, setCustomDomain } from "../../api/presskit";
@@ -54,7 +55,7 @@ export function DomainCard() {
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-[220px] flex-1">
-          <Label>Domínio</Label>
+          <Label hint={FIELD_HELP.domain}>Domínio</Label>
           <Input
             value={value}
             onChange={(e) => setValue(e.target.value)}

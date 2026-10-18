@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { InfoTip, type InfoTipContent } from "./InfoTip";
 import type {
   ButtonHTMLAttributes,
   FormHTMLAttributes,
@@ -101,8 +102,13 @@ export function Card(props: CardDivProps | CardFormProps) {
   );
 }
 
-export function Label({ children, className }: { children: ReactNode; className?: string }) {
-  return <label className={cx("mb-2 block text-sm font-bold text-fg", className)}>{children}</label>;
+export function Label({ children, className, hint }: { children: ReactNode; className?: string; hint?: InfoTipContent }) {
+  return (
+    <label className={cx("mb-2 flex items-center gap-1.5 text-sm font-bold text-fg", className)}>
+      {children}
+      {hint && <InfoTip content={hint} />}
+    </label>
+  );
 }
 
 export function FieldError({ children }: { children?: ReactNode }) {

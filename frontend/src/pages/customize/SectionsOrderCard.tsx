@@ -9,6 +9,8 @@ import {
 } from "@presskit/shared";
 import type { Presskit, Section } from "../../api/presskit";
 import { Card, FieldError, Input } from "../../components/ui";
+import { InfoTip } from "../../components/InfoTip";
+import { FIELD_HELP } from "../../lib/fieldHelp";
 import { SectionStylePanel } from "./SectionStylePanel";
 
 function sectionDisplayName(section: Section) {
@@ -240,7 +242,10 @@ export function SectionsOrderCard({
     <Card className="flex flex-col gap-1 p-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-[15px] font-extrabold text-fg">Seções da página</h2>
+          <h2 className="flex items-center gap-1.5 text-[15px] font-extrabold text-fg">
+            Seções da página
+            <InfoTip content={FIELD_HELP.sections} label="Sobre: seções da página" />
+          </h2>
           <p className="text-xs text-fg-muted">Ordem, nome, visibilidade e o estilo de cada uma (pincel).</p>
         </div>
         {addable.length > 0 && (
