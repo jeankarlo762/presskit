@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { PlanKey, UserRole } from "@presskit/shared";
+import type { AccountType, PlanKey, UserRole } from "@presskit/shared";
 
 export type AuthUser = {
   id: string;
@@ -8,6 +8,8 @@ export type AuthUser = {
   email: string;
   planKey: PlanKey;
   role: UserRole;
+  /** ARTIST (one page) or AGENCY (own page + roster of artist pages). */
+  accountType?: AccountType;
   /** ISO date while the free PRO trial runs, else null. */
   trialEndsAt?: string | null;
 };
@@ -36,6 +38,10 @@ export const useAuthStore = create<AuthState>()(
     { name: "presskit-auth" },
   ),
 );
+
+export function isAgency(user: AuthUser | null | undefined) {
+  return user?.accountType === "AGENCY";
+}
 
 export function isSuperadmin(user: AuthUser | null | undefined) {
   return user?.role === "SUPERADMIN";

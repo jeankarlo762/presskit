@@ -27,13 +27,13 @@ export async function galleryRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
 
   fastify.get("/presskit/gallery", async (request, reply) => {
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send({ photos: await listGalleryPhotos(presskit.id) });
   });
 
   fastify.post("/presskit/gallery/upload-url", async (request, reply) => {
     const { extension } = uploadUrlSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const result = await requestGalleryUpload(
       presskit.id,
       request.currentUser.planKey,
@@ -45,21 +45,21 @@ export async function galleryRoutes(fastify: FastifyInstance) {
 
   fastify.post("/presskit/gallery/confirm", async (request, reply) => {
     const input = confirmSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const photo = await confirmGalleryPhoto(presskit.id, request.currentUser.planKey, presskit.category, input);
     return reply.status(201).send({ photo });
   });
 
   fastify.delete("/presskit/gallery/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await deleteGalleryPhoto(presskit.id, id);
     return reply.status(204).send();
   });
 
   fastify.patch("/presskit/gallery/reorder", async (request, reply) => {
     const { order } = reorderSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await reorderGalleryPhotos(presskit.id, order);
     return reply.status(204).send();
   });

@@ -23,6 +23,7 @@ import type {
   PublicMediaEmbed,
   PublicPressMention,
   PublicTourDate,
+  RosterArtistCreateInput,
   SectionType,
   TourDateInput,
   TrackableLinkInput,
@@ -31,6 +32,11 @@ import type {
 export type Presskit = {
   id: string;
   slug: string;
+  kind: "ARTIST" | "AGENCY";
+  /** Name on the page; null = the account's name. */
+  displayName: string | null;
+  /** Set on an artist page created by an agency. */
+  agencyId: string | null;
   category: ArtistCategory;
   templateKey: string;
   published: boolean;
@@ -310,4 +316,17 @@ export async function confirmFile(storageKey: string) {
     { storageKey },
   );
   return data;
+}
+
+// Agency roster -------------------------------------------------------------
+export async function listMyPresskits() {
+  const { data } = await api.get<{ presskits: Presskit[]; roster: { used: number; seats: number } }>("/presskit/all");
+  return data;
+}
+export async function createRosterArtist(input: RosterArtistCreateInput) {
+  const { data } = await api.post<{ presskit: Presskit }>("/presskit/roster", input);
+  return data.presskit;
+}
+export async function deleteRosterArtist(id: string) {
+  await api.delete(`/presskit/roster/${id}`);
 }

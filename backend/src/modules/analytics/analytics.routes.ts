@@ -9,7 +9,7 @@ export async function analyticsRoutes(fastify: FastifyInstance) {
 
   fastify.get("/analytics/summary", async (request, reply) => {
     const { days } = analyticsSummaryQuerySchema.parse(request.query);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const summary = await getAnalyticsSummary(presskit, request.currentUser.planKey, days);
     return reply.send({ summary });
   });

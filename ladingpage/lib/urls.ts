@@ -18,3 +18,7 @@ export const DASHBOARD_URL = trimTrailingSlash(process.env.NEXT_PUBLIC_DASHBOARD
 
 export const DASHBOARD_SIGNUP_URL = `${DASHBOARD_URL}/signup`;
 export const DASHBOARD_LOGIN_URL = `${DASHBOARD_URL}/login`;
+
+/** This site's own public origin — used for absolute links between pages
+ * when a page is served on an artist's/agency's custom domain. */
+export const PUBLIC_SITE_URL = trimTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL ?? "https://presskitai.com.br");

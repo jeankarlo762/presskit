@@ -12,6 +12,8 @@ import { AuthLayout } from "../components/auth/AuthLayout";
 /** sessionStorage key carrying the plan chosen on the landing page through
  * signup → onboarding → /assinatura, so the pricing CTA ends in a checkout. */
 export const CHOSEN_PLAN_KEY = "presskit-plano";
+/** Same trip for "?conta=produtora" (landing → signup → onboarding). */
+export const CHOSEN_ACCOUNT_KEY = "presskit-conta";
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -21,12 +23,12 @@ export function SignupPage() {
 
   useEffect(() => {
     const plano = params.get("plano");
-    if (plano) {
-      try {
-        sessionStorage.setItem(CHOSEN_PLAN_KEY, plano);
-      } catch {
-        // storage blocked — the user simply picks the plan again later
-      }
+    const conta = params.get("conta");
+    try {
+      if (plano) sessionStorage.setItem(CHOSEN_PLAN_KEY, plano);
+      if (conta) sessionStorage.setItem(CHOSEN_ACCOUNT_KEY, conta);
+    } catch {
+      // storage blocked — the user simply picks the plan again later
     }
   }, [params]);
 

@@ -54,6 +54,34 @@ export const BILLING_PLANS: Record<BillingCycle, BillingPlan> = {
 
 export const BILLING_PLAN_LIST: BillingPlan[] = BILLING_CYCLES.map((cycle) => BILLING_PLANS[cycle]);
 
+/** Agency (produtora) plans: the agency's own page plus N artist pages,
+ * priced per artist per month. Pick a pack of seats, then a cycle. */
+export const AGENCY_SEAT_OPTIONS = [3, 5, 10, 20] as const;
+export const AGENCY_MAX_SEATS = 50;
+
+export const AGENCY_PRICING: Record<BillingCycle, { perArtistMonthlyCents: number }> = {
+  TRIMESTRAL: { perArtistMonthlyCents: 3900 },
+  SEMESTRAL: { perArtistMonthlyCents: 3200 },
+  ANUAL: { perArtistMonthlyCents: 2500 },
+};
+
+export const AGENCY_PLAN_FEATURES = [
+  "Página da produtora com a lista de artistas",
+  "Uma página completa por artista",
+  "Troque de artista pelo painel, sem logins separados",
+  "Tudo do plano PRO em cada página",
+];
+
+/** Per month, for `seats` artists on `cycle`. */
+export function agencyMonthlyCents(cycle: BillingCycle, seats: number): number {
+  return AGENCY_PRICING[cycle].perArtistMonthlyCents * seats;
+}
+
+/** What Mercado Pago charges an agency once per cycle. */
+export function agencyCycleTotalCents(cycle: BillingCycle, seats: number): number {
+  return agencyMonthlyCents(cycle, seats) * BILLING_PLANS[cycle].months;
+}
+
 /** What Mercado Pago charges once per cycle. */
 export function cycleTotalCents(cycle: BillingCycle): number {
   const plan = BILLING_PLANS[cycle];

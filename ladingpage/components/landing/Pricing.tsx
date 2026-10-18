@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { BILLING_PLAN_LIST, cycleTotalCents, type BillingPlan } from "@presskit/shared";
+import { AGENCY_PLAN_FEATURES, AGENCY_PRICING, BILLING_PLAN_LIST, cycleTotalCents, type BillingPlan } from "@presskit/shared";
 import { ButtonLink, Container, SectionHeading } from "./ui";
 import { DASHBOARD_SIGNUP_URL } from "../../lib/urls";
 
@@ -74,6 +74,30 @@ export function Pricing() {
         <p className="text-sm text-muted">
           Plano grátis disponível para sempre, com marca d&apos;água e 1 link rastreável.
         </p>
+
+        <div
+          id="produtoras"
+          className="flex flex-col gap-5 rounded-[18px] border border-line bg-surface p-7 md:flex-row md:items-center md:justify-between"
+        >
+          <div className="flex max-w-xl flex-col gap-2.5">
+            <h3 className="text-lg font-extrabold">Para produtoras, selos e agências</h3>
+            <p className="text-[15px] text-soft">
+              Uma página da produtora com a lista de artistas, mais uma página completa para cada um — tudo em um painel
+              só. A partir de <strong>{formatPrice(AGENCY_PRICING.ANUAL.perArtistMonthlyCents)}</strong> por artista/mês no
+              plano anual ({formatPrice(AGENCY_PRICING.TRIMESTRAL.perArtistMonthlyCents)} no trimestral).
+            </p>
+            <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-soft">
+              {AGENCY_PLAN_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-center gap-1.5">
+                  <Check size={14} aria-hidden className="shrink-0 text-accent" /> {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ButtonLink href={`${DASHBOARD_SIGNUP_URL}?conta=produtora`} variant="outline" aria-label="Criar conta de produtora">
+            Criar conta de produtora
+          </ButtonLink>
+        </div>
       </Container>
     </section>
   );

@@ -1,7 +1,9 @@
 import type { Prisma, PaymentStatus, Subscription, SubscriptionStatus, User } from "@prisma/client";
 import {
+  AGENCY_MAX_SEATS,
   BILLING_GRACE_DAYS,
   BILLING_PLANS,
+  agencyCycleTotalCents,
   cycleTotalCents,
   type BillingCycle,
   type MyBilling,
@@ -10,6 +12,7 @@ import {
 } from "@presskit/shared";
 import { prisma } from "../../config/prisma";
 import { env } from "../../config/env";
+import { countRosterPages, effectiveArtistSeats } from "../presskit/presskit.service";
 import {
   BillingProviderError,
   getAuthorizedPayment,
@@ -121,7 +124,25 @@ export async function syncEntitlement(userId: string) {
   });
 
   const planKey = entitled ? "PRO" : "FREE";
-  await prisma.user.updateMany({ where: { id: userId, NOT: { planKey } }, data: { planKey } });
+  // Agency seats follow the same entitlement: the largest pack among the
+  // subscriptions that currently count, nothing once none does.
+  const artistSeats = entitled
+    ? Math.max(
+        0,
+        ...subscriptions
+          .filter((subscription) => {
+            const periodEnd = subscription.currentPeriodEnd?.getTime();
+            if (subscription.status === "AUTHORIZED") return !subscription.pastDue && (periodEnd === undefined || periodEnd + GRACE_MS > now);
+            if (subscription.status === "CANCELLED" || subscription.status === "PAUSED") return periodEnd !== undefined && periodEnd > now;
+            return false;
+          })
+          .map((subscription) => subscription.seats),
+      )
+    : 0;
+  await prisma.user.updateMany({
+    where: { id: userId, OR: [{ NOT: { planKey } }, { NOT: { artistSeats } }] },
+    data: { planKey, artistSeats },
+  });
 }
 
 /** A subscription is past due when the paid period (or, lacking one, MP's
@@ -140,7 +161,10 @@ function computePastDue(subscription: Pick<Subscription, "status" | "currentPeri
 // Checkout (user side)
 // ---------------------------------------------------------------------------
 
-export async function startCheckout(user: Pick<User, "id" | "email">, cycle: BillingCycle) {
+export async function startCheckout(user: Pick<User, "id" | "email" | "accountType">, cycle: BillingCycle, requestedSeats?: number) {
+  // Artists always buy one page; agencies pick a pack of artist pages.
+  const isAgency = user.accountType === "AGENCY";
+  const seats = isAgency ? Math.min(AGENCY_MAX_SEATS, Math.max(1, requestedSeats ?? 5)) : 1;
   const open = await prisma.subscription.findMany({
     where: { userId: user.id, status: { in: OPEN_STATUSES } },
     orderBy: { createdAt: "desc" },
@@ -151,7 +175,7 @@ export async function startCheckout(user: Pick<User, "id" | "email">, cycle: Bil
 
   // Resume an abandoned checkout for the same cycle instead of piling up
   // preapprovals on the MP side.
-  const resumable = open.find((s) => s.status === "PENDING" && s.cycle === cycle && s.mpInitPoint);
+  const resumable = open.find((s) => s.status === "PENDING" && s.cycle === cycle && s.seats === seats && s.mpInitPoint);
   if (resumable) return { subscription: resumable, checkoutUrl: resumable.mpInitPoint! };
 
   // Any other stale pending checkout is superseded by this one.
@@ -161,18 +185,21 @@ export async function startCheckout(user: Pick<User, "id" | "email">, cycle: Bil
   });
 
   const plan = BILLING_PLANS[cycle];
-  const amountCents = cycleTotalCents(cycle);
+  const amountCents = isAgency ? agencyCycleTotalCents(cycle, seats) : cycleTotalCents(cycle);
+  const reason = isAgency
+    ? `PressKit.AI — produtora, ${seats} ${seats === 1 ? "artista" : "artistas"}, plano ${plan.label}`
+    : `PressKit.AI — plano ${plan.label}`;
 
   // Local row first so its id can travel to MP as external_reference —
   // that's what lets a webhook (or the return redirect) find its way back.
   const subscription = await prisma.subscription.create({
-    data: { userId: user.id, cycle, amountCents, status: "PENDING" },
+    data: { userId: user.id, cycle, seats, amountCents, status: "PENDING" },
   });
 
   try {
     const response = await preapprovalClient().create({
       body: {
-        reason: `PressKit.AI — plano ${plan.label}`,
+        reason,
         external_reference: subscription.id,
         payer_email: user.email,
         back_url: `${env.PUBLIC_DASHBOARD_URL.replace(/\/+$/, "")}/assinatura?retorno=mp`,
@@ -496,6 +523,7 @@ function toMySubscription(subscription: Subscription): MySubscription {
   return {
     id: subscription.id,
     cycle: subscription.cycle,
+    seats: subscription.seats,
     status: subscription.status,
     amountCents: subscription.amountCents,
     pastDue: subscription.pastDue,
@@ -509,14 +537,17 @@ function toMySubscription(subscription: Subscription): MySubscription {
   };
 }
 
-export async function getMyBilling(user: Pick<User, "id" | "planKey" | "trialEndsAt">): Promise<MyBilling> {
-  const [subscription, payments] = await Promise.all([
+export async function getMyBilling(
+  user: Pick<User, "id" | "planKey" | "trialEndsAt" | "accountType" | "artistSeats">,
+): Promise<MyBilling> {
+  const [subscription, payments, artistsUsed] = await Promise.all([
     prisma.subscription.findFirst({
       where: { userId: user.id },
       // Open subscriptions first, then the most recent cancelled one.
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     }),
     prisma.payment.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 24 }),
+    user.accountType === "AGENCY" ? countRosterPages(user.id) : Promise.resolve(0),
   ]);
 
   const current = await pickCurrentSubscription(user.id, subscription);
@@ -524,6 +555,9 @@ export async function getMyBilling(user: Pick<User, "id" | "planKey" | "trialEnd
   const trialActive = !current && !!user.trialEndsAt && user.trialEndsAt > new Date();
   return {
     planKey: user.planKey,
+    accountType: user.accountType,
+    artistSeats: effectiveArtistSeats(user),
+    artistsUsed,
     trialEndsAt: trialActive ? user.trialEndsAt!.toISOString() : null,
     subscription: current ? toMySubscription(current) : null,
     payments: payments.map(

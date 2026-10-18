@@ -64,6 +64,9 @@ export type AdminUserRow = {
   email: string;
   role: (typeof USER_ROLES)[number];
   planKey: (typeof PLAN_KEYS)[number];
+  accountType: "ARTIST" | "AGENCY";
+  /** AGENCY: roster pages created / seats available. */
+  artists: { used: number; seats: number } | null;
   createdAt: string;
   lastLoginAt: string | null;
   presskit: { slug: string; published: boolean; pageViews: number } | null;

@@ -258,6 +258,10 @@ export const SECTION_ALIGN_LABELS: Record<SectionAlign, string> = { left: "Esque
 
 /** Layout variants each section type can switch between (first = default). */
 export const SECTION_LAYOUTS: Record<string, readonly { key: string; label: string }[]> = {
+  ROSTER: [
+    { key: "grid", label: "Cards com foto" },
+    { key: "list", label: "Lista" },
+  ],
   BIO: [
     { key: "text", label: "Texto" },
     { key: "split", label: "Foto ao lado do texto" },

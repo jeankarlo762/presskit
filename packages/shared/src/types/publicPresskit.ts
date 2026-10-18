@@ -57,10 +57,27 @@ export type PublicPressMention = {
   publishedAt: string | null;
 };
 
+/** A roster entry on an agency page: just enough for a card + link. */
+export type PublicRosterArtist = {
+  slug: string;
+  name: string;
+  category: ArtistCategory;
+  tagline: string | null;
+  city: string | null;
+  state: string | null;
+  avatarImageUrl: string | null;
+  coverImageUrl: string | null;
+};
+
 export type PublicPresskit = {
   id: string;
   slug: string;
   artistName: string;
+  kind?: "ARTIST" | "AGENCY";
+  /** Artist page created by an agency: who represents them. */
+  agency?: { slug: string; name: string } | null;
+  /** Agency page: its published artists, in roster order. */
+  roster?: PublicRosterArtist[];
   category: ArtistCategory;
   templateKey: string;
   city: string | null;

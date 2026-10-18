@@ -11,5 +11,9 @@ declare module "fastify" {
   }
   interface FastifyRequest {
     currentUser: User;
+    /** Which of the user's presskits the request is about (header
+     * `X-Presskit-Id`); null = the account's primary page. Ownership is
+     * checked by getOwnedPresskitOrThrow, never trusted from the header. */
+    presskitId: string | null;
   }
 }

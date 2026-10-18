@@ -12,6 +12,7 @@ import {
 } from "@presskit/shared";
 import { PresskitRenderer } from "@presskit/shared/ui";
 import { fetchPublicPresskit, recordPresskitView } from "../../lib/api";
+import { PUBLIC_SITE_URL } from "../../lib/urls";
 import { FONT_FAMILY } from "../../lib/fonts";
 import { ClickTracker } from "../../components/presskit/ClickTracker";
 
@@ -41,7 +42,8 @@ export async function generateMetadata(props: PageProps<"/[slug]">): Promise<Met
   const shortBio = (lang === "en" ? bioEn?.shortBio : undefined) || bio?.shortBio;
   const categoryLabel = (lang === "en" ? ARTIST_CATEGORY_LABELS_EN : ARTIST_CATEGORY_LABELS)[presskit.category];
 
-  const title = presskit.ogTitleOverride ?? `${presskit.artistName} — Presskit`;
+  const isAgency = presskit.kind === "AGENCY";
+  const title = presskit.ogTitleOverride ?? (isAgency ? `${presskit.artistName} — Artistas` : `${presskit.artistName} — Presskit`);
   const description =
     presskit.ogDescriptionOverride ??
     shortBio ??
@@ -91,7 +93,13 @@ export default async function PresskitPage(props: PageProps<"/[slug]">) {
   return (
     <>
       <ClickTracker slug={slug} />
-      <PresskitRenderer presskit={presskit} fontFamilies={FONT_FAMILY} lang={lang} languageHref={languageHref} />
+      <PresskitRenderer
+        presskit={presskit}
+        fontFamilies={FONT_FAMILY}
+        lang={lang}
+        languageHref={languageHref}
+        siteBaseUrl={onCustomDomain ? PUBLIC_SITE_URL : ""}
+      />
     </>
   );
 }

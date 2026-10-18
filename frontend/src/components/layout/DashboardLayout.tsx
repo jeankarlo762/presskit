@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -15,9 +15,11 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
+import { listMyPresskits, type Presskit } from "../../api/presskit";
+import { usePresskitStore } from "../../store/presskit.store";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { fetchMe, logout } from "../../api/auth";
-import { isSuperadmin, useAuthStore } from "../../store/auth.store";
+import { isAgency, isSuperadmin, useAuthStore } from "../../store/auth.store";
 import { Logo } from "../ui";
 
 type NavItem = { to: string; label: string; icon: typeof FileEdit; end?: boolean };
@@ -37,7 +39,32 @@ const CONTA_ITEMS: NavItem[] = [
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
 ];
 
+const AGENCY_ITEMS: NavItem[] = [{ to: "/artistas", label: "Artistas", icon: Users }];
+
 const TRIAL_DAYS = 14;
+
+/** Agency accounts: which page the editor is on. Changing it remounts the
+ * routed page (key on <Outlet/>), so every screen reloads for that page. */
+function PageSwitcher({ pages, activeId, onChange }: { pages: Presskit[]; activeId: string | null; onChange: (id: string | null) => void }) {
+  if (pages.length === 0) return null;
+  const current = pages.find((p) => (p.agencyId ? p.id === activeId : activeId === null)) ?? pages[0]!;
+  return (
+    <label className="flex flex-col gap-1 px-1 text-[11px] font-bold uppercase tracking-widest text-fg-muted/80">
+      Editando
+      <select
+        value={current.agencyId ? current.id : ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="min-h-11 w-full rounded-xl border border-white/10 bg-bg px-3 text-sm font-bold normal-case tracking-normal text-fg outline-none focus:border-primary-text"
+      >
+        {pages.map((page) => (
+          <option key={page.id} value={page.agencyId ? page.id : ""}>
+            {page.agencyId ? page.displayName ?? page.slug : `Produtora · ${page.displayName ?? page.slug}`}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 /** Sidebar card while the free PRO trial runs: days left and the way out. */
 function TrialCard({ trialEndsAt }: { trialEndsAt: string }) {
@@ -92,6 +119,28 @@ function NavGroup({ label, items }: { label?: string; items: NavItem[] }) {
 export function DashboardLayout() {
   const navigate = useNavigate();
   const { user, refreshToken, clearSession, setUser } = useAuthStore();
+  const { activePresskitId, setActivePresskitId } = usePresskitStore();
+  const agency = isAgency(user);
+  const [pages, setPages] = useState<Presskit[]>([]);
+
+  useEffect(() => {
+    if (!agency) {
+      if (activePresskitId) setActivePresskitId(null);
+      return;
+    }
+    listMyPresskits()
+      .then(({ presskits }) => {
+        setPages(presskits);
+        // A deleted/unknown page in storage falls back to the agency's own.
+        if (activePresskitId && !presskits.some((p) => p.id === activePresskitId)) setActivePresskitId(null);
+      })
+      .catch(() => undefined);
+  }, [agency, activePresskitId, setActivePresskitId]);
+
+  function switchPage(id: string | null) {
+    setActivePresskitId(id);
+    navigate("/");
+  }
 
   // Re-read the profile on mount: role/plan may have changed server-side
   // (promoted to superadmin, subscription approved) since it was stored.
@@ -113,8 +162,11 @@ export function DashboardLayout() {
         <div className="flex flex-col gap-5">
           <Logo className="px-2 text-[22px]" />
 
+          {agency && <PageSwitcher pages={pages} activeId={activePresskitId} onChange={switchPage} />}
+
           <nav aria-label="Menu" className="flex flex-col gap-1">
             <NavGroup items={MAIN_ITEMS} />
+            {agency && <NavGroup items={AGENCY_ITEMS} />}
             <NavGroup label="Conta" items={CONTA_ITEMS} />
             {isSuperadmin(user) && (
               <>
@@ -131,6 +183,7 @@ export function DashboardLayout() {
           {user?.trialEndsAt && <TrialCard trialEndsAt={user.trialEndsAt} />}
           <p className="truncate px-3 text-sm text-fg-muted">
             {user?.name}
+            {agency && <span className="ml-2 text-[11px] font-bold text-fg-muted/70">produtora</span>}
             <span className={"ml-2 text-[11px] font-bold " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
               {user?.planKey}
             </span>
@@ -146,7 +199,7 @@ export function DashboardLayout() {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">
+      <main className="min-w-0 flex-1" key={activePresskitId ?? "primary"}>
         <Outlet />
       </main>
     </div>

@@ -3,6 +3,8 @@ import { BILLING_CYCLES, type BillingCycle, type PaymentStatus, type Subscriptio
 
 export const checkoutSchema = z.object({
   cycle: z.enum(BILLING_CYCLES),
+  /** Agency accounts only: how many artist pages the plan includes. */
+  seats: z.number().int().min(1).max(50).optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
@@ -10,6 +12,7 @@ export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type MySubscription = {
   id: string;
   cycle: BillingCycle;
+  seats: number;
   status: SubscriptionStatus;
   amountCents: number;
   pastDue: boolean;
@@ -35,6 +38,11 @@ export type MyPayment = {
 
 export type MyBilling = {
   planKey: "FREE" | "PRO";
+  accountType: "ARTIST" | "AGENCY";
+  /** AGENCY: artist pages the account may have right now (trial included). */
+  artistSeats: number;
+  /** AGENCY: roster pages that already exist. */
+  artistsUsed: number;
   /** ISO date while the free PRO trial runs and no subscription exists. */
   trialEndsAt: string | null;
   subscription: MySubscription | null;

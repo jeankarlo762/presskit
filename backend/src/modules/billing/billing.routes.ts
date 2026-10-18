@@ -20,8 +20,8 @@ export async function billingRoutes(fastify: FastifyInstance) {
     });
 
     authenticated.post("/billing/checkout", CHECKOUT_RATE_LIMIT, async (request, reply) => {
-      const { cycle } = checkoutSchema.parse(request.body);
-      const { checkoutUrl, subscription } = await startCheckout(request.currentUser, cycle);
+      const { cycle, seats } = checkoutSchema.parse(request.body);
+      const { checkoutUrl, subscription } = await startCheckout(request.currentUser, cycle, seats);
       return reply.status(201).send({ checkoutUrl, subscriptionId: subscription.id });
     });
 

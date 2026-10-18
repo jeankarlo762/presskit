@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, ExternalLink, Monitor, Palette, Smartphone } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, Monitor, Palette, Smartphone, Users } from "lucide-react";
 import {
   FONT_FAMILY_CSS,
   SECTION_DEFAULT_TITLES,
@@ -166,7 +166,7 @@ export function DashboardHomePage() {
   // font, button style…) reaches the preview without listing each one here.
   const previewPresskit: PublicPresskit = {
     ...presskit,
-    artistName: user?.name ?? "",
+    artistName: presskit.displayName ?? user?.name ?? "",
     ogTitleOverride: null,
     ogDescriptionOverride: null,
     sections: previewSections.map((s) => ({ ...s, data: s.data ?? {} })),
@@ -177,9 +177,10 @@ export function DashboardHomePage() {
   };
 
   // "Ready to send to a booker": the minimum a contractor expects to find.
+  const isAgencyPage = presskit.kind === "AGENCY";
   const checklist = [
-    { label: "Bio curta", done: bioData.shortBio.trim().length > 0 },
-    { label: "Música ou set", done: media.some((m) => AUDIO_PROVIDERS.includes(m.provider)) },
+    { label: isAgencyPage ? "Apresentação da produtora" : "Bio curta", done: bioData.shortBio.trim().length > 0 },
+    ...(isAgencyPage ? [] : [{ label: "Música ou set", done: media.some((m) => AUDIO_PROVIDERS.includes(m.provider)) }]),
     { label: "Contato para shows", done: !!contactData.email?.trim() },
     { label: "3 fotos na galeria", done: gallery.length >= 3 },
     { label: "Próximas datas", done: tourDates.length > 0 },
@@ -191,7 +192,9 @@ export function DashboardHomePage() {
     <div className="flex min-h-screen flex-col gap-6 px-5 py-6 sm:px-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[26px] font-extrabold text-fg">Meu presskit</h1>
+          <h1 className="text-[26px] font-extrabold text-fg">
+            {isAgencyPage ? "Página da produtora" : presskit.displayName ?? "Meu presskit"}
+          </h1>
           <p className="text-sm text-fg-muted">
             {SITE_HOST}/{presskit.slug} ·{" "}
             <span className={presskit.published ? "font-bold text-emerald-400" : "font-semibold"}>
@@ -276,6 +279,23 @@ export function DashboardHomePage() {
               <span className="text-[13px] text-fg-muted">Modelo, cores, fundos, abas e seções extras (números, depoimentos, FAQ, downloads…)</span>
             </span>
           </Link>
+
+          {isAgencyPage && (
+            <Link
+              to="/artistas"
+              className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
+                <Users size={20} />
+              </span>
+              <span className="flex flex-col">
+                <span className="font-bold text-fg">Artistas</span>
+                <span className="text-[13px] text-fg-muted">
+                  Crie e edite a página de cada artista. Os publicados aparecem na seção "Artistas" desta página.
+                </span>
+              </span>
+            </Link>
+          )}
 
           <BioForm
             initial={bioData}

@@ -2,10 +2,24 @@ import { useEffect, useState } from "react";
 import { NAV_MODES, NAV_MODE_LABELS, type NavMode, type PresskitUpdateInput } from "@presskit/shared";
 import type { Presskit } from "../../api/presskit";
 import { Input, Label, Select } from "../../components/ui";
+import { useAuthStore } from "../../store/auth.store";
 
 export function SiteCard({ presskit, onChange }: { presskit: Presskit; onChange: (patch: PresskitUpdateInput) => void }) {
+  const userName = useAuthStore((state) => state.user?.name ?? "");
   const [tagline, setTagline] = useState(presskit.tagline ?? "");
+  const [displayName, setDisplayName] = useState(presskit.displayName ?? "");
   useEffect(() => setTagline(presskit.tagline ?? ""), [presskit.tagline]);
+  useEffect(() => setDisplayName(presskit.displayName ?? ""), [presskit.displayName]);
+
+  function commitDisplayName() {
+    const trimmed = displayName.trim();
+    // Roster pages must keep a name; the account page can fall back to the account name.
+    if (presskit.agencyId && trimmed.length < 2) {
+      setDisplayName(presskit.displayName ?? "");
+      return;
+    }
+    if ((trimmed || null) !== presskit.displayName) onChange({ displayName: trimmed || null });
+  }
 
   function commitTagline() {
     const trimmed = tagline.trim();
@@ -14,6 +28,16 @@ export function SiteCard({ presskit, onChange }: { presskit: Presskit; onChange:
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <Label>Nome na página</Label>
+        <Input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          onBlur={commitDisplayName}
+          maxLength={80}
+          placeholder={presskit.agencyId ? "Nome artístico" : userName || "Nome da conta"}
+        />
+      </div>
       <div>
         <Label>Frase abaixo do nome</Label>
         <Input

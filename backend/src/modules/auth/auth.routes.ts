@@ -26,6 +26,7 @@ function toPublicUser(user: {
   email: string;
   planKey: string;
   role: string;
+  accountType: string;
   trialEndsAt: Date | null;
   passwordHash: string | null;
   googleId: string | null;
@@ -39,6 +40,7 @@ function toPublicUser(user: {
     email: user.email,
     planKey: inTrial ? "PRO" : user.planKey,
     role: user.role,
+    accountType: user.accountType,
     trialEndsAt: inTrial ? user.trialEndsAt!.toISOString() : null,
     // Which sign-in methods exist — never the secrets themselves.
     hasPassword: !!user.passwordHash,

@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Check, CreditCard, ExternalLink } from "lucide-react";
 import {
+  AGENCY_PLAN_FEATURES,
+  AGENCY_SEAT_OPTIONS,
   BILLING_CYCLES,
   BILLING_PLAN_LIST,
   BILLING_PLANS,
+  agencyCycleTotalCents,
+  agencyMonthlyCents,
   cycleTotalCents,
   formatBRL,
   type BillingCycle,
@@ -30,6 +34,7 @@ export function SubscriptionPage() {
   const [billing, setBilling] = useState<MyBilling | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyCycle, setBusyCycle] = useState<BillingCycle | null>(null);
+  const [seats, setSeats] = useState<number>(5);
   const [cancelArmed, setCancelArmed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +52,10 @@ export function SubscriptionPage() {
       .then(async (result) => {
         if (cancelled) return;
         setBilling(result);
+        if (result.accountType === "AGENCY") {
+          const wanted = result.subscription?.seats ?? Math.max(result.artistsUsed, 5);
+          setSeats(AGENCY_SEAT_OPTIONS.find((n) => n >= wanted) ?? AGENCY_SEAT_OPTIONS[AGENCY_SEAT_OPTIONS.length - 1]!);
+        }
         if (returnedFromMp) {
           setNotice(
             result.subscription?.status === "AUTHORIZED"
@@ -69,7 +78,7 @@ export function SubscriptionPage() {
     setError(null);
     setBusyCycle(cycle);
     try {
-      const { checkoutUrl } = await startCheckout(cycle);
+      const { checkoutUrl } = await startCheckout(cycle, isAgencyAccount ? seats : undefined);
       window.location.assign(checkoutUrl);
     } catch (err) {
       setError(apiErrorMessage(err, "Não foi possível iniciar o pagamento"));
@@ -93,6 +102,7 @@ export function SubscriptionPage() {
     }
   }
 
+  const isAgencyAccount = billing?.accountType === "AGENCY";
   const subscription = billing?.subscription ?? null;
   const hasOpenSubscription = subscription !== null && subscription.status !== "CANCELLED";
   const isActive = subscription?.status === "AUTHORIZED";
@@ -106,7 +116,11 @@ export function SubscriptionPage() {
       <PageHeader
         icon={CreditCard}
         title="Assinatura"
-        description="Escolha um ciclo, pague pelo Mercado Pago e seu presskit fica no plano PRO."
+        description={
+          isAgencyAccount
+            ? "Escolha quantos artistas e o ciclo, pague pelo Mercado Pago e todas as páginas ficam no PRO."
+            : "Escolha um ciclo, pague pelo Mercado Pago e seu presskit fica no plano PRO."
+        }
       />
 
       {trialDaysLeft !== null && (
@@ -156,6 +170,7 @@ export function SubscriptionPage() {
                   <dt className="text-fg-muted">Ciclo</dt>
                   <dd className="font-medium text-fg">
                     {BILLING_PLANS[subscription.cycle].label} · {formatBRL(subscription.amountCents)}
+                    {isAgencyAccount && ` · ${subscription.seats} ${subscription.seats === 1 ? "artista" : "artistas"}`}
                   </dd>
                 </div>
                 <div>
@@ -203,8 +218,47 @@ export function SubscriptionPage() {
             </p>
           )}
 
+          {isAgencyAccount && (
+            <Card className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-extrabold text-fg">Quantos artistas?</h2>
+                  <p className="text-sm text-fg-muted">
+                    A página da produtora está incluída. Hoje você usa {billing?.artistsUsed ?? 0} de {billing?.artistSeats ?? 0}.
+                  </p>
+                </div>
+                <div role="radiogroup" aria-label="Artistas no plano" className="flex gap-1.5">
+                  {AGENCY_SEAT_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={seats === option}
+                      onClick={() => setSeats(option)}
+                      className={
+                        "min-h-11 min-w-14 rounded-xl px-3 text-sm font-bold transition " +
+                        (seats === option ? "border-2 border-primary bg-bg-elevated-2 text-fg" : "border border-white/15 text-fg-muted hover:text-fg")
+                      }
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-fg-muted">
+                {AGENCY_PLAN_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-center gap-1.5">
+                    <Check size={14} className="shrink-0 text-primary-text" /> {feature}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {BILLING_PLAN_LIST.map((plan) => {
+              const monthly = isAgencyAccount ? agencyMonthlyCents(plan.cycle, seats) : plan.monthlyPriceCents;
+              const total = isAgencyAccount ? agencyCycleTotalCents(plan.cycle, seats) : cycleTotalCents(plan.cycle);
               const current = subscription?.cycle === plan.cycle && hasOpenSubscription;
               const emphasized = plan.popular || highlighted === plan.cycle;
               return (
@@ -222,11 +276,12 @@ export function SubscriptionPage() {
                     <p className="text-sm text-fg-muted">Ciclo de {plan.months} meses</p>
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="font-display text-4xl text-fg">{formatBRL(plan.monthlyPriceCents)}</span>
+                    <span className="font-display text-4xl text-fg">{formatBRL(monthly)}</span>
                     <span className="text-sm text-fg-muted">/mês</span>
                   </div>
                   <p className="text-xs text-fg-muted">
-                    {formatBRL(cycleTotalCents(plan.cycle))} cobrados a cada {plan.months} meses
+                    {formatBRL(total)} cobrados a cada {plan.months} meses
+                    {isAgencyAccount && ` · ${seats} artistas`}
                     {plan.savingsLabel ? ` · ${plan.savingsLabel}` : ""}
                   </p>
                   <ul className="flex flex-col gap-2 text-sm text-fg-muted">

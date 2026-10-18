@@ -8,8 +8,11 @@ import {
 import {
   DomainAlreadyInUseError,
   DomainNotAllowedError,
+  NotAnAgencyError,
   PresskitAlreadyExistsError,
   PresskitNotFoundError,
+  RosterLimitError,
+  RosterPageNotFoundError,
   SlugAlreadyInUseError,
 } from "../modules/presskit/presskit.service";
 import { DomainRegistrationError } from "../modules/admin/domains.service";
@@ -54,6 +57,9 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [DomainNotAllowedError, 400],
   [DomainRegistrationError, 502],
   [PresskitAlreadyExistsError, 409],
+  [NotAnAgencyError, 403],
+  [RosterLimitError, 402],
+  [RosterPageNotFoundError, 404],
   [PlanLimitError, 402],
   [MediaEmbedNotFoundError, 404],
   [TourDateNotFoundError, 404],

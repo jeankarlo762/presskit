@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import type { ImageSlot } from "@presskit/shared";
 import { confirmImage, removeImage, requestImageUploadUrl, type Presskit } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
-import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
+import { uploadImageToStorage } from "../../lib/uploadImage";
+import { prepareImage } from "../../lib/imageResize";
 
 /**
  * Upload/removal for one image slot of the presskit (background, cover,
@@ -18,8 +19,10 @@ export function useImageSlot(slot: ImageSlot, onChange: (presskit: Presskit) => 
     setError(null);
     setUploading(true);
     try {
-      const ticket = await requestImageUploadUrl(slot, fileExtension(file));
-      await uploadImageToStorage(ticket, file);
+      // Resized/cropped to the slot's format before it leaves the browser.
+      const prepared = await prepareImage(file, slot);
+      const ticket = await requestImageUploadUrl(slot, prepared.extension);
+      await uploadImageToStorage(ticket, prepared.file);
       onChange(await confirmImage(slot, { storageKey: ticket.storageKey }));
     } catch (err) {
       setError(apiErrorMessage(err, "Não foi possível enviar a imagem"));

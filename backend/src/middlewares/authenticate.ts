@@ -30,6 +30,11 @@ export default fp(async function authenticatePlugin(fastify: FastifyInstance) {
     } else {
       request.currentUser = user;
     }
+
+    // Agencies switch between their pages with this header; it only
+    // narrows which *owned* presskit a route touches.
+    const requested = request.headers["x-presskit-id"];
+    request.presskitId = typeof requested === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(requested) ? requested : null;
   });
 
   fastify.decorate("requireSuperadmin", async (request: FastifyRequest, reply: FastifyReply) => {

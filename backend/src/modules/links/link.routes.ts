@@ -16,13 +16,13 @@ export async function linkRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
 
   fastify.get("/presskit/links", async (request, reply) => {
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send({ links: await listTrackableLinks(presskit.id) });
   });
 
   fastify.post("/presskit/links", async (request, reply) => {
     const input = trackableLinkSchema.omit({ id: true }).parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const link = await createTrackableLink(presskit.id, request.currentUser.planKey, input);
     return reply.status(201).send({ link });
   });
@@ -30,14 +30,14 @@ export async function linkRoutes(fastify: FastifyInstance) {
   fastify.patch("/presskit/links/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
     const input = updateSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const link = await updateTrackableLink(presskit.id, id, input);
     return reply.send({ link });
   });
 
   fastify.delete("/presskit/links/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await deleteTrackableLink(presskit.id, id);
     return reply.status(204).send();
   });

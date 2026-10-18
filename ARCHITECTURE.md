@@ -253,6 +253,36 @@ seção for recriada. Arquivos para download e PDF do rider sobem por `/presskit
 (pasta `files`, pdf/zip/docx/pptx/mp3 até 50 MB) e são servidos por `/media/*` com
 `Content-Disposition: attachment` para os formatos que o navegador abriria inline.
 
+## Contas de produtora (AGENCY) e várias páginas por login
+
+`User.accountType` é ARTIST ou AGENCY, decidido no onboarding (`POST /presskit/onboarding`,
+campo `accountType`). Um usuário pode ter vários `Presskit` (o `@unique` de `userId` caiu):
+a página primária (`agencyId = null`; para AGENCY tem `kind = AGENCY` e categoria
+`PRODUTORA`) e, para produtoras, as páginas de artistas do casting (`agencyId` aponta para a
+página da produtora, `displayName` guarda o nome artístico). Tudo pertence ao mesmo `userId`:
+um login edita todas as páginas.
+
+Qual página uma rota autenticada edita vem do header `X-Presskit-Id` (dashboard: store
+`presskit-active`, interceptor do axios). `authenticate.ts` só copia o header para
+`request.presskitId`; `getOwnedPresskitOrThrow(request)` resolve para a página pedida **se**
+for do usuário, senão a primária — nunca confia no header. `GET /presskit/all` lista as páginas e
+o uso de vagas; `POST /presskit/roster` cria artista (limite = `effectiveArtistSeats`);
+`DELETE /presskit/roster/:id` apaga só páginas com `agencyId` (e seus uploads).
+
+Vagas: `Subscription.seats` (planos de produtora são por artista/mês, `AGENCY_PRICING`,
+packs `AGENCY_SEAT_OPTIONS`); `syncEntitlement` copia o maior pack ativo para
+`User.artistSeats`; no teste grátis a produtora tem `AGENCY_TRIAL_SEATS` (3). A página pública
+da produtora tem a seção `ROSTER` (artistas publicados, montada pelo backend em
+`loadFullPublicPresskit`); a página do artista mostra "Artista de <produtora>" com link.
+
+## Imagens enviadas
+
+Toda imagem é redimensionada no navegador antes do PUT (`frontend/src/lib/imageResize.ts`,
+`prepareImage(file, kind)`): avatar 800×800 e capa 1600×900 com corte central; logo contida em
+1200×400 com transparência; fundo da página/seção e galeria contidas em 1920/2000 px; saída
+WebP (PNG/JPEG onde o navegador não codifica WebP). O backend continua aceitando só
+jpg/png/webp até 10 MB — o limite vira redundante, não a regra.
+
 ## Links de mídia (YouTube, Vimeo, Spotify, SoundCloud)
 
 `packages/shared/src/media/parseMediaUrl.ts` é a única fonte de verdade para "esse link é

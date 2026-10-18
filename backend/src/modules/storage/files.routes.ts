@@ -23,13 +23,13 @@ export async function filesRoutes(fastify: FastifyInstance) {
 
   fastify.post("/presskit/files/upload-url", async (request, reply) => {
     const { extension } = uploadUrlSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send(await createFileUploadUrl(presskit.id, extension));
   });
 
   fastify.post("/presskit/files/confirm", async (request, reply) => {
     const { storageKey } = keySchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     assertOwnedStorageKey(presskit.id, "files", storageKey);
     const info = await describeStoredFile(storageKey);
     return reply.send({ url: publicUrlFor(storageKey), storageKey, ...info });
@@ -39,7 +39,7 @@ export async function filesRoutes(fastify: FastifyInstance) {
   // lets it also free the object once the link is gone from the data.
   fastify.delete("/presskit/files", async (request, reply) => {
     const { storageKey } = keySchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     assertOwnedStorageKey(presskit.id, "files", storageKey);
     await deleteImageObject(storageKey);
     return reply.status(204).send();

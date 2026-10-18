@@ -20,7 +20,8 @@ import {
   type Section,
 } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
-import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
+import { uploadImageToStorage } from "../../lib/uploadImage";
+import { prepareImage } from "../../lib/imageResize";
 import { FieldError, Select } from "../../components/ui";
 
 /** A color that can be "inherit from the page": swatch + clear button. */
@@ -88,8 +89,9 @@ export function SectionStylePanel({
     setUploading(true);
     setError(null);
     try {
-      const ticket = await requestSectionBackgroundUploadUrl(section.type, fileExtension(file));
-      await uploadImageToStorage(ticket, file);
+      const prepared = await prepareImage(file, "section-bg");
+      const ticket = await requestSectionBackgroundUploadUrl(section.type, prepared.extension);
+      await uploadImageToStorage(ticket, prepared.file);
       onSectionChange(await confirmSectionBackground(section.type, ticket.storageKey));
     } catch (err) {
       setError(apiErrorMessage(err, "Não foi possível enviar a imagem"));

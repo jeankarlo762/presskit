@@ -20,11 +20,25 @@ enum UserRole {
   SUPERADMIN
 }
 
+/// What kind of customer the account is. ARTIST owns one page; AGENCY
+/// (produtora / selo / agência) owns its own page plus a roster of artist
+/// pages, capped by the seats of its subscription.
+enum AccountType {
+  ARTIST
+  AGENCY
+}
+
+enum PresskitKind {
+  ARTIST
+  AGENCY
+}
+
 enum ArtistCategory {
   MUSICO_BANDA
   DJ
   ATOR
   ARTISTA_VISUAL
+  PRODUTORA
 }
 
 enum SectionType {
@@ -41,6 +55,7 @@ enum SectionType {
   TESTIMONIALS
   FAQ
   DOWNLOADS
+  ROSTER
 }
 
 enum MediaProvider {
@@ -106,6 +121,10 @@ model User {
   /// other way (a superadmin may still override manually).
   planKey   PlanKey  @default(FREE)
   role      UserRole @default(USER)
+  accountType AccountType @default(ARTIST)
+  /// Artist pages an AGENCY may create, derived from its subscription by
+  /// syncEntitlement (trial grants AGENCY_TRIAL_SEATS on top, in memory).
+  artistSeats Int @default(0)
   lastLoginAt DateTime?
   /// End of the free PRO trial. New accounts get now() + 14 days from the
   /// database default; accounts that existed before the trial launched stay
@@ -113,7 +132,7 @@ model User {
   /// middlewares/authenticate.ts) — planKey itself is never touched.
   trialEndsAt DateTime? @default(dbgenerated("(now() + '14 days'::interval)"))
 
-  presskit      Presskit?
+  presskits     Presskit[]
   refreshTokens RefreshToken[]
   subscriptions Subscription[]
   payments      Payment[]
@@ -132,6 +151,8 @@ model Subscription {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   cycle       BillingCycle
+  /// Artist pages included (AGENCY plans); 1 for artist plans.
+  seats       Int                @default(1)
   status      SubscriptionStatus @default(PENDING)
   amountCents Int
   currency    String             @default("BRL")
@@ -241,8 +262,17 @@ model RefreshToken {
 
 model Presskit {
   id       String         @id @default(cuid())
-  userId   String         @unique
+  userId   String
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind PresskitKind @default(ARTIST)
+  /// Name shown on the page. Null = the owner's User.name (an artist's own
+  /// page); always set on roster pages, whose owner is the agency.
+  displayName String?
+  /// For an artist page created by an AGENCY: the agency's own presskit.
+  agencyId String?
+  agency   Presskit?  @relation("AgencyRoster", fields: [agencyId], references: [id], onDelete: SetNull)
+  roster   Presskit[] @relation("AgencyRoster")
 
   slug        String         @unique
   category    ArtistCategory
@@ -331,6 +361,9 @@ model Presskit {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([agencyId])
 }
 
 /// Keeps old slugs redirecting (301) for a period after an artist renames

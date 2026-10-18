@@ -38,6 +38,7 @@ import {
 import { whatsappUrl } from "../constants/quickLinks";
 import { heroVideoEmbedSrc } from "../media/parseMediaUrl";
 import { presskitButtonClass, TEMPLATE_STYLES, type HeaderVariant, type TemplateStyle } from "./templates";
+import { RosterBlock } from "./RosterBlock";
 import { BioBlock } from "./BioBlock";
 import { ContactBlock } from "./ContactBlock";
 import { AUDIO_PROVIDERS, MediaEmbedBlock, VIDEO_PROVIDERS } from "./MediaEmbedBlock";
@@ -73,7 +74,7 @@ function localizeSection(section: PublicSection, lang: PresskitLanguage): Locali
   return { title, data: merged };
 }
 
-function renderSection(section: PublicSection, presskit: PublicPresskit, lang: PresskitLanguage) {
+function renderSection(section: PublicSection, presskit: PublicPresskit, lang: PresskitLanguage, siteBaseUrl?: string) {
   const { title, data } = localizeSection(section, lang);
   const t = PUBLIC_STRINGS[lang]!;
   const layout = resolveSectionLayout(section.type, section.layout);
@@ -122,6 +123,17 @@ function renderSection(section: PublicSection, presskit: PublicPresskit, lang: P
       return <TestimonialsBlock title={title} data={data as TestimonialsSectionData} layout={layout} />;
     case "FAQ":
       return <FaqBlock title={title} data={data as FaqSectionData} />;
+    case "ROSTER":
+      return (
+        <RosterBlock
+          title={title}
+          artists={presskit.roster ?? []}
+          layout={layout}
+          lang={lang}
+          baseUrl={siteBaseUrl}
+          seeLabel={t.seeArtist ?? "Ver página"}
+        />
+      );
     case "DOWNLOADS":
       return (
         <DownloadsBlock title={title} data={data as DownloadsSectionData} layout={layout} downloadLabel={t.download ?? "Baixar"} />
@@ -160,6 +172,8 @@ function sectionHasContent(section: PublicSection, presskit: PublicPresskit): bo
     case "FAQ":
     case "DOWNLOADS":
       return items.length > 0;
+    case "ROSTER":
+      return (presskit.roster?.length ?? 0) > 0;
     default:
       return false;
   }
@@ -354,6 +368,24 @@ function Tagline({ presskit, className }: { presskit: PublicPresskit; className?
   return <p className={className ?? "text-base text-[var(--presskit-muted)] @3xl:text-lg"}>{presskit.tagline}</p>;
 }
 
+/** On a roster page: "Artista de <agência>", linking to the agency page. */
+function AgencyLine({ presskit, lang, siteBaseUrl = "" }: { presskit: PublicPresskit; lang: PresskitLanguage; siteBaseUrl?: string }) {
+  if (!presskit.agency) return null;
+  const t = PUBLIC_STRINGS[lang]!;
+  return (
+    <p className="text-sm text-[var(--presskit-muted)]">
+      {t.agencyOf}{" "}
+      <a
+        href={`${siteBaseUrl.replace(/\/+$/, "")}/${presskit.agency.slug}`}
+        data-track="agency"
+        className="font-semibold text-[var(--presskit-text)] underline decoration-[var(--presskit-accent)] underline-offset-4"
+      >
+        {presskit.agency.name}
+      </a>
+    </p>
+  );
+}
+
 function HeaderActions({ presskit, lang }: { presskit: PublicPresskit; lang: PresskitLanguage }) {
   const t = PUBLIC_STRINGS[lang]!;
   const visible = (type: PublicSection["type"]) => presskit.sections.find((s) => s.type === type && s.visible);
@@ -413,7 +445,18 @@ function LanguageSwitch({
   );
 }
 
-function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit: PublicPresskit; lang: PresskitLanguage }) {
+function Header({
+  variant,
+  presskit,
+  lang,
+  siteBaseUrl,
+}: {
+  variant: HeaderVariant;
+  presskit: PublicPresskit;
+  lang: PresskitLanguage;
+  siteBaseUrl?: string;
+}) {
+  const agencyLine = <AgencyLine presskit={presskit} lang={lang} siteBaseUrl={siteBaseUrl} />;
   const category = (lang === "en" ? ARTIST_CATEGORY_LABELS_EN : ARTIST_CATEGORY_LABELS)[presskit.category];
   const place = [presskit.city, presskit.state].filter(Boolean).join(" - ");
   const actions = <HeaderActions presskit={presskit} lang={lang} />;
@@ -450,6 +493,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
               className="break-words font-bold uppercase leading-[0.85]"
             />
             <Tagline presskit={presskit} className="max-w-2xl text-lg text-[var(--presskit-muted)] @3xl:text-xl" />
+            {agencyLine}
             <QuickLinksBar links={quickLinks} />
             {actions}
           </div>
@@ -468,6 +512,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
             </div>
           </div>
           <Tagline presskit={presskit} />
+            {agencyLine}
           <QuickLinksBar links={quickLinks} />
           {actions}
         </header>
@@ -485,6 +530,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
             className="break-words font-normal leading-[1.02]"
           />
           <Tagline presskit={presskit} className="max-w-xl italic text-[var(--presskit-muted)]" />
+            {agencyLine}
           {place && <p className="text-sm italic text-[var(--presskit-muted)]">{place}</p>}
           <QuickLinksBar links={quickLinks} align="center" />
           <div className="flex justify-center">{actions}</div>
@@ -505,6 +551,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
             </div>
           </div>
           <Tagline presskit={presskit} />
+            {agencyLine}
           <QuickLinksBar links={quickLinks} />
           {actions}
         </header>
@@ -692,11 +739,15 @@ export function PresskitRenderer({
   fontFamilies = FONT_FAMILY_CSS,
   lang = "pt",
   languageHref,
+  siteBaseUrl,
 }: {
   presskit: PublicPresskit;
   fontFamilies?: PresskitFontFamilies;
   lang?: PresskitLanguage;
   languageHref?: (lang: PresskitLanguage) => string;
+  /** Origin for links to other pages of the site (roster cards, agency
+   * line). Empty/omitted = relative, which is right on presskitai.com.br. */
+  siteBaseUrl?: string;
 }) {
   const templateKey = resolveTemplateKey(presskit.templateKey);
   const template = TEMPLATE_STYLES[templateKey];
@@ -711,7 +762,7 @@ export function PresskitRenderer({
   }));
   const showNav = (presskit.showNav ?? true) && navEntries.length >= 2;
 
-  const header = <Header variant={template.header} presskit={presskit} lang={lang} />;
+  const header = <Header variant={template.header} presskit={presskit} lang={lang} siteBaseUrl={siteBaseUrl} />;
 
   return (
     <div
@@ -731,7 +782,7 @@ export function PresskitRenderer({
         <div className={tabs ? "pk-tabs" : undefined}>
           {sections.map((section) => (
             <SectionShell key={section.id} section={section} template={template} tabs={tabs}>
-              {renderSection(section, presskit, lang)}
+              {renderSection(section, presskit, lang, siteBaseUrl)}
             </SectionShell>
           ))}
         </div>

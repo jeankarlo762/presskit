@@ -324,7 +324,7 @@ export function CustomizePage() {
   // without listing each one (same approach as the editor page).
   const previewPresskit: PublicPresskit = {
     ...presskit,
-    artistName: user?.name ?? "Seu nome",
+    artistName: presskit.displayName ?? user?.name ?? "Seu nome",
     ogTitleOverride: null,
     ogDescriptionOverride: null,
     sections: sections.map((s) => ({ ...s, data: s.data ?? {} })),

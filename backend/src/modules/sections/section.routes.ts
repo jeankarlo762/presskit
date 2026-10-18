@@ -45,21 +45,21 @@ export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
 
   fastify.get("/presskit/sections", async (request, reply) => {
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send({ sections: await listSections(presskit.id) });
   });
 
   // Add a section type the page doesn't have yet / remove one.
   fastify.post("/presskit/sections/:type", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await addSection(presskit.id, type);
     return reply.status(201).send({ section });
   });
 
   fastify.delete("/presskit/sections/:type", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await removeSection(presskit.id, type);
     return reply.status(204).send();
   });
@@ -70,7 +70,7 @@ export async function sectionRoutes(fastify: FastifyInstance) {
     const dataSchema = sectionDataSchemaByType[type as SectionType];
     const data = dataSchema.parse(rawData);
 
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await upsertSectionData(presskit.id, type, data, title);
     return reply.send({ section });
   });
@@ -83,7 +83,7 @@ export async function sectionRoutes(fastify: FastifyInstance) {
     const dataEn =
       rawDataEn === undefined ? undefined : sectionTranslationSchemaByType[type as SectionType].parse(rawDataEn);
 
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await upsertSectionTranslation(presskit.id, type, { dataEn, titleEn });
     return reply.send({ section });
   });
@@ -92,7 +92,7 @@ export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.patch("/presskit/sections/:type/style", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
     const input = styleBodySchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await updateSectionStyle(presskit.id, type, input);
     return reply.send({ section });
   });
@@ -102,14 +102,14 @@ export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.post("/presskit/sections/:type/background/upload-url", async (request, reply) => {
     sectionTypeParamSchema.parse(request.params);
     const { extension } = uploadUrlSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send(await createImageUploadUrl(presskit.id, extension, "section-bg"));
   });
 
   fastify.post("/presskit/sections/:type/background/confirm", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
     const { storageKey } = confirmImageSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     assertOwnedStorageKey(presskit.id, "section-bg", storageKey);
     await assertImageObjectExists(storageKey);
     const { section, previousKey } = await setSectionBackgroundImage(presskit.id, type, {
@@ -122,7 +122,7 @@ export async function sectionRoutes(fastify: FastifyInstance) {
 
   fastify.delete("/presskit/sections/:type/background", async (request, reply) => {
     const { type } = sectionTypeParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const { section, previousKey } = await setSectionBackgroundImage(presskit.id, type, null);
     if (previousKey) await deleteImageObject(previousKey);
     return reply.send({ section });
@@ -132,7 +132,7 @@ export async function sectionRoutes(fastify: FastifyInstance) {
     const { type } = sectionTypeParamSchema.parse(request.params);
     const { visible } = visibilitySchema.parse(request.body);
 
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await setSectionVisibility(presskit.id, type, visible);
     return reply.send({ section });
   });
@@ -141,14 +141,14 @@ export async function sectionRoutes(fastify: FastifyInstance) {
     const { type } = sectionTypeParamSchema.parse(request.params);
     const { title } = titleSchema.parse(request.body);
 
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const section = await renameSection(presskit.id, type, title);
     return reply.send({ section });
   });
 
   fastify.post("/presskit/sections/reorder", async (request, reply) => {
     const { order } = reorderSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await reorderSections(presskit.id, order);
     return reply.status(204).send();
   });

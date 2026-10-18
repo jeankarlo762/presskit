@@ -11,6 +11,7 @@ import { FeedbackPage } from "./pages/feedback/FeedbackPage";
 import { SharePage } from "./pages/share/SharePage";
 import { AnalyticsPage } from "./pages/analytics/AnalyticsPage";
 import { AccountPage } from "./pages/account/AccountPage";
+import { ArtistsPage } from "./pages/artists/ArtistsPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
 import { AdminSubscriptionsRoute } from "./pages/admin/AdminSubscriptionsPage";
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/compartilhar" element={<SharePage />} />
           <Route path="/quem-abriu" element={<AnalyticsPage />} />
           <Route path="/conta" element={<AccountPage />} />
+          <Route path="/artistas" element={<ArtistsPage />} />
 
           <Route path="/admin" element={admin(<AdminOverviewPage />)} />
           <Route path="/admin/usuarios" element={admin(<AdminUsersPage />)} />

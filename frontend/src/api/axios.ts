@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/auth.store";
+import { usePresskitStore } from "../store/presskit.store";
 import { API_URL } from "../config";
 
 export const api = axios.create({
@@ -24,6 +25,9 @@ api.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
+  // Agencies edit several pages with one login: this names the one in use.
+  const { activePresskitId } = usePresskitStore.getState();
+  if (activePresskitId) config.headers["X-Presskit-Id"] = activePresskitId;
   return config;
 });
 

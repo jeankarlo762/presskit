@@ -1,15 +1,18 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { env } from "../../config/env";
 import {
+  AGENCY_TRIAL_SEATS,
   DEFAULT_SECTIONS_BY_CATEGORY,
   type ArtistCategory,
+  type PresskitOnboardingInput,
+  type RosterArtistCreateInput,
   type CustomDomainInfo,
   type CustomDomainStatus,
   type ImageSlot,
   type PresskitUpdateInput,
 } from "@presskit/shared";
-import type { ImageFolder } from "../../shared/storage.service";
+import { deleteImageObject, type ImageFolder } from "../../shared/storage.service";
 
 export class DomainAlreadyInUseError extends Error {
   constructor() {
@@ -54,39 +57,115 @@ export class PresskitAlreadyExistsError extends Error {
   }
 }
 
-export async function findPresskitByUserId(userId: string) {
-  return prisma.presskit.findUnique({ where: { userId } });
+export class NotAnAgencyError extends Error {
+  constructor() {
+    super("Só contas de produtora podem criar páginas de artistas");
+    this.name = "NotAnAgencyError";
+  }
 }
 
-/** Every authenticated presskit route starts here instead of a tenant-wide
- * middleware — a single ownership check per route is simpler to audit at
- * this scale (everything hangs off presskitId, one hop from userId). */
-export async function getOwnedPresskitOrThrow(userId: string) {
-  const presskit = await prisma.presskit.findUnique({ where: { userId } });
+export class RosterLimitError extends Error {
+  constructor(seats: number) {
+    super(
+      seats === 0
+        ? "Seu plano não inclui páginas de artistas. Assine um plano de produtora para criar."
+        : `Seu plano inclui ${seats} ${seats === 1 ? "artista" : "artistas"}. Aumente o plano para adicionar mais.`,
+    );
+    this.name = "RosterLimitError";
+  }
+}
+
+export class RosterPageNotFoundError extends Error {
+  constructor() {
+    super("Página de artista não encontrada");
+    this.name = "RosterPageNotFoundError";
+  }
+}
+
+/** Which presskit an authenticated request is about: the one named by the
+ * X-Presskit-Id header (if the user owns it) or the account's primary page.
+ * Every route hands its `request` here, so ownership is one check in one
+ * place even now that an agency owns several pages. */
+export type PresskitScope = { currentUser: { id: string }; presskitId?: string | null };
+
+/** The account's own page: an artist's only presskit, or the agency's
+ * page (roster pages hang off it through agencyId). */
+export async function findPrimaryPresskit(userId: string) {
+  return prisma.presskit.findFirst({ where: { userId, agencyId: null }, orderBy: { createdAt: "asc" } });
+}
+
+export async function findActivePresskit(scope: PresskitScope) {
+  if (scope.presskitId) {
+    return prisma.presskit.findFirst({ where: { id: scope.presskitId, userId: scope.currentUser.id } });
+  }
+  return findPrimaryPresskit(scope.currentUser.id);
+}
+
+export async function getOwnedPresskitOrThrow(scope: PresskitScope) {
+  const presskit = await findActivePresskit(scope);
   if (!presskit) throw new PresskitNotFoundError();
   return presskit;
 }
 
-export async function createPresskitForUser(userId: string, category: ArtistCategory, slug: string) {
-  const existing = await findPresskitByUserId(userId);
-  if (existing) throw new PresskitAlreadyExistsError();
+/** Everything the account can edit, primary page first. */
+export async function listMyPresskits(userId: string) {
+  const all = await prisma.presskit.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
+  return [...all.filter((p) => !p.agencyId), ...all.filter((p) => p.agencyId)];
+}
+
+/** How many roster pages an AGENCY may have right now: what the
+ * subscription grants (artistSeats, kept by syncEntitlement) or, while the
+ * free trial runs, at least AGENCY_TRIAL_SEATS. */
+export function effectiveArtistSeats(user: Pick<User, "accountType" | "artistSeats" | "trialEndsAt">): number {
+  if (user.accountType !== "AGENCY") return 0;
+  const inTrial = !!user.trialEndsAt && user.trialEndsAt > new Date();
+  return Math.max(user.artistSeats, inTrial ? AGENCY_TRIAL_SEATS : 0);
+}
+
+export async function countRosterPages(userId: string) {
+  return prisma.presskit.count({ where: { userId, agencyId: { not: null } } });
+}
+
+async function createDefaultSections(tx: Prisma.TransactionClient, presskitId: string, category: ArtistCategory) {
+  await tx.section.createMany({
+    data: DEFAULT_SECTIONS_BY_CATEGORY[category].map((type, order) => ({ presskitId, type, order, visible: true })),
+  });
+}
+
+/** An agency adds an artist page to its roster. The page belongs to the
+ * agency's user (one login edits everything) and links back through
+ * agencyId, which is what the public agency page lists. */
+export async function createRosterArtist(user: Pick<User, "id" | "accountType" | "artistSeats" | "trialEndsAt">, input: RosterArtistCreateInput) {
+  if (user.accountType !== "AGENCY") throw new NotAnAgencyError();
+  const agency = await findPrimaryPresskit(user.id);
+  if (!agency) throw new PresskitNotFoundError();
+
+  const seats = effectiveArtistSeats(user);
+  const used = await countRosterPages(user.id);
+  if (used >= seats) throw new RosterLimitError(seats);
 
   try {
     return await prisma.$transaction(async (tx) => {
       const presskit = await tx.presskit.create({
-        data: { userId, category, slug },
+        data: {
+          userId: user.id,
+          kind: "ARTIST",
+          agencyId: agency.id,
+          displayName: input.name,
+          category: input.category,
+          slug: input.slug,
+          // Roster pages start with the agency's look so the roster feels
+          // like one family; each one can be restyled afterwards.
+          templateKey: agency.templateKey,
+          themeBackgroundColor: agency.themeBackgroundColor,
+          themeTextColor: agency.themeTextColor,
+          themeAccentColor: agency.themeAccentColor,
+          themeFontKey: agency.themeFontKey,
+          themeHeadingFontKey: agency.themeHeadingFontKey,
+          themeButtonStyle: agency.themeButtonStyle,
+        },
       });
-
-      const defaultSections = DEFAULT_SECTIONS_BY_CATEGORY[category];
-      await tx.section.createMany({
-        data: defaultSections.map((type, order) => ({
-          presskitId: presskit.id,
-          type,
-          order,
-          visible: true,
-        })),
-      });
-
+      await createDefaultSections(tx, presskit.id, input.category);
       return presskit;
     });
   } catch (error) {
@@ -97,8 +176,57 @@ export async function createPresskitForUser(userId: string, category: ArtistCate
   }
 }
 
-export async function updatePresskit(userId: string, input: PresskitUpdateInput) {
-  const current = await getOwnedPresskitOrThrow(userId);
+/** Removes a roster page and its uploads. Only pages with an agencyId can
+ * be deleted this way — an account's primary page is never deleted here. */
+export async function deleteRosterArtist(userId: string, presskitId: string) {
+  const page = await prisma.presskit.findFirst({
+    where: { id: presskitId, userId, agencyId: { not: null } },
+    include: { galleryPhotos: { select: { storageKey: true } }, sections: { select: { style: true } } },
+  });
+  if (!page) throw new RosterPageNotFoundError();
+
+  const keys = [
+    page.themeBackgroundImageKey,
+    page.coverImageKey,
+    page.avatarImageKey,
+    page.logoImageKey,
+    ...page.galleryPhotos.map((photo) => photo.storageKey),
+    ...page.sections.map((section) => (section.style as { backgroundImageKey?: string } | null)?.backgroundImageKey),
+  ].filter((key): key is string => typeof key === "string" && key.length > 0);
+
+  await prisma.presskit.delete({ where: { id: page.id } });
+  await Promise.all(keys.map((key) => deleteImageObject(key)));
+}
+
+/** Onboarding: the account's primary page. An AGENCY gets a PRODUTORA page
+ * (its roster lives in the ROSTER section); the choice also fixes the
+ * account type, which drives plans and the dashboard. */
+export async function createPresskitForUser(userId: string, input: PresskitOnboardingInput) {
+  const existing = await findPrimaryPresskit(userId);
+  if (existing) throw new PresskitAlreadyExistsError();
+
+  const isAgency = input.accountType === "AGENCY";
+  const category: ArtistCategory = isAgency ? "PRODUTORA" : input.category;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { accountType: input.accountType } });
+      const presskit = await tx.presskit.create({
+        data: { userId, category, slug: input.slug, kind: isAgency ? "AGENCY" : "ARTIST" },
+      });
+      await createDefaultSections(tx, presskit.id, category);
+      return presskit;
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new SlugAlreadyInUseError();
+    }
+    throw error;
+  }
+}
+
+export async function updatePresskit(scope: PresskitScope, input: PresskitUpdateInput) {
+  const current = await getOwnedPresskitOrThrow(scope);
   const { slug: newSlug, ...rest } = input;
 
   try {
@@ -123,13 +251,13 @@ export async function updatePresskit(userId: string, input: PresskitUpdateInput)
 /** Only reachable from the upload-confirm / remove routes, after the key
  * has been proven to belong to this presskit — never from the generic
  * PATCH (its schema doesn't carry these fields). */
-export async function setThemeBackgroundImage(userId: string, image: { url: string; key: string } | null) {
-  return setPresskitImage(userId, "background", image);
+export async function setThemeBackgroundImage(scope: PresskitScope, image: { url: string; key: string } | null) {
+  return setPresskitImage(scope, "background", image);
 }
 
 /** Same contract as setThemeBackgroundImage for every image slot. */
-export async function setPresskitImage(userId: string, slot: ImageSlot, image: { url: string; key: string } | null) {
-  const current = await getOwnedPresskitOrThrow(userId);
+export async function setPresskitImage(scope: PresskitScope, slot: ImageSlot, image: { url: string; key: string } | null) {
+  const current = await getOwnedPresskitOrThrow(scope);
   const { urlField, keyField } = IMAGE_SLOT_CONFIG[slot];
   return prisma.presskit.update({
     where: { id: current.id },
@@ -157,16 +285,16 @@ function domainInfo(domain: string | null, status: string): CustomDomainInfo {
   };
 }
 
-export async function getCustomDomain(userId: string): Promise<CustomDomainInfo> {
-  const presskit = await getOwnedPresskitOrThrow(userId);
+export async function getCustomDomain(scope: PresskitScope): Promise<CustomDomainInfo> {
+  const presskit = await getOwnedPresskitOrThrow(scope);
   return domainInfo(presskit.customDomain, presskit.customDomainStatus);
 }
 
 /** Setting a domain parks it as PENDING; a superadmin flips it to ACTIVE
  * once the CNAME resolves and the domain is registered on the host.
  * Changing the domain resets the status — the old one stops routing. */
-export async function setCustomDomain(userId: string, domain: string | null): Promise<CustomDomainInfo> {
-  const presskit = await getOwnedPresskitOrThrow(userId);
+export async function setCustomDomain(scope: PresskitScope, domain: string | null): Promise<CustomDomainInfo> {
+  const presskit = await getOwnedPresskitOrThrow(scope);
   if (domain && OUR_DOMAIN_SUFFIXES.some((suffix) => domain === suffix || domain.endsWith(`.${suffix}`))) {
     throw new DomainNotAllowedError();
   }
@@ -195,13 +323,13 @@ export async function findSlugByCustomDomain(host: string): Promise<string | nul
   return presskit?.slug ?? null;
 }
 
-export async function publishPresskit(userId: string) {
-  const presskit = await getOwnedPresskitOrThrow(userId);
+export async function publishPresskit(scope: PresskitScope) {
+  const presskit = await getOwnedPresskitOrThrow(scope);
   return prisma.presskit.update({ where: { id: presskit.id }, data: { published: true } });
 }
 
-export async function unpublishPresskit(userId: string) {
-  const presskit = await getOwnedPresskitOrThrow(userId);
+export async function unpublishPresskit(scope: PresskitScope) {
+  const presskit = await getOwnedPresskitOrThrow(scope);
   return prisma.presskit.update({ where: { id: presskit.id }, data: { published: false } });
 }
 
@@ -215,6 +343,22 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
     where: { ...where, published: true },
     include: {
       user: { select: { name: true } },
+      agency: { select: { slug: true, displayName: true, published: true, user: { select: { name: true } } } },
+      roster: {
+        where: { published: true },
+        orderBy: { createdAt: "asc" },
+        select: {
+          slug: true,
+          displayName: true,
+          category: true,
+          tagline: true,
+          city: true,
+          state: true,
+          avatarImageUrl: true,
+          coverImageUrl: true,
+          user: { select: { name: true } },
+        },
+      },
       sections: { orderBy: { order: "asc" } },
       mediaEmbeds: { orderBy: { order: "asc" } },
       galleryPhotos: { orderBy: { order: "asc" } },
@@ -234,12 +378,17 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
     avatarImageKey: _avatarKey,
     logoImageKey: _logoKey,
     customDomainStatus: _domainStatus,
+    agencyId: _agencyId,
+    agency,
+    roster,
     sections,
     ...rest
   } = presskit;
   return {
     ...rest,
-    artistName: user.name,
+    artistName: presskit.displayName ?? user.name,
+    agency: agency && agency.published ? { slug: agency.slug, name: agency.displayName ?? agency.user.name } : null,
+    roster: roster.map(({ user: rosterUser, displayName, ...artist }) => ({ ...artist, name: displayName ?? rosterUser.name })),
     sections: sections.map((section) => {
       const { backgroundImageKey: _sectionKey, ...style } = (section.style ?? {}) as Record<string, unknown>;
       return { ...section, style };

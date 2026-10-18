@@ -1,4 +1,16 @@
-export const ARTIST_CATEGORIES = ["MUSICO_BANDA", "DJ", "ATOR", "ARTISTA_VISUAL"] as const;
+export const ARTIST_CATEGORIES = ["MUSICO_BANDA", "DJ", "ATOR", "ARTISTA_VISUAL", "PRODUTORA"] as const;
+
+/** Categories an artist (or an agency creating a roster page) can pick —
+ * PRODUTORA is reserved for the agency's own page. */
+export const PICKABLE_ARTIST_CATEGORIES = ["MUSICO_BANDA", "DJ", "ATOR", "ARTISTA_VISUAL"] as const;
+
+export const ACCOUNT_TYPES = ["ARTIST", "AGENCY"] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = { ARTIST: "Artista", AGENCY: "Produtora" };
+
+/** Roster pages an AGENCY can create while its free trial runs (no
+ * subscription yet). */
+export const AGENCY_TRIAL_SEATS = 3;
 
 export type ArtistCategory = (typeof ARTIST_CATEGORIES)[number];
 
@@ -7,6 +19,7 @@ export const ARTIST_CATEGORY_LABELS: Record<ArtistCategory, string> = {
   DJ: "DJ",
   ATOR: "Ator / Atriz",
   ARTISTA_VISUAL: "Artista Visual",
+  PRODUTORA: "Produtora / Agência",
 };
 
 export const SECTION_TYPES = [
@@ -23,6 +36,7 @@ export const SECTION_TYPES = [
   "TESTIMONIALS",
   "FAQ",
   "DOWNLOADS",
+  "ROSTER",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -46,6 +60,7 @@ export const SECTION_DEFAULT_TITLES: Record<SectionType, string> = {
   TESTIMONIALS: "Depoimentos",
   FAQ: "Perguntas frequentes",
   DOWNLOADS: "Downloads",
+  ROSTER: "Artistas",
 };
 
 /** What each section type is for — shown when the artist adds a section. */
@@ -63,6 +78,7 @@ export const SECTION_TYPE_INFO: Record<SectionType, { label: string; description
   TESTIMONIALS: { label: "Depoimentos", description: "O que contratantes e público dizem" },
   FAQ: { label: "Perguntas frequentes", description: "Respostas prontas para contratantes" },
   DOWNLOADS: { label: "Downloads", description: "Fotos em alta, release, rider, logo…" },
+  ROSTER: { label: "Artistas", description: "Os artistas da produtora, cada um com link para a própria página" },
 };
 
 /** URL fragment of each section on the public page (nav anchors / tabs). */
@@ -80,6 +96,7 @@ export const SECTION_ANCHORS: Record<SectionType, string> = {
   TESTIMONIALS: "depoimentos",
   FAQ: "perguntas",
   DOWNLOADS: "downloads",
+  ROSTER: "artistas",
 };
 
 /**
@@ -96,6 +113,7 @@ export const DEFAULT_SECTIONS_BY_CATEGORY: Record<ArtistCategory, SectionType[]>
   DJ: ["BIO", "MUSIC", "TOUR_DATES", "GALLERY", "VIDEO", "CONTACT"],
   ATOR: ["BIO", "VIDEO", "GALLERY", "CONTACT"],
   ARTISTA_VISUAL: ["BIO", "GALLERY", "CONTACT"],
+  PRODUTORA: ["BIO", "ROSTER", "VIDEO", "GALLERY", "CONTACT"],
 };
 
 export const PLAN_KEYS = ["FREE", "PRO"] as const;

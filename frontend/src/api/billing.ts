@@ -11,8 +11,11 @@ export async function fetchMyBilling() {
   return data;
 }
 
-export async function startCheckout(cycle: BillingCycle) {
-  const { data } = await api.post<{ checkoutUrl: string; subscriptionId: string }>("/billing/checkout", { cycle });
+export async function startCheckout(cycle: BillingCycle, seats?: number) {
+  const { data } = await api.post<{ checkoutUrl: string; subscriptionId: string }>("/billing/checkout", {
+    cycle,
+    ...(seats ? { seats } : {}),
+  });
   return data;
 }
 

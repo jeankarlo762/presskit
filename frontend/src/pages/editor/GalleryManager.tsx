@@ -1,24 +1,9 @@
 import { useRef, useState } from "react";
 import { confirmGalleryPhoto, deleteGalleryPhoto, requestGalleryUploadUrl, type GalleryPhoto } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
-import { fileExtension, uploadImageToStorage } from "../../lib/uploadImage";
+import { uploadImageToStorage } from "../../lib/uploadImage";
+import { prepareImage } from "../../lib/imageResize";
 import { Card, FieldError } from "../../components/ui";
-
-function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(objectUrl);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error("Não foi possível ler a imagem"));
-    };
-    img.src = objectUrl;
-  });
-}
 
 export function GalleryManager({
   initial,
@@ -36,9 +21,9 @@ export function GalleryManager({
     setError(null);
     setUploading(true);
     try {
-      const { width, height } = await readImageDimensions(file);
-      const ticket = await requestGalleryUploadUrl(fileExtension(file));
-      await uploadImageToStorage(ticket, file);
+      const { file: resized, width, height, extension } = await prepareImage(file, "gallery");
+      const ticket = await requestGalleryUploadUrl(extension);
+      await uploadImageToStorage(ticket, resized);
       const photo = await confirmGalleryPhoto({ storageKey: ticket.storageKey, width, height });
 
       const next = [...items, photo];

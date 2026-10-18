@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ARTIST_CATEGORIES, RESERVED_SLUGS } from "../constants/category";
+import { ARTIST_CATEGORIES, RESERVED_SLUGS, ACCOUNT_TYPES, PICKABLE_ARTIST_CATEGORIES } from "../constants/category";
 import {
   BACKGROUND_ATTACHMENTS,
   BACKGROUND_BLUR_MAX,
@@ -95,6 +95,8 @@ export const presskitUpdateSchema = z.object({
   navMode: z.enum(NAV_MODES).optional(),
   showNav: z.boolean().optional(),
   tagline: z.string().trim().max(140).nullable().optional(),
+  /** Name on the page; null = owner's name. Required on roster pages. */
+  displayName: z.string().trim().min(2).max(80).nullable().optional(),
   languages: z
     .array(z.enum(PRESSKIT_LANGUAGES))
     .min(1)
@@ -105,9 +107,18 @@ export const presskitUpdateSchema = z.object({
 export type PresskitUpdateInput = z.infer<typeof presskitUpdateSchema>;
 
 export const presskitOnboardingSchema = z.object({
+  accountType: z.enum(ACCOUNT_TYPES).default("ARTIST"),
   category: artistCategorySchema,
   slug: slugSchema,
 });
+
+/** An agency adding an artist page to its roster. */
+export const rosterArtistCreateSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  category: z.enum(PICKABLE_ARTIST_CATEGORIES),
+  slug: slugSchema,
+});
+export type RosterArtistCreateInput = z.infer<typeof rosterArtistCreateSchema>;
 export type PresskitOnboardingInput = z.infer<typeof presskitOnboardingSchema>;
 
 export const IMAGE_SLOTS = ["background", "cover", "avatar", "logo"] as const;

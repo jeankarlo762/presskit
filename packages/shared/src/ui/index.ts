@@ -17,3 +17,4 @@ export * from "./StatsBlock";
 export * from "./TestimonialsBlock";
 export * from "./FaqBlock";
 export * from "./DownloadsBlock";
+export * from "./RosterBlock";

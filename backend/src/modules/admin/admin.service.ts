@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
+import { effectiveArtistSeats } from "../presskit/presskit.service";
 import {
   BILLING_CYCLES,
   monthlyEquivalentCents,
@@ -53,11 +54,17 @@ const userRowSelect = {
   email: true,
   role: true,
   planKey: true,
+  accountType: true,
+  artistSeats: true,
+  trialEndsAt: true,
   createdAt: true,
   lastLoginAt: true,
-  presskit: {
+  presskits: {
+    where: { agencyId: null },
+    take: 1,
     select: { slug: true, published: true, _count: { select: { pageViews: true } } },
   },
+  _count: { select: { presskits: true } },
   subscriptions: {
     where: { status: { in: [...OPEN_STATUSES] } },
     orderBy: { createdAt: "desc" },
@@ -76,10 +83,15 @@ function toUserRow(user: UserRowRecord): AdminUserRow {
     email: user.email,
     role: user.role,
     planKey: user.planKey,
+    accountType: user.accountType,
+    artists:
+      user.accountType === "AGENCY"
+        ? { used: Math.max(0, user._count.presskits - user.presskits.length), seats: effectiveArtistSeats(user) }
+        : null,
     createdAt: user.createdAt.toISOString(),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
-    presskit: user.presskit
-      ? { slug: user.presskit.slug, published: user.presskit.published, pageViews: user.presskit._count.pageViews }
+    presskit: user.presskits[0]
+      ? { slug: user.presskits[0].slug, published: user.presskits[0].published, pageViews: user.presskits[0]._count.pageViews }
       : null,
     subscription: subscription
       ? { status: subscription.status, cycle: subscription.cycle, pastDue: subscription.pastDue }
@@ -93,7 +105,7 @@ function userSearch(q: string | undefined): Prisma.UserWhereInput {
     OR: [
       { email: { contains: q, mode: "insensitive" } },
       { name: { contains: q, mode: "insensitive" } },
-      { presskit: { slug: { contains: q, mode: "insensitive" } } },
+      { presskits: { some: { slug: { contains: q, mode: "insensitive" } } } },
     ],
   };
 }

@@ -25,6 +25,7 @@ export const SECTION_DEFAULT_TITLES_EN: Record<SectionType, string> = {
   TESTIMONIALS: "Testimonials",
   FAQ: "FAQ",
   DOWNLOADS: "Downloads",
+  ROSTER: "Artists",
 };
 
 export const ARTIST_CATEGORY_LABELS_EN: Record<ArtistCategory, string> = {
@@ -32,6 +33,7 @@ export const ARTIST_CATEGORY_LABELS_EN: Record<ArtistCategory, string> = {
   DJ: "DJ",
   ATOR: "Actor / Actress",
   ARTISTA_VISUAL: "Visual artist",
+  PRODUTORA: "Agency / Label",
 };
 
 /** Small UI strings on the public page, by language. */
@@ -45,6 +47,8 @@ export const PUBLIC_STRINGS: Record<PresskitLanguage, Record<string, string>> = 
     switchLanguage: "English",
     download: "Baixar",
     menu: "Menu",
+    agencyOf: "Artista de",
+    seeArtist: "Ver página",
   },
   en: {
     bookCta: "Book for an event",
@@ -55,5 +59,7 @@ export const PUBLIC_STRINGS: Record<PresskitLanguage, Record<string, string>> = 
     switchLanguage: "Português",
     download: "Download",
     menu: "Menu",
+    agencyOf: "Artist of",
+    seeArtist: "See page",
   },
 };

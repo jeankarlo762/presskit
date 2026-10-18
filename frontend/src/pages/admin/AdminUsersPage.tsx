@@ -157,6 +157,13 @@ export function AdminUsersPage() {
                       ) : (
                         <span className="text-fg-muted">—</span>
                       )}
+                      {user.artists && (
+                        <span className="mt-1 block">
+                          <Badge tone="info">
+                            produtora · {user.artists.used}/{user.artists.seats} artistas
+                          </Badge>
+                        </span>
+                      )}
                     </td>
                     <td>
                       {user.subscription ? (

@@ -10,7 +10,7 @@ export async function mediaRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
 
   fastify.get("/presskit/media", async (request, reply) => {
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send({ media: await listMediaEmbeds(presskit.id) });
   });
 
@@ -18,7 +18,7 @@ export async function mediaRoutes(fastify: FastifyInstance) {
     // mediaEmbedCreateSchema also rejects links parseMediaUrl can't turn
     // into a player, so nothing unrenderable ever reaches the public page.
     const input = mediaEmbedCreateSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const media = await createMediaEmbed(presskit.id, input);
     return reply.status(201).send({ media });
   });
@@ -26,14 +26,14 @@ export async function mediaRoutes(fastify: FastifyInstance) {
   fastify.patch("/presskit/media/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
     const input = mediaEmbedPatchSchema.parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const media = await updateMediaEmbed(presskit.id, id, input);
     return reply.send({ media });
   });
 
   fastify.delete("/presskit/media/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await deleteMediaEmbed(presskit.id, id);
     return reply.status(204).send();
   });

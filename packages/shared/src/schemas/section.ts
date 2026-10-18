@@ -98,6 +98,7 @@ export const sectionDataSchemaByType = {
   TESTIMONIALS: testimonialsDataSchema,
   FAQ: faqDataSchema,
   DOWNLOADS: downloadsDataSchema,
+  ROSTER: collectionDataSchema,
 } as const satisfies Record<(typeof SECTION_TYPES)[number], z.ZodTypeAny>;
 
 const sectionBaseFields = {
@@ -157,6 +158,7 @@ export const sectionTranslationSchemaByType = {
   TESTIMONIALS: testimonialsDataSchema.partial(),
   FAQ: faqDataSchema.partial(),
   DOWNLOADS: downloadsDataSchema.partial(),
+  ROSTER: collectionDataSchema,
 } as const satisfies Record<(typeof SECTION_TYPES)[number], z.ZodTypeAny>;
 
 export const sectionTitleEnSchema = z.string().trim().max(60).nullable();

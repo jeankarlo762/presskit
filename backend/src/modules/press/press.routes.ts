@@ -10,13 +10,13 @@ export async function pressRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
 
   fastify.get("/presskit/press", async (request, reply) => {
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     return reply.send({ press: await listPressMentions(presskit.id) });
   });
 
   fastify.post("/presskit/press", async (request, reply) => {
     const input = pressMentionSchema.omit({ id: true }).parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const mention = await createPressMention(presskit.id, input);
     return reply.status(201).send({ mention });
   });
@@ -24,14 +24,14 @@ export async function pressRoutes(fastify: FastifyInstance) {
   fastify.patch("/presskit/press/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
     const input = pressMentionSchema.omit({ id: true }).partial().parse(request.body);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     const mention = await updatePressMention(presskit.id, id, input);
     return reply.send({ mention });
   });
 
   fastify.delete("/presskit/press/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
-    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const presskit = await getOwnedPresskitOrThrow(request);
     await deletePressMention(presskit.id, id);
     return reply.status(204).send();
   });
