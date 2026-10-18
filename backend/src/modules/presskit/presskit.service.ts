@@ -234,9 +234,17 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
     avatarImageKey: _avatarKey,
     logoImageKey: _logoKey,
     customDomainStatus: _domainStatus,
+    sections,
     ...rest
   } = presskit;
-  return { ...rest, artistName: user.name };
+  return {
+    ...rest,
+    artistName: user.name,
+    sections: sections.map((section) => {
+      const { backgroundImageKey: _sectionKey, ...style } = (section.style ?? {}) as Record<string, unknown>;
+      return { ...section, style };
+    }),
+  };
 }
 
 export async function findPublicPresskitBySlug(slug: string): Promise<PublicPresskitLookup> {

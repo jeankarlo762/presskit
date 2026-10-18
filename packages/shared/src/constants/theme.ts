@@ -212,3 +212,89 @@ export const BACKGROUND_PRESET_KEYS = BACKGROUND_PRESETS.map((preset) => preset.
 export function resolveBackgroundPreset(key: string | null | undefined): BackgroundPreset {
   return BACKGROUND_PRESETS.find((preset) => preset.key === key) ?? BACKGROUND_PRESETS[0]!;
 }
+
+// ---------------------------------------------------------------------------
+// Site structure: navigation and per-section layout/style options
+// ---------------------------------------------------------------------------
+
+export const NAV_MODES = ["SCROLL", "TABS"] as const;
+export type NavMode = (typeof NAV_MODES)[number];
+export const NAV_MODE_LABELS: Record<NavMode, string> = {
+  SCROLL: "Página única (rolagem com menu)",
+  TABS: "Abas (uma seção por vez)",
+};
+
+export const SECTION_WIDTHS = ["narrow", "normal", "wide", "full"] as const;
+export type SectionWidth = (typeof SECTION_WIDTHS)[number];
+export const SECTION_WIDTH_LABELS: Record<SectionWidth, string> = {
+  narrow: "Estreita",
+  normal: "Normal",
+  wide: "Larga",
+  full: "Toda a largura",
+};
+export const SECTION_WIDTH_CLASS: Record<SectionWidth, string> = {
+  narrow: "max-w-xl",
+  normal: "max-w-2xl",
+  wide: "max-w-5xl",
+  full: "max-w-none",
+};
+
+export const SECTION_PADDINGS = ["compact", "normal", "spacious"] as const;
+export type SectionPadding = (typeof SECTION_PADDINGS)[number];
+export const SECTION_PADDING_LABELS: Record<SectionPadding, string> = {
+  compact: "Compacto",
+  normal: "Normal",
+  spacious: "Espaçoso",
+};
+export const SECTION_PADDING_CLASS: Record<SectionPadding, string> = {
+  compact: "py-6 @3xl:py-8",
+  normal: "py-10 @3xl:py-14",
+  spacious: "py-16 @3xl:py-24",
+};
+
+export const SECTION_ALIGNS = ["left", "center"] as const;
+export type SectionAlign = (typeof SECTION_ALIGNS)[number];
+export const SECTION_ALIGN_LABELS: Record<SectionAlign, string> = { left: "Esquerda", center: "Centro" };
+
+/** Layout variants each section type can switch between (first = default). */
+export const SECTION_LAYOUTS: Record<string, readonly { key: string; label: string }[]> = {
+  BIO: [
+    { key: "text", label: "Texto" },
+    { key: "split", label: "Foto ao lado do texto" },
+  ],
+  GALLERY: [
+    { key: "grid", label: "Grade" },
+    { key: "masonry", label: "Mosaico" },
+    { key: "strip", label: "Carrossel horizontal" },
+  ],
+  MUSIC: [
+    { key: "list", label: "Lista" },
+    { key: "grid", label: "Grade" },
+  ],
+  VIDEO: [
+    { key: "list", label: "Lista" },
+    { key: "grid", label: "Grade" },
+  ],
+  TOUR_DATES: [
+    { key: "list", label: "Lista" },
+    { key: "cards", label: "Cartões" },
+  ],
+  TESTIMONIALS: [
+    { key: "cards", label: "Cartões" },
+    { key: "quotes", label: "Citações grandes" },
+  ],
+  STATS: [
+    { key: "row", label: "Em linha" },
+    { key: "cards", label: "Cartões" },
+  ],
+  DOWNLOADS: [
+    { key: "list", label: "Lista" },
+    { key: "cards", label: "Cartões" },
+  ],
+};
+
+export function resolveSectionLayout(type: string, layout: string | null | undefined): string {
+  const options = SECTION_LAYOUTS[type];
+  if (!options || options.length === 0) return "default";
+  return options.some((option) => option.key === layout) ? (layout as string) : options[0]!.key;
+}

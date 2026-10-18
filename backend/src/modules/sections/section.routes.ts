@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   SECTION_TYPES,
   sectionDataSchemaByType,
+  sectionLayoutSchema,
+  sectionStyleSchema,
   sectionTitleEnSchema,
   sectionTitleSchema,
   sectionTranslationSchemaByType,
@@ -10,13 +12,24 @@ import {
 } from "@presskit/shared";
 import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
 import {
+  addSection,
   listSections,
+  removeSection,
   renameSection,
   reorderSections,
+  setSectionBackgroundImage,
   setSectionVisibility,
+  updateSectionStyle,
   upsertSectionData,
   upsertSectionTranslation,
 } from "./section.service";
+import {
+  assertImageObjectExists,
+  assertOwnedStorageKey,
+  createImageUploadUrl,
+  deleteImageObject,
+  publicUrlFor,
+} from "../../shared/storage.service";
 
 const sectionTypeParamSchema = z.object({ type: z.enum(SECTION_TYPES) });
 const visibilitySchema = z.object({ visible: z.boolean() });
@@ -24,6 +37,9 @@ const titleSchema = z.object({ title: sectionTitleSchema });
 const reorderSchema = z.object({ order: z.array(z.enum(SECTION_TYPES)) });
 const sectionUpdateBodySchema = z.object({ data: z.unknown(), title: sectionTitleSchema.optional() });
 const translationBodySchema = z.object({ dataEn: z.unknown().optional(), titleEn: sectionTitleEnSchema.optional() });
+const styleBodySchema = z.object({ style: sectionStyleSchema.optional(), layout: sectionLayoutSchema.optional() });
+const uploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
+const confirmImageSchema = z.object({ storageKey: z.string().min(1).max(512) });
 
 export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -31,6 +47,21 @@ export async function sectionRoutes(fastify: FastifyInstance) {
   fastify.get("/presskit/sections", async (request, reply) => {
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
     return reply.send({ sections: await listSections(presskit.id) });
+  });
+
+  // Add a section type the page doesn't have yet / remove one.
+  fastify.post("/presskit/sections/:type", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const section = await addSection(presskit.id, type);
+    return reply.status(201).send({ section });
+  });
+
+  fastify.delete("/presskit/sections/:type", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    await removeSection(presskit.id, type);
+    return reply.status(204).send();
   });
 
   fastify.patch("/presskit/sections/:type", async (request, reply) => {
@@ -54,6 +85,46 @@ export async function sectionRoutes(fastify: FastifyInstance) {
 
     const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
     const section = await upsertSectionTranslation(presskit.id, type, { dataEn, titleEn });
+    return reply.send({ section });
+  });
+
+  // Per-section look: colors/background preset/width/spacing + layout variant.
+  fastify.patch("/presskit/sections/:type/style", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const input = styleBodySchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const section = await updateSectionStyle(presskit.id, type, input);
+    return reply.send({ section });
+  });
+
+  // Per-section background image: same presign → PUT → confirm dance as the
+  // page-level images, under the "section-bg" prefix.
+  fastify.post("/presskit/sections/:type/background/upload-url", async (request, reply) => {
+    sectionTypeParamSchema.parse(request.params);
+    const { extension } = uploadUrlSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    return reply.send(await createImageUploadUrl(presskit.id, extension, "section-bg"));
+  });
+
+  fastify.post("/presskit/sections/:type/background/confirm", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const { storageKey } = confirmImageSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    assertOwnedStorageKey(presskit.id, "section-bg", storageKey);
+    await assertImageObjectExists(storageKey);
+    const { section, previousKey } = await setSectionBackgroundImage(presskit.id, type, {
+      url: publicUrlFor(storageKey),
+      key: storageKey,
+    });
+    if (previousKey && previousKey !== storageKey) await deleteImageObject(previousKey);
+    return reply.send({ section });
+  });
+
+  fastify.delete("/presskit/sections/:type/background", async (request, reply) => {
+    const { type } = sectionTypeParamSchema.parse(request.params);
+    const presskit = await getOwnedPresskitOrThrow(request.currentUser.id);
+    const { section, previousKey } = await setSectionBackgroundImage(presskit.id, type, null);
+    if (previousKey) await deleteImageObject(previousKey);
     return reply.send({ section });
   });
 

@@ -19,6 +19,10 @@ export const SECTION_TYPES = [
   "CONTACT",
   "TECH_RIDER",
   "CUSTOM",
+  "STATS",
+  "TESTIMONIALS",
+  "FAQ",
+  "DOWNLOADS",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -38,6 +42,44 @@ export const SECTION_DEFAULT_TITLES: Record<SectionType, string> = {
   CONTACT: "Contato",
   TECH_RIDER: "Rider técnico",
   CUSTOM: "",
+  STATS: "Números",
+  TESTIMONIALS: "Depoimentos",
+  FAQ: "Perguntas frequentes",
+  DOWNLOADS: "Downloads",
+};
+
+/** What each section type is for — shown when the artist adds a section. */
+export const SECTION_TYPE_INFO: Record<SectionType, { label: string; description: string }> = {
+  BIO: { label: "Sobre", description: "Bio curta e completa" },
+  MUSIC: { label: "Música", description: "Players do Spotify / SoundCloud" },
+  VIDEO: { label: "Vídeos", description: "YouTube / Vimeo" },
+  GALLERY: { label: "Fotos", description: "Galeria de imagens" },
+  PRESS: { label: "Imprensa", description: "Matérias, citações e destaques" },
+  TOUR_DATES: { label: "Agenda", description: "Próximos shows e datas" },
+  CONTACT: { label: "Contato", description: "E-mail, telefone e redes" },
+  TECH_RIDER: { label: "Rider técnico", description: "Texto e PDF para a produção" },
+  CUSTOM: { label: "Texto livre", description: "Uma seção com o título e o texto que você quiser" },
+  STATS: { label: "Números", description: "Ouvintes, seguidores, shows feitos…" },
+  TESTIMONIALS: { label: "Depoimentos", description: "O que contratantes e público dizem" },
+  FAQ: { label: "Perguntas frequentes", description: "Respostas prontas para contratantes" },
+  DOWNLOADS: { label: "Downloads", description: "Fotos em alta, release, rider, logo…" },
+};
+
+/** URL fragment of each section on the public page (nav anchors / tabs). */
+export const SECTION_ANCHORS: Record<SectionType, string> = {
+  BIO: "sobre",
+  MUSIC: "musica",
+  VIDEO: "videos",
+  GALLERY: "fotos",
+  PRESS: "imprensa",
+  TOUR_DATES: "agenda",
+  CONTACT: "contato",
+  TECH_RIDER: "rider",
+  CUSTOM: "mais",
+  STATS: "numeros",
+  TESTIMONIALS: "depoimentos",
+  FAQ: "perguntas",
+  DOWNLOADS: "downloads",
 };
 
 /**

@@ -1,4 +1,4 @@
-import type { TemplateKey } from "../constants/theme";
+import type { SectionPadding, SectionWidth, TemplateKey } from "../constants/theme";
 
 export type HeaderVariant = "classic" | "stage" | "minimal" | "editorial";
 
@@ -17,8 +17,13 @@ export type TemplateStyle = {
   header: HeaderVariant;
   /** Content column (below the header). */
   container: string;
-  /** Wrapper around each section. */
+  /** Extra classes on each section shell (e.g. a top rule). */
   section: string;
+  /** Horizontal padding + vertical gap inside every section shell. */
+  sectionInner: string;
+  /** Defaults a section inherits until the artist overrides them. */
+  sectionWidth: SectionWidth;
+  sectionPadding: SectionPadding;
   vars: {
     "--pk-h2-size": string;
     "--pk-h2-weight": string;
@@ -37,8 +42,11 @@ export type TemplateStyle = {
 export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   default: {
     header: "classic",
-    container: "mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10",
+    container: "mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 pt-10 pb-4",
     section: "",
+    sectionInner: "gap-6 px-4",
+    sectionWidth: "normal",
+    sectionPadding: "normal",
     vars: {
       "--pk-h2-size": "0.75rem",
       "--pk-h2-weight": "600",
@@ -56,6 +64,9 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
     header: "stage",
     container: "mx-auto flex w-full max-w-5xl flex-col gap-12 px-5 py-12 @3xl:gap-14 @3xl:px-8 @3xl:py-14",
     section: "",
+    sectionInner: "gap-8 px-5 @3xl:px-8",
+    sectionWidth: "wide",
+    sectionPadding: "normal",
     vars: {
       "--pk-h2-size": "clamp(2.25rem, 11cqw, 3rem)",
       "--pk-h2-weight": "700",
@@ -71,8 +82,11 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   },
   minimal: {
     header: "minimal",
-    container: "mx-auto flex w-full max-w-xl flex-col gap-10 px-6 py-16 @3xl:py-24",
-    section: "border-t border-[var(--presskit-border)] pt-8",
+    container: "mx-auto flex w-full max-w-xl flex-col gap-10 px-6 pt-16 pb-6 @3xl:pt-24",
+    section: "border-t border-[var(--presskit-border)]",
+    sectionInner: "gap-6 px-6",
+    sectionWidth: "narrow",
+    sectionPadding: "normal",
     vars: {
       "--pk-h2-size": "0.875rem",
       "--pk-h2-weight": "600",
@@ -88,8 +102,11 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   },
   editorial: {
     header: "editorial",
-    container: "mx-auto flex w-full max-w-2xl flex-col gap-14 px-6 py-14 @3xl:gap-20 @3xl:px-10 @3xl:py-20",
+    container: "mx-auto flex w-full max-w-2xl flex-col gap-14 px-6 pt-14 pb-4 @3xl:gap-20 @3xl:px-10 @3xl:pt-20",
     section: "",
+    sectionInner: "gap-8 px-6 @3xl:px-10",
+    sectionWidth: "normal",
+    sectionPadding: "spacious",
     vars: {
       "--pk-h2-size": "clamp(1.75rem, 7cqw, 2.375rem)",
       "--pk-h2-weight": "400",

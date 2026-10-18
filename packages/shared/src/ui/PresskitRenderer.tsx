@@ -4,11 +4,16 @@ import type {
   BioSectionData,
   ContactSectionData,
   CustomSectionData,
+  DownloadsSectionData,
+  FaqSectionData,
   PressSectionData,
+  SectionStyle,
+  StatsSectionData,
   TechRiderSectionData,
+  TestimonialsSectionData,
 } from "../schemas/section";
 import type { QuickLink } from "../schemas/presskit";
-import { ARTIST_CATEGORY_LABELS, SECTION_DEFAULT_TITLES } from "../constants/category";
+import { ARTIST_CATEGORY_LABELS, SECTION_ANCHORS, SECTION_DEFAULT_TITLES } from "../constants/category";
 import {
   BACKGROUND_BLUR_MAX,
   BACKGROUND_OVERLAY_MAX,
@@ -16,8 +21,13 @@ import {
   DEFAULT_BUTTON_STYLE,
   FONT_FAMILY_CSS,
   resolveBackgroundPreset,
+  resolveSectionLayout,
   resolveTemplateKey,
+  SECTION_PADDING_CLASS,
+  SECTION_WIDTH_CLASS,
   type FontKey,
+  type SectionPadding,
+  type SectionWidth,
 } from "../constants/theme";
 import {
   ARTIST_CATEGORY_LABELS_EN,
@@ -27,7 +37,7 @@ import {
 } from "../constants/i18n";
 import { whatsappUrl } from "../constants/quickLinks";
 import { heroVideoEmbedSrc } from "../media/parseMediaUrl";
-import { presskitButtonClass, TEMPLATE_STYLES, type HeaderVariant } from "./templates";
+import { presskitButtonClass, TEMPLATE_STYLES, type HeaderVariant, type TemplateStyle } from "./templates";
 import { BioBlock } from "./BioBlock";
 import { ContactBlock } from "./ContactBlock";
 import { AUDIO_PROVIDERS, MediaEmbedBlock, VIDEO_PROVIDERS } from "./MediaEmbedBlock";
@@ -36,6 +46,10 @@ import { TourDatesBlock } from "./TourDatesBlock";
 import { PressBlock } from "./PressBlock";
 import { TechRiderBlock } from "./TechRiderBlock";
 import { CustomBlock } from "./CustomBlock";
+import { StatsBlock } from "./StatsBlock";
+import { TestimonialsBlock } from "./TestimonialsBlock";
+import { FaqBlock } from "./FaqBlock";
+import { DownloadsBlock } from "./DownloadsBlock";
 import { BrandIcon, QuickLinksBar } from "./QuickLinksBar";
 
 // ---------------------------------------------------------------------------
@@ -43,7 +57,9 @@ import { BrandIcon, QuickLinksBar } from "./QuickLinksBar";
 // half-translated section still renders fully.
 // ---------------------------------------------------------------------------
 
-function localizeSection(section: PublicSection, lang: PresskitLanguage): { title: string; data: unknown } {
+type LocalizedSection = { title: string; data: unknown };
+
+function localizeSection(section: PublicSection, lang: PresskitLanguage): LocalizedSection {
   const base = (section.data ?? {}) as Record<string, unknown>;
   if (lang !== "en") {
     return { title: section.title?.trim() || SECTION_DEFAULT_TITLES[section.type], data: base };
@@ -60,16 +76,25 @@ function localizeSection(section: PublicSection, lang: PresskitLanguage): { titl
 function renderSection(section: PublicSection, presskit: PublicPresskit, lang: PresskitLanguage) {
   const { title, data } = localizeSection(section, lang);
   const t = PUBLIC_STRINGS[lang]!;
+  const layout = resolveSectionLayout(section.type, section.layout);
 
   switch (section.type) {
     case "BIO":
-      return <BioBlock title={title} data={data as BioSectionData} />;
+      return (
+        <BioBlock
+          title={title}
+          data={data as BioSectionData}
+          layout={layout}
+          imageUrl={presskit.avatarImageUrl ?? presskit.coverImageUrl ?? presskit.galleryPhotos[0]?.url ?? null}
+        />
+      );
     case "CONTACT":
       return <ContactBlock title={title} data={data as ContactSectionData} />;
     case "MUSIC":
       return (
         <MediaEmbedBlock
           title={title}
+          layout={layout}
           embeds={presskit.mediaEmbeds.filter((e) => AUDIO_PROVIDERS.includes(e.provider))}
         />
       );
@@ -77,21 +102,66 @@ function renderSection(section: PublicSection, presskit: PublicPresskit, lang: P
       return (
         <MediaEmbedBlock
           title={title}
+          layout={layout}
           embeds={presskit.mediaEmbeds.filter((e) => VIDEO_PROVIDERS.includes(e.provider))}
         />
       );
     case "GALLERY":
-      return <GalleryBlock title={title} photos={presskit.galleryPhotos} />;
+      return <GalleryBlock title={title} photos={presskit.galleryPhotos} layout={layout} />;
     case "TOUR_DATES":
-      return <TourDatesBlock title={title} dates={presskit.tourDates} ticketsLabel={t.tickets} />;
+      return <TourDatesBlock title={title} dates={presskit.tourDates} ticketsLabel={t.tickets} layout={layout} />;
     case "PRESS":
       return <PressBlock title={title} data={data as PressSectionData} mentions={presskit.pressMentions} />;
     case "TECH_RIDER":
       return <TechRiderBlock title={title} data={data as TechRiderSectionData} />;
     case "CUSTOM":
       return <CustomBlock title={title} data={data as CustomSectionData} />;
+    case "STATS":
+      return <StatsBlock title={title} data={data as StatsSectionData} layout={layout} />;
+    case "TESTIMONIALS":
+      return <TestimonialsBlock title={title} data={data as TestimonialsSectionData} layout={layout} />;
+    case "FAQ":
+      return <FaqBlock title={title} data={data as FaqSectionData} />;
+    case "DOWNLOADS":
+      return (
+        <DownloadsBlock title={title} data={data as DownloadsSectionData} layout={layout} downloadLabel={t.download ?? "Baixar"} />
+      );
     default:
       return null;
+  }
+}
+
+/** Sections with nothing to show are skipped entirely — otherwise an empty
+ * section would still leave a nav tab and a blank band on the page. */
+function sectionHasContent(section: PublicSection, presskit: PublicPresskit): boolean {
+  const data = (section.data ?? {}) as Record<string, unknown>;
+  const items = Array.isArray(data.items) ? data.items : [];
+  switch (section.type) {
+    case "BIO":
+      return Boolean((data.shortBio as string)?.trim() || (data.longBio as string)?.trim());
+    case "CONTACT":
+      return Boolean(data.email || data.phone || (Array.isArray(data.socialLinks) && data.socialLinks.length > 0));
+    case "MUSIC":
+      return presskit.mediaEmbeds.some((e) => AUDIO_PROVIDERS.includes(e.provider));
+    case "VIDEO":
+      return presskit.mediaEmbeds.some((e) => VIDEO_PROVIDERS.includes(e.provider));
+    case "GALLERY":
+      return presskit.galleryPhotos.length > 0;
+    case "TOUR_DATES":
+      return presskit.tourDates.length > 0;
+    case "PRESS":
+      return Boolean(data.highlightStats) || presskit.pressMentions.length > 0;
+    case "TECH_RIDER":
+      return Boolean(data.text || data.pdfUrl);
+    case "CUSTOM":
+      return Boolean((data.body as string)?.trim());
+    case "STATS":
+    case "TESTIMONIALS":
+    case "FAQ":
+    case "DOWNLOADS":
+      return items.length > 0;
+    default:
+      return false;
   }
 }
 
@@ -117,9 +187,19 @@ function readableOn(hex: string): string {
   return luminance > 0.4 ? "#111111" : "#ffffff";
 }
 
-function clamp(value: number | undefined, fallback: number, max: number): number {
-  if (value === undefined || Number.isNaN(value)) return fallback;
+function clamp(value: number | null | undefined, fallback: number, max: number): number {
+  if (value === undefined || value === null || Number.isNaN(value)) return fallback;
   return Math.max(0, Math.min(max, value));
+}
+
+/** The derived tones every block uses, computed from a text color. */
+function derivedTones(textColor: string): Record<string, string> {
+  return {
+    "--presskit-muted": `color-mix(in srgb, ${textColor} 65%, transparent)`,
+    "--presskit-border": `color-mix(in srgb, ${textColor} 15%, transparent)`,
+    "--presskit-border-strong": `color-mix(in srgb, ${textColor} 30%, transparent)`,
+    "--presskit-hover": `color-mix(in srgb, ${textColor} 8%, transparent)`,
+  };
 }
 
 export type PresskitFontFamilies = Record<FontKey, string>;
@@ -136,10 +216,7 @@ function themeStyle(presskit: PublicPresskit, fonts: PresskitFontFamilies): CSSP
     ["--presskit-text" as string]: presskit.themeTextColor,
     ["--presskit-accent" as string]: presskit.themeAccentColor,
     ["--presskit-on-accent" as string]: readableOn(presskit.themeAccentColor),
-    ["--presskit-muted" as string]: `color-mix(in srgb, ${presskit.themeTextColor} 65%, transparent)`,
-    ["--presskit-border" as string]: `color-mix(in srgb, ${presskit.themeTextColor} 15%, transparent)`,
-    ["--presskit-border-strong" as string]: `color-mix(in srgb, ${presskit.themeTextColor} 30%, transparent)`,
-    ["--presskit-hover" as string]: `color-mix(in srgb, ${presskit.themeTextColor} 8%, transparent)`,
+    ...(derivedTones(presskit.themeTextColor) as CSSProperties),
     ["--presskit-font-body" as string]: bodyFont,
     ["--presskit-font-heading" as string]: headingFont,
     ["--pk-btn-radius" as string]: buttonRadius,
@@ -272,6 +349,11 @@ function ArtistName({ presskit, className, style }: { presskit: PublicPresskit; 
   );
 }
 
+function Tagline({ presskit, className }: { presskit: PublicPresskit; className?: string }) {
+  if (!presskit.tagline?.trim()) return null;
+  return <p className={className ?? "text-base text-[var(--presskit-muted)] @3xl:text-lg"}>{presskit.tagline}</p>;
+}
+
 function HeaderActions({ presskit, lang }: { presskit: PublicPresskit; lang: PresskitLanguage }) {
   const t = PUBLIC_STRINGS[lang]!;
   const visible = (type: PublicSection["type"]) => presskit.sections.find((s) => s.type === type && s.visible);
@@ -367,6 +449,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
               style={{ fontSize: "clamp(3.25rem, 17cqw, 8.75rem)" }}
               className="break-words font-bold uppercase leading-[0.85]"
             />
+            <Tagline presskit={presskit} className="max-w-2xl text-lg text-[var(--presskit-muted)] @3xl:text-xl" />
             <QuickLinksBar links={quickLinks} />
             {actions}
           </div>
@@ -384,6 +467,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
               <p className="text-sm text-[var(--presskit-muted)]">{[category, place].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
+          <Tagline presskit={presskit} />
           <QuickLinksBar links={quickLinks} />
           {actions}
         </header>
@@ -400,6 +484,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
             style={{ fontSize: "clamp(2.75rem, 12cqw, 4.5rem)" }}
             className="break-words font-normal leading-[1.02]"
           />
+          <Tagline presskit={presskit} className="max-w-xl italic text-[var(--presskit-muted)]" />
           {place && <p className="text-sm italic text-[var(--presskit-muted)]">{place}</p>}
           <QuickLinksBar links={quickLinks} align="center" />
           <div className="flex justify-center">{actions}</div>
@@ -419,6 +504,7 @@ function Header({ variant, presskit, lang }: { variant: HeaderVariant; presskit:
               {place && <p className="text-sm text-[var(--presskit-muted)]">{place}</p>}
             </div>
           </div>
+          <Tagline presskit={presskit} />
           <QuickLinksBar links={quickLinks} />
           {actions}
         </header>
@@ -460,9 +546,138 @@ function WhatsAppFloating({ presskit, lang }: { presskit: PublicPresskit; lang: 
   );
 }
 
+// ---------------------------------------------------------------------------
+// Site structure: nav bar + one shell per section carrying its own look
+// ---------------------------------------------------------------------------
+
+type NavEntry = { anchor: string; label: string };
+
+function SiteNav({ entries, tabs }: { entries: NavEntry[]; tabs: boolean }) {
+  if (entries.length < 2) return null;
+  return (
+    <nav
+      aria-label="Seções"
+      className="pk-nav sticky top-0 z-30 border-b border-[var(--presskit-border)] bg-[color-mix(in_srgb,var(--presskit-bg)_82%,transparent)] backdrop-blur"
+    >
+      <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {entries.map((entry) => (
+          <a
+            key={entry.anchor}
+            href={`#${entry.anchor}`}
+            className="pk-nav-link shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--presskit-muted)] transition hover:text-[var(--presskit-text)]"
+            {...(tabs ? { role: "tab" } : {})}
+          >
+            {entry.label}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/** CSS for tab mode: only the :target section is shown (the first one when
+ * nothing is targeted), and the matching nav link gets the accent. Pure
+ * CSS so the public page ships no JS and the dashboard preview works too. */
+function tabsCss(anchors: string[]): string {
+  const active = "background:var(--presskit-accent);color:var(--presskit-on-accent)";
+  const rules = [
+    ".pk-tabs>.pk-tab{display:none}",
+    ".pk-tabs>.pk-tab:target{display:block}",
+    ".pk-tabs:not(:has(>.pk-tab:target))>.pk-tab:first-of-type{display:block}",
+    `.pk-site:not(:has(.pk-tab:target)) .pk-nav-link:first-of-type{${active}}`,
+    ...anchors.map((anchor) => `.pk-site:has(#${anchor}:target) .pk-nav-link[href="#${anchor}"]{${active}}`),
+  ];
+  return rules.join("\n");
+}
+
+function sectionOverrides(style: SectionStyle, align: "left" | "center"): CSSProperties {
+  const vars: Record<string, string> = {};
+  if (style.backgroundColor) vars["--presskit-bg"] = style.backgroundColor;
+  if (style.textColor) {
+    vars["--presskit-text"] = style.textColor;
+    Object.assign(vars, derivedTones(style.textColor));
+  }
+  if (style.accentColor) {
+    vars["--presskit-accent"] = style.accentColor;
+    vars["--presskit-on-accent"] = readableOn(style.accentColor);
+  }
+  if (align === "center") vars["--pk-h2-align"] = "center";
+  return vars as CSSProperties;
+}
+
+function SectionShell({
+  section,
+  template,
+  tabs,
+  children,
+}: {
+  section: PublicSection;
+  template: TemplateStyle;
+  tabs: boolean;
+  children: React.ReactNode;
+}) {
+  const style = (section.style ?? {}) as SectionStyle;
+  const anchor = SECTION_ANCHORS[section.type];
+  const width = SECTION_WIDTH_CLASS[(style.width as SectionWidth) ?? template.sectionWidth];
+  const padding = SECTION_PADDING_CLASS[(style.padding as SectionPadding) ?? template.sectionPadding];
+  const align = style.align === "center" ? "center" : "left";
+  const preset = resolveBackgroundPreset(style.backgroundPreset);
+  const image = style.backgroundImageUrl ?? null;
+  const paintsOwnBackground = Boolean(style.backgroundColor || image || preset.css);
+  const overlay = clamp(style.backgroundOverlay, 55, BACKGROUND_OVERLAY_MAX);
+
+  return (
+    <section
+      id={anchor}
+      data-section={section.type}
+      style={{
+        ...sectionOverrides(style, align),
+        backgroundColor: paintsOwnBackground ? "var(--presskit-bg)" : undefined,
+        color: style.textColor ? "var(--presskit-text)" : undefined,
+        scrollMarginTop: "3.5rem",
+      }}
+      className={
+        `pk-section relative ${tabs ? "pk-tab" : ""} ` +
+        (style.divider ? "border-t border-[var(--presskit-border)] " : "") +
+        (template.section ? `${template.section} ` : "")
+      }
+    >
+      {(image || preset.css) && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          {image && (
+            <div className="absolute inset-0" style={{ backgroundImage: cssUrl(image), backgroundSize: "cover", backgroundPosition: "center" }} />
+          )}
+          {image && (
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: `color-mix(in srgb, var(--presskit-bg) ${overlay}%, transparent)` }}
+            />
+          )}
+          {preset.css && (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: preset.css,
+                backgroundSize: preset.size ?? "cover",
+                backgroundRepeat: preset.size ? "repeat" : "no-repeat",
+              }}
+            />
+          )}
+        </div>
+      )}
+      <div
+        className={`relative mx-auto flex w-full flex-col ${width} ${template.sectionInner} ${padding} ${align === "center" ? "items-center text-center" : ""}`}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
 /**
- * Renders a presskit with its template, colors, fonts, background layers,
- * identity images and conversion elements.
+ * Renders a presskit as the artist's site: template, colors, fonts,
+ * background layers, identity images, a section nav (anchors or CSS tabs)
+ * and one shell per section carrying that section's own look.
  *
  * Fonts: the renderer only sets `font-family` values — loading them is the
  * host's job. The dashboard loads all options with a Google Fonts <link>
@@ -486,9 +701,15 @@ export function PresskitRenderer({
   const templateKey = resolveTemplateKey(presskit.templateKey);
   const template = TEMPLATE_STYLES[templateKey];
   const fullBleedHeader = template.header === "stage";
-  const visibleSections = [...presskit.sections]
-    .filter((section) => section.visible)
+  const tabs = presskit.navMode === "TABS";
+  const sections = [...presskit.sections]
+    .filter((section) => section.visible && sectionHasContent(section, presskit))
     .sort((a, b) => a.order - b.order);
+  const navEntries: NavEntry[] = sections.map((section) => ({
+    anchor: SECTION_ANCHORS[section.type],
+    label: localizeSection(section, lang).title,
+  }));
+  const showNav = (presskit.showNav ?? true) && navEntries.length >= 2;
 
   const header = <Header variant={template.header} presskit={presskit} lang={lang} />;
 
@@ -497,20 +718,21 @@ export function PresskitRenderer({
       data-presskit-template={templateKey}
       lang={lang === "en" ? "en" : "pt-BR"}
       style={themeStyle(presskit, fontFamilies)}
-      className="@container relative isolate min-h-screen"
+      className="pk-site @container relative isolate min-h-screen"
     >
+      {tabs && <style dangerouslySetInnerHTML={{ __html: tabsCss(navEntries.map((e) => e.anchor)) }} />}
       {/* Palco's header already paints the background image as its cover —
           the page layer then only carries the preset/overlay. */}
       <BackgroundLayers presskit={presskit} skipImage={fullBleedHeader && !presskit.coverImageUrl} />
       <LanguageSwitch presskit={presskit} lang={lang} languageHref={languageHref} />
       <div className="relative z-10">
-        {fullBleedHeader && header}
-        <div className={template.container}>
-          {!fullBleedHeader && header}
-          {visibleSections.map((section) => (
-            <div key={section.id} className={template.section || undefined}>
+        {fullBleedHeader ? header : <div className={template.container}>{header}</div>}
+        {showNav && <SiteNav entries={navEntries} tabs={tabs} />}
+        <div className={tabs ? "pk-tabs" : undefined}>
+          {sections.map((section) => (
+            <SectionShell key={section.id} section={section} template={template} tabs={tabs}>
               {renderSection(section, presskit, lang)}
-            </div>
+            </SectionShell>
           ))}
         </div>
         <WhatsAppFloating presskit={presskit} lang={lang} />

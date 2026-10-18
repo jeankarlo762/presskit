@@ -231,6 +231,28 @@ não são nossos e reescreve `/` para `/<slug>` mantendo o domínio do artista n
 **Limite do plano Hobby: 2 domínios personalizados por serviço** — a landing já usa os dois
 (`presskitai.com.br` + `www`); domínios de artistas exigem o plano Pro (20 por serviço).
 
+### Site do artista: abas, seções e estilo por seção
+
+A página pública é um site de uma página só, com navegação por âncoras. `Presskit.navMode`
+escolhe entre `SCROLL` (menu fixo que rola até a seção) e `TABS` (uma seção por vez, feito só
+com CSS `:target` — sem JS no cliente, funciona no SSR e em links diretos `#musica`);
+`showNav` liga o menu e `tagline` é a frase abaixo do nome. As âncoras vêm de
+`SECTION_ANCHORS` (shared) e o CSS das abas de `tabsCss()` no `PresskitRenderer`.
+
+Cada `Section` tem `style` (JSON validado por `sectionStyleSchema`: cor de fundo, imagem
+`backgroundImageUrl/Key`, preset de gradiente/textura, overlay, cores de texto/destaque, largura,
+espaçamento, alinhamento, divisória) e `layout` (variantes por tipo em `SECTION_LAYOUTS`, ex.
+galeria grade/mosaico/faixa, bio texto/dividida). `SectionShell` aplica tudo via CSS vars
+(`sectionOverrides`), por cima dos defaults do template (`templates.ts`). O storage key da
+imagem de fundo da seção é removido do payload público em `loadFullPublicPresskit`.
+
+Tipos novos: `STATS`, `TESTIMONIALS`, `FAQ`, `DOWNLOADS` (dados em `Section.data`, sem
+tabelas próprias). Seções são adicionadas/removidas com `POST|DELETE /presskit/sections/:type`;
+remover apaga a imagem de fundo mas preserva coleções (fotos, mídias, datas), que voltam se a
+seção for recriada. Arquivos para download e PDF do rider sobem por `/presskit/files/*`
+(pasta `files`, pdf/zip/docx/pptx/mp3 até 50 MB) e são servidos por `/media/*` com
+`Content-Disposition: attachment` para os formatos que o navegador abriria inline.
+
 ## Links de mídia (YouTube, Vimeo, Spotify, SoundCloud)
 
 `packages/shared/src/media/parseMediaUrl.ts` é a única fonte de verdade para "esse link é

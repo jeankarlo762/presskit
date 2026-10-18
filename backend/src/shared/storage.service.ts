@@ -38,7 +38,23 @@ export class ForeignStorageKeyError extends Error {
   }
 }
 
-export type ImageFolder = "gallery" | "theme-bg" | "cover" | "avatar" | "logo";
+export type ImageFolder = "gallery" | "theme-bg" | "cover" | "avatar" | "logo" | "section-bg";
+export type FileFolder = "files";
+export type StorageFolder = ImageFolder | FileFolder;
+
+/** Downloadable press material: documents, archives and audio. */
+const FILE_CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
+  pdf: "application/pdf",
+  zip: "application/zip",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  mp3: "audio/mpeg",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
   jpg: "image/jpeg",
@@ -66,7 +82,7 @@ function getClient() {
   });
 }
 
-function storageKeyPrefix(presskitId: string, folder: ImageFolder) {
+function storageKeyPrefix(presskitId: string, folder: StorageFolder) {
   return `presskits/${presskitId}/${folder}/`;
 }
 
@@ -83,7 +99,7 @@ export function publicUrlFor(storageKey: string) {
  * `presskits/<someone-else>/gallery/x.jpg` and then deleting that row would
  * have the API delete another artist's object from R2.
  */
-export function assertOwnedStorageKey(presskitId: string, folder: ImageFolder, storageKey: string) {
+export function assertOwnedStorageKey(presskitId: string, folder: StorageFolder, storageKey: string) {
   const prefix = storageKeyPrefix(presskitId, folder);
   const wellFormed = /^[A-Za-z0-9/_.-]+$/.test(storageKey) && !storageKey.includes("..");
   if (!wellFormed || !storageKey.startsWith(prefix)) throw new ForeignStorageKeyError();
@@ -112,6 +128,45 @@ export async function createImageUploadUrl(presskitId: string, extension: string
   return { uploadUrl, storageKey, contentType, maxBytes: MAX_IMAGE_BYTES, publicUrl: publicUrlFor(storageKey) };
 }
 
+/** Presigned PUT for a downloadable file (DOWNLOADS section, rider PDF).
+ * Same mechanics as images, bigger cap, different extension allow-list. */
+export async function createFileUploadUrl(presskitId: string, extension: string) {
+  const normalizedExtension = extension.toLowerCase().replace(/^\./, "");
+  const contentType = FILE_CONTENT_TYPE_BY_EXTENSION[normalizedExtension];
+  if (!contentType) throw new UnsupportedImageExtensionError(normalizedExtension);
+
+  const client = getClient();
+  const storageKey = `${storageKeyPrefix(presskitId, "files")}${generateOpaqueToken()}.${normalizedExtension}`;
+  const uploadUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey, ContentType: contentType }),
+    { expiresIn: 600 },
+  );
+  return { uploadUrl, storageKey, contentType, maxBytes: MAX_FILE_BYTES, publicUrl: publicUrlFor(storageKey) };
+}
+
+/** HEAD for a confirmed file: size + type, so the section can show them. */
+export async function describeStoredFile(storageKey: string) {
+  const client = getClient();
+  try {
+    const head = await client.send(new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
+    const size = head.ContentLength ?? 0;
+    if (size > MAX_FILE_BYTES) {
+      await deleteImageObject(storageKey);
+      throw new UploadNotFoundError();
+    }
+    return { sizeBytes: size, contentType: head.ContentType ?? "application/octet-stream" };
+  } catch (error) {
+    if (error instanceof UploadNotFoundError) throw error;
+    throw new UploadNotFoundError();
+  }
+}
+
+export function contentTypeForKey(storageKey: string): string {
+  const extension = storageKey.split(".").pop()?.toLowerCase() ?? "";
+  return CONTENT_TYPE_BY_EXTENSION[extension] ?? FILE_CONTENT_TYPE_BY_EXTENSION[extension] ?? "application/octet-stream";
+}
+
 /** Confirms the object actually landed in R2 (and isn't oversized) before
  * the metadata row is persisted — a client that calls "confirm" without
  * ever uploading must not be able to plant a broken gallery entry. */
@@ -136,10 +191,9 @@ export async function getImageObject(storageKey: string) {
   const client = getClient();
   const object = await client.send(new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
   if (!object.Body) throw new UploadNotFoundError();
-  const extension = storageKey.split(".").pop()?.toLowerCase() ?? "";
   return {
     body: object.Body as Readable,
-    contentType: object.ContentType ?? CONTENT_TYPE_BY_EXTENSION[extension] ?? "application/octet-stream",
+    contentType: object.ContentType ?? contentTypeForKey(storageKey),
     contentLength: object.ContentLength,
     etag: object.ETag,
   };

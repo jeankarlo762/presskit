@@ -6,6 +6,8 @@ import {
   SECTION_DEFAULT_TITLES,
   type BioSectionData,
   type ContactSectionData,
+  type DownloadsSectionData,
+  type PressSectionData,
   type PublicPresskit,
 } from "@presskit/shared";
 import { AUDIO_PROVIDERS, PresskitRenderer, VIDEO_PROVIDERS } from "@presskit/shared/ui";
@@ -13,6 +15,7 @@ import {
   getMyPresskit,
   listGalleryPhotos,
   listMedia,
+  listPress,
   listSections,
   listTourDates,
   publishPresskit,
@@ -20,6 +23,7 @@ import {
   type GalleryPhoto,
   type MediaEmbed,
   type Presskit,
+  type PressMention,
   type Section,
   type TourDate,
 } from "../api/presskit";
@@ -32,6 +36,29 @@ import { ContactForm } from "./editor/ContactForm";
 import { EmbedManager } from "./editor/EmbedManager";
 import { GalleryManager } from "./editor/GalleryManager";
 import { TourDatesManager } from "./editor/TourDatesManager";
+import { ListSectionForm, type ListField } from "./editor/ListSectionForm";
+import { DownloadsManager } from "./editor/DownloadsManager";
+import { TextSectionForm } from "./editor/TextSectionForm";
+import { PressManager } from "./editor/PressManager";
+
+const STATS_FIELDS: ListField[] = [
+  { key: "value", label: "Número", maxLength: 20, placeholder: "Ex.: 120k" },
+  { key: "label", label: "Descrição", maxLength: 40, placeholder: "Ex.: ouvintes mensais" },
+];
+const TESTIMONIAL_FIELDS: ListField[] = [
+  { key: "author", label: "Quem disse", maxLength: 80 },
+  { key: "role", label: "Cargo / veículo", maxLength: 80, optional: true },
+  { key: "quote", label: "Depoimento", kind: "textarea", maxLength: 500 },
+];
+const FAQ_FIELDS: ListField[] = [
+  { key: "question", label: "Pergunta", maxLength: 160 },
+  { key: "answer", label: "Resposta", kind: "textarea", maxLength: 1500 },
+];
+
+function itemsOf<T>(section: Section | undefined): T[] {
+  const items = (section?.data as { items?: T[] } | null)?.items;
+  return Array.isArray(items) ? items : [];
+}
 
 const EMPTY_BIO: BioSectionData = { shortBio: "", longBio: "" };
 const EMPTY_CONTACT: ContactSectionData = { email: "", socialLinks: [] };
@@ -53,6 +80,7 @@ export function DashboardHomePage() {
   const [media, setMedia] = useState<MediaEmbed[]>([]);
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [tourDates, setTourDates] = useState<TourDate[]>([]);
+  const [press, setPress] = useState<PressMention[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishBusy, setPublishBusy] = useState(false);
   const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
@@ -68,11 +96,12 @@ export function DashboardHomePage() {
       }
       setPresskit(found);
 
-      const [sectionsRes, mediaRes, galleryRes, tourDatesRes] = await Promise.all([
+      const [sectionsRes, mediaRes, galleryRes, tourDatesRes, pressRes] = await Promise.all([
         listSections(),
         listMedia(),
         listGalleryPhotos(),
         listTourDates(),
+        listPress(),
       ]);
       if (cancelled) return;
 
@@ -80,6 +109,7 @@ export function DashboardHomePage() {
       setMedia(mediaRes);
       setGallery(galleryRes);
       setTourDates(tourDatesRes);
+      setPress(pressRes);
       setLoading(false);
     });
 
@@ -120,6 +150,16 @@ export function DashboardHomePage() {
   const musicSection = sections.find((s) => s.type === "MUSIC");
   const videoSection = sections.find((s) => s.type === "VIDEO");
   const tourDatesSection = sections.find((s) => s.type === "TOUR_DATES");
+  const pressSection = sections.find((s) => s.type === "PRESS");
+  const riderSection = sections.find((s) => s.type === "TECH_RIDER");
+  const customSection = sections.find((s) => s.type === "CUSTOM");
+  const statsSection = sections.find((s) => s.type === "STATS");
+  const testimonialsSection = sections.find((s) => s.type === "TESTIMONIALS");
+  const faqSection = sections.find((s) => s.type === "FAQ");
+  const downloadsSection = sections.find((s) => s.type === "DOWNLOADS");
+  const pressData = (pressSection?.data as PressSectionData | null) ?? {};
+  const riderData = (riderSection?.data as { text?: string; pdfUrl?: string } | null) ?? {};
+  const customData = (customSection?.data as { body?: string } | null) ?? {};
 
 
   // Spread the presskit so every theme field it carries (template, heading
@@ -133,7 +173,7 @@ export function DashboardHomePage() {
     mediaEmbeds: media,
     galleryPhotos: gallery,
     tourDates,
-    pressMentions: [],
+    pressMentions: press,
   };
 
   // "Ready to send to a booker": the minimum a contractor expects to find.
@@ -233,7 +273,7 @@ export function DashboardHomePage() {
             </span>
             <span className="flex flex-col">
               <span className="font-bold text-fg">Personalizar visual</span>
-              <span className="text-[13px] text-fg-muted">Modelo, cores, fontes e ordem das seções</span>
+              <span className="text-[13px] text-fg-muted">Modelo, cores, fundos, abas e seções extras (números, depoimentos, FAQ, downloads…)</span>
             </span>
           </Link>
 
@@ -284,6 +324,94 @@ export function DashboardHomePage() {
             onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
           />
+          {statsSection && (
+            <ListSectionForm
+              sectionType="STATS"
+              fields={STATS_FIELDS}
+              max={6}
+              description="Até 6 números que impressionam: ouvintes mensais, shows feitos, seguidores…"
+              initialItems={itemsOf(statsSection)}
+              initialTitle={statsSection.title ?? SECTION_DEFAULT_TITLES.STATS}
+              defaultTitle={SECTION_DEFAULT_TITLES.STATS}
+              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "STATS", { items }, title))}
+              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "STATS", { items }, title))}
+            />
+          )}
+          {testimonialsSection && (
+            <ListSectionForm
+              sectionType="TESTIMONIALS"
+              fields={TESTIMONIAL_FIELDS}
+              max={8}
+              description="O que contratantes, produtores e público disseram sobre você."
+              initialItems={itemsOf(testimonialsSection)}
+              initialTitle={testimonialsSection.title ?? SECTION_DEFAULT_TITLES.TESTIMONIALS}
+              defaultTitle={SECTION_DEFAULT_TITLES.TESTIMONIALS}
+              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
+              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
+            />
+          )}
+          {pressSection && (
+            <PressManager
+              initialMentions={press}
+              initialData={pressData}
+              initialTitle={pressSection.title ?? SECTION_DEFAULT_TITLES.PRESS}
+              onMentionsChange={setPress}
+              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "PRESS", data, title))}
+              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "PRESS", data, title))}
+            />
+          )}
+          {downloadsSection && (
+            <DownloadsManager
+              initialItems={itemsOf<DownloadsSectionData["items"][number]>(downloadsSection)}
+              initialTitle={downloadsSection.title ?? SECTION_DEFAULT_TITLES.DOWNLOADS}
+              defaultTitle={SECTION_DEFAULT_TITLES.DOWNLOADS}
+              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
+              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
+            />
+          )}
+          {riderSection && (
+            <TextSectionForm
+              sectionType="TECH_RIDER"
+              textKey="text"
+              label="Necessidades técnicas"
+              placeholder="Ex.: 2 CDJ-3000 + DJM-900, monitor de palco, 1 microfone sem fio…"
+              maxLength={6000}
+              withPdf
+              initialText={riderData.text ?? ""}
+              initialPdfUrl={riderData.pdfUrl ?? null}
+              initialTitle={riderSection.title ?? SECTION_DEFAULT_TITLES.TECH_RIDER}
+              defaultTitle={SECTION_DEFAULT_TITLES.TECH_RIDER}
+              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
+              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
+            />
+          )}
+          {faqSection && (
+            <ListSectionForm
+              sectionType="FAQ"
+              fields={FAQ_FIELDS}
+              max={12}
+              description="Perguntas que contratantes sempre fazem: cachê, duração do set, deslocamento…"
+              initialItems={itemsOf(faqSection)}
+              initialTitle={faqSection.title ?? SECTION_DEFAULT_TITLES.FAQ}
+              defaultTitle={SECTION_DEFAULT_TITLES.FAQ}
+              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
+              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
+            />
+          )}
+          {customSection && (
+            <TextSectionForm
+              sectionType="CUSTOM"
+              textKey="body"
+              label="Texto"
+              placeholder="Qualquer coisa que não coube nas outras seções."
+              maxLength={4000}
+              initialText={customData.body ?? ""}
+              initialTitle={customSection.title ?? SECTION_DEFAULT_TITLES.CUSTOM}
+              defaultTitle={SECTION_DEFAULT_TITLES.CUSTOM}
+              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
+              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
+            />
+          )}
           <ContactForm
             initial={contactData}
             initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
@@ -347,5 +475,8 @@ function upsertSection(sections: Section[], type: Section["type"], data: unknown
   if (existing) {
     return sections.map((s) => (s.type === type ? { ...s, data, ...(title !== undefined ? { title } : {}) } : s));
   }
-  return [...sections, { id: type, type, title: title ?? null, order: sections.length, visible: true, data, titleEn: null, dataEn: null }];
+  return [
+    ...sections,
+    { id: type, type, title: title ?? null, order: sections.length, visible: true, data, titleEn: null, dataEn: null, style: {}, layout: null },
+  ];
 }

@@ -19,16 +19,59 @@ export function TourDatesBlock({
   title,
   dates,
   ticketsLabel = "Ingressos",
+  layout = "list",
 }: {
   title: string;
   dates: PublicTourDate[];
   ticketsLabel?: string;
+  layout?: string;
 }) {
   if (dates.length === 0) return null;
 
   const now = Date.now();
   const upcoming = dates.filter((d) => new Date(d.date).getTime() >= now);
   const list = upcoming.length > 0 ? upcoming : dates;
+
+  if (layout === "cards") {
+    return (
+      <section className="flex flex-col gap-4">
+        <SectionHeading>{title}</SectionHeading>
+        <ul className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @4xl:grid-cols-3">
+          {list.map((date) => {
+            const day = new Date(date.date);
+            return (
+              <li
+                key={date.id}
+                className="flex items-center gap-4 rounded-[var(--pk-card-radius)] border border-[var(--presskit-border)] bg-[var(--presskit-hover)] p-4"
+              >
+                <div className="flex w-14 shrink-0 flex-col items-center rounded-[var(--pk-btn-radius)] bg-[var(--presskit-accent)] py-2 text-[var(--presskit-on-accent)]">
+                  <span className="text-2xl font-bold leading-none">{String(day.getUTCDate()).padStart(2, "0")}</span>
+                  <span className="text-[11px] font-semibold uppercase">
+                    {day.toLocaleDateString("pt-BR", { month: "short", timeZone: "UTC" }).replace(".", "")}
+                  </span>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{date.venueName}</span>
+                  <span className="text-sm text-[var(--presskit-muted)]">{date.city}</span>
+                </div>
+                {date.ticketUrl && (
+                  <a
+                    href={date.ticketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-track="tickets"
+                    className={presskitButtonClass("outline", "sm")}
+                  >
+                    {ticketsLabel}
+                  </a>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-3">

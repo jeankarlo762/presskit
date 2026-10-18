@@ -20,7 +20,7 @@ export function ContactBlock({ title, data }: { title: string; data: ContactSect
   if (!hasContent) return null;
 
   return (
-    <section id="contato" className="flex scroll-mt-6 flex-col gap-3 text-sm">
+    <section className="flex flex-col gap-3 text-sm">
       <SectionHeading>{title}</SectionHeading>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {data.email && (

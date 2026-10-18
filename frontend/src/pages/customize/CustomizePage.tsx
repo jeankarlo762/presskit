@@ -13,19 +13,24 @@ import {
   type FontKey,
   type PresskitUpdateInput,
   type PublicPresskit,
+  type SectionStyleInput,
+  type SectionType,
   type TemplateKey,
 } from "@presskit/shared";
 import {
+  addSection,
   getMyPresskit,
   listGalleryPhotos,
   listMedia,
   listPress,
   listSections,
   listTourDates,
+  removeSection,
   renameSection,
   reorderSections,
   setSectionVisibility,
   updatePresskit,
+  updateSectionStyle,
   type GalleryPhoto,
   type MediaEmbed,
   type PressMention,
@@ -45,6 +50,9 @@ import { IdentityCard } from "./IdentityCard";
 import { ConversionCard } from "./ConversionCard";
 import { LanguagesCard } from "./LanguagesCard";
 import { DomainCard } from "./DomainCard";
+import { SiteCard } from "./SiteCard";
+
+const SECTION_STYLE_DELAY_MS = 600;
 
 const AUTOSAVE_DELAY_MS = 700;
 
@@ -123,6 +131,11 @@ function samePalette(presskit: Presskit, palette: ColorPalette) {
   );
 }
 
+/** Drops cleared (null) keys so the preview matches what the server keeps. */
+function pruneStyle<T extends Record<string, unknown>>(style: T): T {
+  return Object.fromEntries(Object.entries(style).filter(([, v]) => v !== null && v !== undefined)) as T;
+}
+
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label className="relative flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-white/10 bg-bg px-3 py-2 text-[13px] text-fg focus-within:border-primary-text">
@@ -163,6 +176,8 @@ export function CustomizePage() {
   const [tourDates, setTourDates] = useState<TourDate[]>([]);
   const [press, setPress] = useState<PressMention[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const stylePending = useRef(new Map<SectionType, { style?: SectionStyleInput; layout?: string | null }>());
+  const styleTimers = useRef(new Map<SectionType, ReturnType<typeof setTimeout>>());
 
   useEffect(() => {
     let cancelled = false;
@@ -248,6 +263,58 @@ export function CustomizePage() {
   async function handleRename(section: Section, title: string) {
     const saved = await track(renameSection(section, title));
     setSections((prev) => prev.map((s) => (s.id === section.id ? { ...s, title: saved.title } : s)));
+  }
+
+  async function handleAddSection(type: SectionType) {
+    const created = await track(addSection(type));
+    setSections((prev) => [...prev.filter((s) => s.type !== created.type), created].sort((a, b) => a.order - b.order));
+  }
+
+  async function handleRemoveSection(section: Section) {
+    await track(removeSection(section.type));
+    setSections((prev) => prev.filter((s) => s.id !== section.id));
+  }
+
+  // Style edits apply to the preview at once and are merged per section
+  // into one PATCH after a short pause (same idea as the presskit autosave).
+  function handleStyleChange(section: Section, patch: { style?: SectionStyleInput; layout?: string | null }) {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === section.id
+          ? {
+              ...s,
+              layout: patch.layout !== undefined ? patch.layout : s.layout,
+              style: patch.style ? pruneStyle({ ...(s.style ?? {}), ...patch.style }) : s.style,
+            }
+          : s,
+      ),
+    );
+    const key = section.type;
+    const merged = stylePending.current.get(key) ?? {};
+    stylePending.current.set(key, {
+      style: patch.style ? { ...(merged.style ?? {}), ...patch.style } : merged.style,
+      layout: patch.layout !== undefined ? patch.layout : merged.layout,
+    });
+    const existing = styleTimers.current.get(key);
+    if (existing) clearTimeout(existing);
+    styleTimers.current.set(
+      key,
+      setTimeout(() => {
+        const body = stylePending.current.get(key);
+        stylePending.current.delete(key);
+        styleTimers.current.delete(key);
+        if (!body) return;
+        track(updateSectionStyle(key, body))
+          .then((saved) =>
+            setSections((prev) => prev.map((s) => (s.type === key ? { ...s, style: saved.style, layout: saved.layout } : s))),
+          )
+          .catch(() => undefined);
+      }, SECTION_STYLE_DELAY_MS),
+    );
+  }
+
+  function replaceSection(saved: Section) {
+    setSections((prev) => prev.map((s) => (s.id === saved.id ? { ...s, style: saved.style, layout: saved.layout } : s)));
   }
 
   const templateKey = resolveTemplateKey(presskit.templateKey);
@@ -402,7 +469,21 @@ export function CustomizePage() {
           <ConversionCard presskit={presskit} onChange={change} />
         </SectionCard>
 
-        <SectionsOrderCard sections={sections} onMove={moveSection} onToggle={toggleSection} onRename={handleRename} />
+        <SectionCard title="Site: frase, menu e abas">
+          <SiteCard presskit={presskit} onChange={change} />
+        </SectionCard>
+
+        <SectionsOrderCard
+          sections={sections}
+          presskit={presskit}
+          onMove={moveSection}
+          onToggle={toggleSection}
+          onRename={handleRename}
+          onAdd={handleAddSection}
+          onRemove={handleRemoveSection}
+          onStyleChange={handleStyleChange}
+          onSectionChange={replaceSection}
+        />
 
         <SectionCard title="Idiomas">
           <LanguagesCard

@@ -37,6 +37,10 @@ enum SectionType {
   CONTACT
   TECH_RIDER
   CUSTOM
+  STATS
+  TESTIMONIALS
+  FAQ
+  DOWNLOADS
 }
 
 enum MediaProvider {
@@ -308,6 +312,13 @@ model Presskit {
   customDomain       String? @unique
   customDomainStatus String  @default("NONE")
 
+  /// Site navigation: SCROLL (one long page with a sticky anchor bar) or
+  /// TABS (one section at a time, CSS :target — no JS on the public page).
+  navMode String  @default("SCROLL")
+  showNav Boolean @default(true)
+  /// Short line under the artist name ("DJ de techno · São Paulo").
+  tagline String?
+
   sections       Section[]
   linkClicks     LinkClick[]
   mediaEmbeds    MediaEmbed[]
@@ -354,6 +365,11 @@ model Section {
   /// the Portuguese value at render time.
   titleEn    String?
   dataEn     Json?
+  /// Per-section look: background (color/image/preset/overlay), text and
+  /// accent overrides, width, spacing, alignment — see sectionStyleSchema.
+  style      Json        @default("{}")
+  /// Per-type layout variant key (SECTION_LAYOUTS in shared); null = default.
+  layout     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

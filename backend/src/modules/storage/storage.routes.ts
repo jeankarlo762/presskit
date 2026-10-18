@@ -4,7 +4,9 @@ import { getImageObject, StorageNotConfiguredError } from "../../shared/storage.
 
 // Only keys the app itself writes (see createImageUploadUrl) are ever
 // served — anything else in the bucket stays unreachable through here.
-const SERVABLE_KEY = /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg|cover|avatar|logo)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/;
+const SERVABLE_KEY =
+  /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg|cover|avatar|logo|section-bg|files)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp|pdf|zip|docx|pptx|mp3)$/;
+const ATTACHMENT_EXTENSIONS = new Set(["zip", "docx", "pptx", "mp3"]);
 
 /**
  * Public read path for uploaded images. Railway buckets are private (no
@@ -36,6 +38,14 @@ export async function storageRoutes(fastify: FastifyInstance) {
       // Images embed anywhere (OG scrapers, other sites linking the presskit).
       reply.header("Access-Control-Allow-Origin", "*");
       reply.header("X-Content-Type-Options", "nosniff");
+      // Documents open inline (PDF viewer); archives/audio are offered as a
+      // download with a readable name instead of the random key.
+      const extension = key.split(".").pop()?.toLowerCase() ?? "";
+      if (ATTACHMENT_EXTENSIONS.has(extension)) {
+        const name =
+          (request.query as { name?: string }).name?.replace(/[^\w.\- ]/g, "").slice(0, 80) || `arquivo.${extension}`;
+        reply.header("Content-Disposition", `attachment; filename="${name}"`);
+      }
 
       if (request.method === "HEAD") return reply.send();
       return reply.send(object.body instanceof Readable ? object.body : Readable.from(object.body));

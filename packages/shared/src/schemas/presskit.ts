@@ -8,6 +8,7 @@ import {
   BACKGROUND_PRESET_KEYS,
   BUTTON_STYLES,
   FONT_KEYS,
+  NAV_MODES,
   TEMPLATE_KEYS,
 } from "../constants/theme";
 import { MAX_QUICK_LINKS, QUICK_LINK_PLATFORMS } from "../constants/quickLinks";
@@ -91,6 +92,9 @@ export const presskitUpdateSchema = z.object({
   whatsappNumber: whatsappNumberSchema.nullable().optional(),
   whatsappMessage: z.string().trim().max(300).nullable().optional(),
   quickLinks: z.array(quickLinkSchema).max(MAX_QUICK_LINKS).optional(),
+  navMode: z.enum(NAV_MODES).optional(),
+  showNav: z.boolean().optional(),
+  tagline: z.string().trim().max(140).nullable().optional(),
   languages: z
     .array(z.enum(PRESSKIT_LANGUAGES))
     .min(1)

@@ -2,6 +2,7 @@ import type { ArtistCategory, SectionType } from "../constants/category";
 import type { BackgroundAttachment, BackgroundPosition, ButtonStyle, FontKey } from "../constants/theme";
 import type { MediaProvider } from "../schemas/collections";
 import type { QuickLink } from "../schemas/presskit";
+import type { SectionStyle } from "../schemas/section";
 
 /** Shape of what GET /public/presskits/:slug returns after the HTTP+JSON
  * round-trip — dates arrive as ISO strings, not Date instances, which is why
@@ -16,6 +17,10 @@ export type PublicSection = {
   /** English variants; absent/null = fall back to the Portuguese values. */
   titleEn?: string | null;
   dataEn?: unknown;
+  /** Per-section look (see sectionStyleSchema); absent = page theme. */
+  style?: SectionStyle | null;
+  /** Layout variant key (SECTION_LAYOUTS); absent/unknown = default. */
+  layout?: string | null;
 };
 
 export type PublicMediaEmbed = {
@@ -88,6 +93,9 @@ export type PublicPresskit = {
   whatsappMessage?: string | null;
   quickLinks?: QuickLink[];
   languages?: string[];
+  navMode?: string;
+  showNav?: boolean;
+  tagline?: string | null;
   sections: PublicSection[];
   mediaEmbeds: PublicMediaEmbed[];
   galleryPhotos: PublicGalleryPhoto[];

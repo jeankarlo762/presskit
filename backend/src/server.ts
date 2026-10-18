@@ -23,6 +23,7 @@ import { billingRoutes } from "./modules/billing/billing.routes";
 import { webhookRoutes } from "./modules/billing/webhook.routes";
 import { feedbackRoutes } from "./modules/feedback/feedback.routes";
 import { storageRoutes } from "./modules/storage/storage.routes";
+import { filesRoutes } from "./modules/storage/files.routes";
 import { runBillingHousekeeping } from "./modules/billing/billing.service";
 
 const HOUSEKEEPING_INTERVAL_MS = 60 * 60 * 1000;
@@ -96,6 +97,7 @@ async function buildServer() {
   await fastify.register(webhookRoutes);
   await fastify.register(feedbackRoutes);
   await fastify.register(storageRoutes);
+  await fastify.register(filesRoutes);
 
   return fastify;
 }

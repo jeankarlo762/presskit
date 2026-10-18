@@ -21,6 +21,10 @@ export const SECTION_DEFAULT_TITLES_EN: Record<SectionType, string> = {
   CONTACT: "Contact",
   TECH_RIDER: "Tech rider",
   CUSTOM: "",
+  STATS: "Numbers",
+  TESTIMONIALS: "Testimonials",
+  FAQ: "FAQ",
+  DOWNLOADS: "Downloads",
 };
 
 export const ARTIST_CATEGORY_LABELS_EN: Record<ArtistCategory, string> = {
@@ -39,6 +43,8 @@ export const PUBLIC_STRINGS: Record<PresskitLanguage, Record<string, string>> = 
     tickets: "Ingressos",
     mediaUnavailable: "Mídia indisponível",
     switchLanguage: "English",
+    download: "Baixar",
+    menu: "Menu",
   },
   en: {
     bookCta: "Book for an event",
@@ -47,5 +53,7 @@ export const PUBLIC_STRINGS: Record<PresskitLanguage, Record<string, string>> = 
     tickets: "Tickets",
     mediaUnavailable: "Media unavailable",
     switchLanguage: "Português",
+    download: "Download",
+    menu: "Menu",
   },
 };

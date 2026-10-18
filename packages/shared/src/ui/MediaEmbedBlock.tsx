@@ -33,13 +33,21 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
   );
 }
 
-export function MediaEmbedBlock({ title, embeds }: { title: string; embeds: PublicMediaEmbed[] }) {
+export function MediaEmbedBlock({
+  title,
+  embeds,
+  layout = "list",
+}: {
+  title: string;
+  embeds: PublicMediaEmbed[];
+  layout?: string;
+}) {
   if (embeds.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading>{title}</SectionHeading>
-      <div className="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+      <div className={layout === "grid" ? "grid grid-cols-1 gap-4 @lg:grid-cols-2" : "grid grid-cols-1 gap-4"}>
         {embeds.map((embed) => (
           <EmbedFrame key={embed.id} embed={embed} />
         ))}

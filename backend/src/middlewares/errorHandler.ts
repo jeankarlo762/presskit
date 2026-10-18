@@ -30,6 +30,7 @@ import { CannotChangeOwnRoleError, LastSuperadminError, UserNotFoundError } from
 import { BillingNotConfiguredError, BillingProviderError, WebhookSignatureError } from "../modules/billing/mercadopago";
 import { AlreadySubscribedError, SubscriptionNotFoundError } from "../modules/billing/billing.service";
 import { FeedbackNotFoundError } from "../modules/feedback/feedback.service";
+import { SectionNotFoundError } from "../modules/sections/section.service";
 import { InvalidResetCodeError } from "../modules/auth/passwordReset.service";
 
 const KNOWN_ERROR_STATUS = new Map<Function, number>([
@@ -41,6 +42,7 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [UserNotFoundError, 404],
   [SubscriptionNotFoundError, 404],
   [FeedbackNotFoundError, 404],
+  [SectionNotFoundError, 404],
   [CannotChangeOwnRoleError, 400],
   [InvalidResetCodeError, 400],
   [LastSuperadminError, 409],

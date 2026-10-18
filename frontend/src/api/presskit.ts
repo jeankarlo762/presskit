@@ -8,7 +8,10 @@ import type {
   CustomDomainInfo,
   CustomDomainStatus,
   ImageSlot,
+  NavMode,
   PresskitLanguage,
+  SectionStyle,
+  SectionStyleInput,
   QuickLink,
   ContactSectionData,
   FontKey,
@@ -58,6 +61,9 @@ export type Presskit = {
   languages: PresskitLanguage[];
   customDomain: string | null;
   customDomainStatus: CustomDomainStatus;
+  navMode: NavMode;
+  showNav: boolean;
+  tagline: string | null;
 };
 
 export type Section = {
@@ -69,6 +75,8 @@ export type Section = {
   data: unknown;
   titleEn: string | null;
   dataEn: unknown;
+  style: SectionStyle;
+  layout: string | null;
 };
 // These reuse the *Public types (what the API actually returns — nullable
 // fields serialize as null, not undefined) rather than the write-input
@@ -263,5 +271,43 @@ export async function getCustomDomain() {
 }
 export async function setCustomDomain(domain: string | null) {
   const { data } = await api.put<CustomDomainInfo>("/presskit/domain", { domain });
+  return data;
+}
+
+// Site structure -----------------------------------------------------------
+export async function addSection(type: SectionType) {
+  const { data } = await api.post<{ section: Section }>(`/presskit/sections/${type}`);
+  return data.section;
+}
+export async function removeSection(type: SectionType) {
+  await api.delete(`/presskit/sections/${type}`);
+}
+export async function updateSectionStyle(type: SectionType, input: { style?: SectionStyleInput; layout?: string | null }) {
+  const { data } = await api.patch<{ section: Section }>(`/presskit/sections/${type}/style`, input);
+  return data.section;
+}
+export async function requestSectionBackgroundUploadUrl(type: SectionType, extension: string) {
+  const { data } = await api.post<ImageUploadTicket>(`/presskit/sections/${type}/background/upload-url`, { extension });
+  return data;
+}
+export async function confirmSectionBackground(type: SectionType, storageKey: string) {
+  const { data } = await api.post<{ section: Section }>(`/presskit/sections/${type}/background/confirm`, { storageKey });
+  return data.section;
+}
+export async function removeSectionBackground(type: SectionType) {
+  const { data } = await api.delete<{ section: Section }>(`/presskit/sections/${type}/background`);
+  return data.section;
+}
+
+// Downloadable files (DOWNLOADS section, rider PDF) ------------------------
+export async function requestFileUploadUrl(extension: string) {
+  const { data } = await api.post<ImageUploadTicket>("/presskit/files/upload-url", { extension });
+  return data;
+}
+export async function confirmFile(storageKey: string) {
+  const { data } = await api.post<{ url: string; storageKey: string; sizeBytes: number; contentType: string }>(
+    "/presskit/files/confirm",
+    { storageKey },
+  );
   return data;
 }

@@ -13,3 +13,7 @@ export * from "./CustomBlock";
 export * from "./PresskitRenderer";
 export * from "./templates";
 export * from "./QuickLinksBar";
+export * from "./StatsBlock";
+export * from "./TestimonialsBlock";
+export * from "./FaqBlock";
+export * from "./DownloadsBlock";
