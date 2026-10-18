@@ -277,8 +277,10 @@ da produtora tem a seção `ROSTER` (artistas publicados, montada pelo backend e
 
 ## Imagens enviadas
 
-Toda imagem é redimensionada no navegador antes do PUT (`frontend/src/lib/imageResize.ts`,
-`prepareImage(file, kind)`): avatar 800×800 e capa 1600×900 com corte central; logo contida em
+Toda imagem passa por um editor de enquadramento (`components/ImageCropModal.tsx`, react-easy-crop:
+arrastar, zoom, girar, moldura na proporção do slot — redonda no avatar, 16:9 na capa/fundos, 3:1 no
+logo, livre/1:1/4:5/16:9 na galeria) e é recortada e redimensionada no navegador antes do PUT
+(`frontend/src/lib/imageResize.ts`, `prepareImage(file, kind, crop)`): avatar 800×800 e capa 1600×900 com corte central; logo contida em
 1200×400 com transparência; fundo da página/seção e galeria contidas em 1920/2000 px; saída
 WebP (PNG/JPEG onde o navegador não codifica WebP). O backend continua aceitando só
 jpg/png/webp até 10 MB — o limite vira redundante, não a regra.

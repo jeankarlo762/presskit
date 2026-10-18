@@ -6,6 +6,7 @@ import { InfoTip } from "../../components/InfoTip";
 import { imageHelp } from "../../lib/fieldHelp";
 import { IMAGE_SPECS } from "../../lib/imageResize";
 import { useImageSlot } from "./useImageSlot";
+import { ImageCropModal } from "../../components/ImageCropModal";
 
 /** One upload tile: current image (or dashed drop target), upload / remove. */
 export function ImageSlotField({
@@ -23,7 +24,7 @@ export function ImageSlotField({
   shape?: "wide" | "square" | "round" | "logo";
   onChange: (presskit: Presskit) => void;
 }) {
-  const { uploading, error, inputRef, upload, remove } = useImageSlot(slot, onChange);
+  const { uploading, error, inputRef, upload, remove, pendingFile, cancelCrop, uploadPrepared } = useImageSlot(slot, onChange);
   const frame =
     shape === "round"
       ? "h-20 w-20 rounded-full"
@@ -99,6 +100,7 @@ export function ImageSlotField({
       )}
       {!url && hint && <p className="text-xs text-fg-muted">{hint}</p>}
       <FieldError>{error}</FieldError>
+      {pendingFile && <ImageCropModal file={pendingFile} kind={slot} onCancel={cancelCrop} onConfirm={uploadPrepared} />}
     </div>
   );
 }

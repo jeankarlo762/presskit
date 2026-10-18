@@ -21,7 +21,8 @@ import {
 } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
 import { uploadImageToStorage } from "../../lib/uploadImage";
-import { prepareImage } from "../../lib/imageResize";
+import type { PreparedImage } from "../../lib/imageResize";
+import { ImageCropModal } from "../../components/ImageCropModal";
 import { FieldError, Select } from "../../components/ui";
 import { InfoTip } from "../../components/InfoTip";
 import { FIELD_HELP } from "../../lib/fieldHelp";
@@ -86,12 +87,22 @@ export function SectionStylePanel({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
-  async function uploadBackground(file: File) {
-    setUploading(true);
+  function uploadBackground(file: File) {
     setError(null);
+    setPendingFile(file);
+  }
+
+  function cancelCrop() {
+    setPendingFile(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  async function uploadPrepared(prepared: PreparedImage) {
+    setPendingFile(null);
+    setUploading(true);
     try {
-      const prepared = await prepareImage(file, "section-bg");
       const ticket = await requestSectionBackgroundUploadUrl(section.type, prepared.extension);
       await uploadImageToStorage(ticket, prepared.file);
       onSectionChange(await confirmSectionBackground(section.type, ticket.storageKey));
@@ -191,6 +202,9 @@ export function SectionStylePanel({
           </label>
         )}
         <FieldError>{error}</FieldError>
+        {pendingFile && (
+          <ImageCropModal file={pendingFile} kind="section-bg" onCancel={cancelCrop} onConfirm={uploadPrepared} />
+        )}
       </div>
 
       <div className="flex flex-col gap-2">

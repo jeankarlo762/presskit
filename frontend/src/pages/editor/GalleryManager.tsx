@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { confirmGalleryPhoto, deleteGalleryPhoto, requestGalleryUploadUrl, type GalleryPhoto } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
 import { uploadImageToStorage } from "../../lib/uploadImage";
-import { prepareImage } from "../../lib/imageResize";
+import type { PreparedImage } from "../../lib/imageResize";
+import { ImageCropModal } from "../../components/ImageCropModal";
 import { Card, FieldError } from "../../components/ui";
 import { InfoTip } from "../../components/InfoTip";
 import { FIELD_HELP } from "../../lib/fieldHelp";
@@ -18,12 +19,22 @@ export function GalleryManager({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
-  async function handleFileSelected(file: File) {
+  function handleFileSelected(file: File) {
     setError(null);
+    setPendingFile(file);
+  }
+
+  function cancelCrop() {
+    setPendingFile(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  async function uploadPrepared({ file: resized, width, height, extension }: PreparedImage) {
+    setPendingFile(null);
     setUploading(true);
     try {
-      const { file: resized, width, height, extension } = await prepareImage(file, "gallery");
       const ticket = await requestGalleryUploadUrl(extension);
       await uploadImageToStorage(ticket, resized);
       const photo = await confirmGalleryPhoto({ storageKey: ticket.storageKey, width, height });
@@ -84,6 +95,7 @@ export function GalleryManager({
         {uploading && <p className="mt-2 text-sm text-fg-muted">Enviando...</p>}
         <FieldError>{error}</FieldError>
       </div>
+      {pendingFile && <ImageCropModal file={pendingFile} kind="gallery" onCancel={cancelCrop} onConfirm={uploadPrepared} />}
     </Card>
   );
 }

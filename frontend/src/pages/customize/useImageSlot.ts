@@ -3,7 +3,7 @@ import type { ImageSlot } from "@presskit/shared";
 import { confirmImage, removeImage, requestImageUploadUrl, type Presskit } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
 import { uploadImageToStorage } from "../../lib/uploadImage";
-import { prepareImage } from "../../lib/imageResize";
+import type { PreparedImage } from "../../lib/imageResize";
 
 /**
  * Upload/removal for one image slot of the presskit (background, cover,
@@ -13,14 +13,26 @@ import { prepareImage } from "../../lib/imageResize";
 export function useImageSlot(slot: ImageSlot, onChange: (presskit: Presskit) => void) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** File waiting in the crop editor; the upload starts after confirmation. */
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function upload(file: File) {
+  /** Step 1: the artist picked a file — open the framing editor. */
+  function upload(file: File) {
     setError(null);
+    setPendingFile(file);
+  }
+
+  function cancelCrop() {
+    setPendingFile(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  /** Step 2: the editor handed back the framed, resized image — send it. */
+  async function uploadPrepared(prepared: PreparedImage) {
+    setPendingFile(null);
     setUploading(true);
     try {
-      // Resized/cropped to the slot's format before it leaves the browser.
-      const prepared = await prepareImage(file, slot);
       const ticket = await requestImageUploadUrl(slot, prepared.extension);
       await uploadImageToStorage(ticket, prepared.file);
       onChange(await confirmImage(slot, { storageKey: ticket.storageKey }));
@@ -41,5 +53,5 @@ export function useImageSlot(slot: ImageSlot, onChange: (presskit: Presskit) => 
     }
   }
 
-  return { uploading, error, inputRef, upload, remove };
+  return { uploading, error, inputRef, upload, remove, pendingFile, cancelCrop, uploadPrepared };
 }

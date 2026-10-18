@@ -1,9 +1,10 @@
 /**
  * Every image the artist uploads is normalised in the browser before the
- * PUT to storage: resized to what its slot needs (and center-cropped when
- * the slot has a fixed shape), re-encoded as WebP, and never larger than
- * the slot's pixel budget. The public page then always gets a predictable
- * file — no 12 MB phone photo as an avatar, no 4:3 cover in a 16:9 hero.
+ * PUT to storage: cropped to the frame the artist chose (or the centre when
+ * no crop was made), resized to what its slot needs, re-encoded as WebP,
+ * and never larger than the slot's pixel budget. The public page then
+ * always gets a predictable file — no 12 MB phone photo as an avatar, no
+ * 4:3 cover in a 16:9 hero.
  */
 export type ImageKind = "avatar" | "cover" | "logo" | "background" | "section-bg" | "gallery";
 
@@ -15,16 +16,24 @@ type Spec = {
   /** Keep transparency (logos). Falls back to PNG where WebP can't be encoded. */
   alpha?: boolean;
   quality: number;
+  /** Crop frame offered in the editor (width/height); undefined = free. */
+  aspect?: number;
+  /** Round mask in the editor (the page shows the avatar round). */
+  round?: boolean;
 };
 
 export const IMAGE_SPECS: Record<ImageKind, Spec> = {
-  avatar: { width: 800, height: 800, fit: "cover", quality: 0.86 },
-  cover: { width: 1600, height: 900, fit: "cover", quality: 0.85 },
-  logo: { width: 1200, height: 400, fit: "contain", alpha: true, quality: 0.9 },
-  background: { width: 1920, height: 1920, fit: "contain", quality: 0.82 },
-  "section-bg": { width: 1920, height: 1920, fit: "contain", quality: 0.82 },
+  avatar: { width: 800, height: 800, fit: "cover", quality: 0.86, aspect: 1, round: true },
+  cover: { width: 1600, height: 900, fit: "cover", quality: 0.85, aspect: 16 / 9 },
+  logo: { width: 1200, height: 400, fit: "contain", alpha: true, quality: 0.9, aspect: 3 },
+  background: { width: 1920, height: 1920, fit: "contain", quality: 0.82, aspect: 16 / 9 },
+  "section-bg": { width: 1920, height: 1920, fit: "contain", quality: 0.82, aspect: 16 / 9 },
   gallery: { width: 2000, height: 2000, fit: "contain", quality: 0.86 },
 };
+
+/** Region of the (rotated) source image to keep, in source pixels — what
+ * the crop editor hands back. */
+export type CropArea = { x: number; y: number; width: number; height: number; rotation?: number };
 
 export class UnreadableImageError extends Error {
   constructor() {
@@ -69,41 +78,61 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-/** Resizes/crops `file` for `kind` and returns the file to upload plus its
- * final pixel size. Already-small images still get re-encoded, so the
- * output format is uniform. */
-export async function prepareImage(file: File, kind: ImageKind): Promise<PreparedImage> {
-  const spec = IMAGE_SPECS[kind];
-  const source = await decode(file);
-  const { width: sw, height: sh } = sizeOf(source);
-  if (!sw || !sh) throw new UnreadableImageError();
+/** Draws the source rotated by `degrees` onto a canvas big enough to hold
+ * the whole rotated image — the coordinate space the crop editor uses. */
+function rotated(source: ImageBitmap | HTMLImageElement, degrees: number): HTMLCanvasElement {
+  const { width, height } = sizeOf(source);
+  const rad = (degrees * Math.PI) / 180;
+  const sin = Math.abs(Math.sin(rad));
+  const cos = Math.abs(Math.cos(rad));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * cos + height * sin);
+  canvas.height = Math.round(width * sin + height * cos);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new UnreadableImageError();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(source, -width / 2, -height / 2);
+  return canvas;
+}
 
-  let targetW: number;
-  let targetH: number;
+/** Crops/resizes `file` for `kind` and returns the file to upload plus its
+ * final pixel size. With `crop` (from the editor) that region is kept;
+ * without it, fixed-shape slots are cropped at the centre. Already-small
+ * images still get re-encoded, so the output format is uniform. */
+export async function prepareImage(file: File, kind: ImageKind, crop?: CropArea): Promise<PreparedImage> {
+  const spec = IMAGE_SPECS[kind];
+  const decoded = await decode(file);
+  const base = sizeOf(decoded);
+  if (!base.width || !base.height) throw new UnreadableImageError();
+
+  const source: ImageBitmap | HTMLImageElement | HTMLCanvasElement =
+    crop?.rotation && crop.rotation % 360 !== 0 ? rotated(decoded, crop.rotation) : decoded;
+  const sw = "naturalWidth" in source ? source.naturalWidth : source.width;
+  const sh = "naturalWidth" in source ? source.naturalHeight : source.height;
+
   let sx = 0;
   let sy = 0;
   let cropW = sw;
   let cropH = sh;
-
-  if (spec.fit === "cover") {
+  if (crop) {
+    sx = Math.max(0, Math.min(sw - 1, Math.round(crop.x)));
+    sy = Math.max(0, Math.min(sh - 1, Math.round(crop.y)));
+    cropW = Math.max(1, Math.min(sw - sx, Math.round(crop.width)));
+    cropH = Math.max(1, Math.min(sh - sy, Math.round(crop.height)));
+  } else if (spec.fit === "cover") {
     const scale = Math.max(spec.width / sw, spec.height / sh);
-    // Never upscale a small image: crop to the right shape at its own size.
-    const factor = Math.min(1, scale);
     cropW = Math.round(spec.width / scale);
     cropH = Math.round(spec.height / scale);
     sx = Math.round((sw - cropW) / 2);
     sy = Math.round((sh - cropH) / 2);
-    targetW = Math.round(cropW * (scale * factor));
-    targetH = Math.round(cropH * (scale * factor));
-  } else {
-    const scale = Math.min(1, spec.width / sw, spec.height / sh);
-    targetW = Math.round(sw * scale);
-    targetH = Math.round(sh * scale);
   }
 
+  // Never upscale: a crop smaller than the slot stays at its own size.
+  const scale = Math.min(1, spec.width / cropW, spec.height / cropH);
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, targetW);
-  canvas.height = Math.max(1, targetH);
+  canvas.width = Math.max(1, Math.round(cropW * scale));
+  canvas.height = Math.max(1, Math.round(cropH * scale));
   const ctx = canvas.getContext("2d", { alpha: Boolean(spec.alpha) });
   if (!ctx) throw new UnreadableImageError();
   if (!spec.alpha) {
@@ -113,7 +142,7 @@ export async function prepareImage(file: File, kind: ImageKind): Promise<Prepare
   }
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, canvas.width, canvas.height);
-  if ("close" in source) source.close();
+  if ("close" in decoded) decoded.close();
 
   let blob = await toBlob(canvas, "image/webp", spec.quality);
   if (!blob || blob.type !== "image/webp") {
