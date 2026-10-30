@@ -9,6 +9,20 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 180;
 // Hosts that are "us" — anything else is a candidate artist domain.
 const OWN_HOST_SUFFIXES = ["presskitai.com.br", "up.railway.app", "railway.internal", "localhost", "127.0.0.1"];
 
+// Free artist subdomains: <slug>.presskitai.com.br opens that presskit.
+// These labels are our own apps, never a slug.
+const SUBDOMAIN_ROOT = "presskitai.com.br";
+const NON_ARTIST_SUBDOMAINS = ["www", "app", "api"];
+
+/** "djnizo.presskitai.com.br" → "djnizo"; null for our own hosts. */
+function artistSubdomain(host: string): string | null {
+  const bare = host.replace(/:\d+$/, "").toLowerCase();
+  if (!bare.endsWith(`.${SUBDOMAIN_ROOT}`)) return null;
+  const label = bare.slice(0, -(SUBDOMAIN_ROOT.length + 1));
+  if (!/^[a-z0-9-]+$/.test(label) || NON_ARTIST_SUBDOMAINS.includes(label)) return null;
+  return label;
+}
+
 function isOwnHost(host: string): boolean {
   const bare = host.replace(/:\d+$/, "").toLowerCase();
   return OWN_HOST_SUFFIXES.some((suffix) => bare === suffix || bare.endsWith(`.${suffix}`));
@@ -41,7 +55,8 @@ async function resolveCustomDomain(host: string): Promise<string | null> {
  *
  * It is also where an artist's own domain (artista.com.br) turns into the
  * presskit route: the host is looked up and the request rewritten to
- * /<slug>, so the address bar keeps the artist's domain. */
+ * /<slug>, so the address bar keeps the artist's domain. A free subdomain
+ * (<slug>.presskitai.com.br) needs no lookup: the label is the slug. */
 export default async function proxy(request: NextRequest) {
   const { country } = geolocation(request);
   const sessionId = request.cookies.get(SESSION_COOKIE)?.value ?? crypto.randomUUID();
@@ -53,8 +68,8 @@ export default async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   let response: NextResponse;
 
-  if (host && !isOwnHost(host) && request.nextUrl.pathname === "/") {
-    const slug = await resolveCustomDomain(host.replace(/:\d+$/, "").toLowerCase());
+  if (host && request.nextUrl.pathname === "/" && (artistSubdomain(host) || !isOwnHost(host))) {
+    const slug = artistSubdomain(host) ?? (await resolveCustomDomain(host.replace(/:\d+$/, "").toLowerCase()));
     if (slug) {
       const url = request.nextUrl.clone();
       url.pathname = `/${slug}`;

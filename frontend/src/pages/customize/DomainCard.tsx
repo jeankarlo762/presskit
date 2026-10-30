@@ -6,8 +6,9 @@ import { getCustomDomain, setCustomDomain } from "../../api/presskit";
 import { apiErrorMessage } from "../../api/axios";
 import { Button, FieldError, Input, Label } from "../../components/ui";
 import { Badge } from "../../components/admin/ui";
+import { presskitSubdomain } from "../../config";
 
-export function DomainCard() {
+export function DomainCard({ slug, published }: { slug: string; published: boolean }) {
   const [info, setInfo] = useState<CustomDomainInfo | null>(null);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,10 +48,26 @@ export function DomainCard() {
 
   const status = info?.status ?? "NONE";
 
+  const subdomain = presskitSubdomain(slug);
+
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1 rounded-xl border border-white/10 bg-bg p-3 text-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-fg-muted">Sem domínio? Use o seu endereço grátis:</span>
+          <Badge tone={published ? "success" : "warning"}>{published ? "ativo" : "ativa ao publicar"}</Badge>
+        </div>
+        {published ? (
+          <a href={`https://${subdomain}`} target="_blank" rel="noreferrer" className="break-all font-bold text-fg underline">
+            {subdomain}
+          </a>
+        ) : (
+          <span className="break-all font-bold text-fg">{subdomain}</span>
+        )}
+        <span className="text-xs text-fg-muted">Muda junto com o seu link (slug). Não precisa configurar nada.</span>
+      </div>
       <p className="text-xs text-fg-muted">
-        Use um domínio seu (ex.: <span className="text-fg">nomedoartista.com.br</span>) no lugar de presskitai.com.br/
+        Ou use um domínio seu (ex.: <span className="text-fg">nomedoartista.com.br</span>) no lugar de presskitai.com.br/
         {"{seu-nome}"}. Você aponta o DNS, a gente ativa.
       </p>
       <div className="flex flex-wrap items-end gap-2">

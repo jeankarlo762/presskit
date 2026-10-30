@@ -14,6 +14,11 @@ export const SITE_URL = trimTrailingSlash(import.meta.env.VITE_SITE_URL ?? "http
 /** Host shown next to the slug in the editor, e.g. "presskit.ai". */
 export const SITE_HOST = new URL(SITE_URL).host;
 
+/** Free artist address, e.g. "djnizo.presskitai.com.br" — no domain to buy. */
+export function presskitSubdomain(slug: string) {
+  return `${slug}.${SITE_HOST.replace(/^www\./, "")}`;
+}
+
 export function publicPresskitUrl(slug: string, trackableCode?: string) {
   const url = new URL(`/${encodeURIComponent(slug)}`, SITE_URL);
   if (trackableCode) url.searchParams.set("ref", trackableCode);

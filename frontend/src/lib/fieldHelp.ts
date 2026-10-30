@@ -47,7 +47,7 @@ export const FIELD_HELP = {
   sections: { title: "Seções da página", lines: ["Ordem, nome e visibilidade de cada parte.", "O pincel abre o estilo da seção: fundo, cores, largura, espaçamento.", "Remover uma seção não apaga fotos, mídias ou datas."] },
   sectionBackground: { title: "Fundo da seção", lines: ["Até 1920×1920 px, JPG/PNG/WebP, até 10 MB.", "Escurecimento controla a legibilidade do texto sobre a imagem.", "Ao enviar, você enquadra a imagem em 16:9 e confirma."] },
   languages: { title: "Idiomas", lines: ["Ligue o inglês para oferecer a página em PT e EN.", "Traduza título e textos de cada seção; o que ficar vazio usa o português."] },
-  domain: { title: "Domínio próprio", lines: ["Use um domínio seu no lugar de presskitai.com.br/nome.", "Crie um CNAME no DNS apontando para o endereço indicado.", "Depois de apontar, a ativação é feita pela equipe (até 1 dia útil)."] },
+  domain: { title: "Domínio próprio", lines: ["Sem domínio? Seu presskit já abre em nome.presskitai.com.br, de graça.", "Ou use um domínio seu no lugar de presskitai.com.br/nome.", "Crie um CNAME no DNS apontando para o endereço indicado.", "Depois de apontar, a ativação é feita pela equipe (até 1 dia útil)."] },
   bioShort: { title: "Bio curta", lines: ["Até 280 caracteres. Aparece no topo da seção e na prévia do link (WhatsApp, Instagram).", "Uma ou duas frases: quem é, estilo, de onde."] },
   bioLong: { title: "Bio completa", lines: ["Até 4000 caracteres. Quebras de linha viram parágrafos.", "Conte a trajetória, destaques e o que o contratante leva."] },
   music: { title: "Músicas e sets", lines: ["Cole links do Spotify (faixa, álbum, playlist) ou SoundCloud.", "Cada link vira um player na página."] },

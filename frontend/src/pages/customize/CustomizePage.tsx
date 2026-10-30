@@ -502,7 +502,7 @@ export function CustomizePage() {
         </SectionCard>
 
         <SectionCard title="Domínio próprio" hint={FIELD_HELP.domain}>
-          <DomainCard />
+          <DomainCard slug={presskit.slug} published={presskit.published} />
         </SectionCard>
       </div>
 

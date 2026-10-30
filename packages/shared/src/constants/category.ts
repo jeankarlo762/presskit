@@ -154,6 +154,7 @@ export function maxGalleryPhotosFor(plan: PlanKey, category: ArtistCategory): nu
 
 export const RESERVED_SLUGS = [
   "app",
+  "www",
   "admin",
   "api",
   "login",
