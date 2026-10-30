@@ -17,9 +17,9 @@ export function BioBlock({
 
   const text = (
     <>
-      {data.shortBio && <p className="text-lg font-medium leading-relaxed">{data.shortBio}</p>}
+      {data.shortBio && <p className="max-w-3xl text-lg font-medium leading-relaxed">{data.shortBio}</p>}
       {data.longBio && (
-        <p className="whitespace-pre-line text-[15px] leading-relaxed text-[var(--presskit-muted)]">
+        <p className="max-w-3xl whitespace-pre-line text-[15px] leading-relaxed text-[var(--presskit-muted)]">
           {data.longBio}
         </p>
       )}

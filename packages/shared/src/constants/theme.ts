@@ -232,10 +232,13 @@ export const SECTION_WIDTH_LABELS: Record<SectionWidth, string> = {
   wide: "Larga",
   full: "Toda a largura",
 };
+// Phone-first widths that open up once the page itself is desktop-wide
+// (`@4xl` = the renderer root, not the browser, so the dashboard's
+// phone-sized preview keeps the mobile widths).
 export const SECTION_WIDTH_CLASS: Record<SectionWidth, string> = {
-  narrow: "max-w-xl",
-  normal: "max-w-2xl",
-  wide: "max-w-5xl",
+  narrow: "max-w-xl @4xl:max-w-3xl",
+  normal: "max-w-2xl @4xl:max-w-4xl",
+  wide: "max-w-5xl @7xl:max-w-6xl",
   full: "max-w-none",
 };
 

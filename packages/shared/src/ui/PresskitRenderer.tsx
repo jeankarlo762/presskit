@@ -331,7 +331,7 @@ function HeroVideo({ src }: { src: string }) {
   );
 }
 
-function Avatar({ presskit, size }: { presskit: PublicPresskit; size: "md" | "lg" }) {
+function Avatar({ presskit, size, className = "" }: { presskit: PublicPresskit; size: "md" | "lg"; className?: string }) {
   if (!presskit.avatarImageUrl) return null;
   const dimension = size === "lg" ? "h-28 w-28 @3xl:h-36 @3xl:w-36" : "h-20 w-20";
   return (
@@ -339,7 +339,7 @@ function Avatar({ presskit, size }: { presskit: PublicPresskit; size: "md" | "lg
     <img
       src={presskit.avatarImageUrl}
       alt=""
-      className={`${dimension} shrink-0 rounded-full border-2 border-[var(--presskit-border-strong)] object-cover shadow-lg`}
+      className={`${dimension} ${className} shrink-0 rounded-full border-2 border-[var(--presskit-border-strong)] object-cover shadow-lg`}
     />
   );
 }
@@ -482,7 +482,7 @@ function Header({
                 "linear-gradient(to bottom, color-mix(in srgb, var(--presskit-bg) 25%, transparent) 0%, color-mix(in srgb, var(--presskit-bg) 45%, transparent) 50%, var(--presskit-bg) 100%)",
             }}
           />
-          <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-10 @3xl:gap-4 @3xl:px-8 @3xl:py-12">
+          <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-10 @3xl:gap-4 @3xl:px-8 @3xl:py-12 @7xl:max-w-6xl">
             <Avatar presskit={presskit} size="lg" />
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--presskit-accent)] @3xl:text-sm">
               {[category, place].filter(Boolean).join(" · ")}
@@ -507,7 +507,7 @@ function Header({
           <div className="flex items-center gap-4">
             <Avatar presskit={presskit} size="md" />
             <div className="flex min-w-0 flex-col gap-1">
-              <ArtistName presskit={presskit} className="text-2xl font-medium tracking-tight" />
+              <ArtistName presskit={presskit} className="text-2xl font-medium tracking-tight @4xl:text-4xl" />
               <p className="text-sm text-[var(--presskit-muted)]">{[category, place].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
@@ -536,35 +536,55 @@ function Header({
           <div className="flex justify-center">{actions}</div>
         </header>
       );
-    default:
+    default: {
+      // Desktop: the cover sits beside the name instead of above it, so the
+      // header uses the width and a portrait photo isn't cropped to a strip.
+      const split = Boolean(cover || videoSrc);
       return (
-        <header className="flex flex-col gap-3">
-          <HeroBanner cover={cover} videoSrc={videoSrc} />
-          <div className="flex items-center gap-4">
-            <Avatar presskit={presskit} size="md" />
-            <div className="flex min-w-0 flex-col gap-2">
-              <span className="w-fit rounded-full border border-[var(--presskit-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--presskit-accent)]">
-                {category}
-              </span>
-              <ArtistName presskit={presskit} className="text-3xl font-semibold tracking-tight" />
-              {place && <p className="text-sm text-[var(--presskit-muted)]">{place}</p>}
+        <header
+          className={`flex flex-col gap-3 ${split ? "@4xl:grid @4xl:grid-cols-2 @4xl:items-center @4xl:gap-12" : ""}`}
+        >
+          <HeroBanner cover={cover} videoSrc={videoSrc} desktopAspect={videoSrc ? "@4xl:aspect-video" : "@4xl:aspect-[4/5]"} />
+          <div className="flex min-w-0 flex-col gap-3 @4xl:gap-4">
+            <div className="flex items-center gap-4">
+              {/* Beside the cover photo the avatar would just repeat it. */}
+              <Avatar presskit={presskit} size="md" className={split ? "@4xl:hidden" : ""} />
+              <div className="flex min-w-0 flex-col gap-2">
+                <span className="w-fit rounded-full border border-[var(--presskit-border)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--presskit-accent)]">
+                  {category}
+                </span>
+                <ArtistName presskit={presskit} className="text-3xl font-semibold tracking-tight @4xl:text-5xl" />
+                {place && <p className="text-sm text-[var(--presskit-muted)]">{place}</p>}
+              </div>
             </div>
-          </div>
-          <Tagline presskit={presskit} />
+            <Tagline presskit={presskit} />
             {agencyLine}
-          <QuickLinksBar links={quickLinks} />
-          {actions}
+            <QuickLinksBar links={quickLinks} />
+            {actions}
+          </div>
         </header>
       );
+    }
   }
 }
 
 /** Cover photo or hero video as a banner above the header in the
  * non-full-bleed templates (Palco uses them as the full header instead). */
-function HeroBanner({ cover, videoSrc }: { cover: string | null; videoSrc: string | null }) {
+function HeroBanner({
+  cover,
+  videoSrc,
+  desktopAspect = "",
+}: {
+  cover: string | null;
+  videoSrc: string | null;
+  /** Aspect override once the page is desktop-wide (an `@4xl:` class). */
+  desktopAspect?: string;
+}) {
   if (!cover && !videoSrc) return null;
   return (
-    <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[var(--pk-card-radius)] bg-[var(--presskit-hover)]">
+    <div
+      className={`relative aspect-[21/9] w-full overflow-hidden rounded-[var(--pk-card-radius)] bg-[var(--presskit-hover)] ${desktopAspect}`}
+    >
       {videoSrc ? (
         <HeroVideo src={videoSrc} />
       ) : (
@@ -599,14 +619,14 @@ function WhatsAppFloating({ presskit, lang }: { presskit: PublicPresskit; lang: 
 
 type NavEntry = { anchor: string; label: string };
 
-function SiteNav({ entries, tabs }: { entries: NavEntry[]; tabs: boolean }) {
+function SiteNav({ entries, tabs, width }: { entries: NavEntry[]; tabs: boolean; width: string }) {
   if (entries.length < 2) return null;
   return (
     <nav
       aria-label="Seções"
       className="pk-nav sticky top-0 z-30 border-b border-[var(--presskit-border)] bg-[color-mix(in_srgb,var(--presskit-bg)_82%,transparent)] backdrop-blur"
     >
-      <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className={`mx-auto flex w-full gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${width}`}>
         {entries.map((entry) => (
           <a
             key={entry.anchor}
@@ -778,7 +798,7 @@ export function PresskitRenderer({
       <LanguageSwitch presskit={presskit} lang={lang} languageHref={languageHref} />
       <div className="relative z-10">
         {fullBleedHeader ? header : <div className={template.container}>{header}</div>}
-        {showNav && <SiteNav entries={navEntries} tabs={tabs} />}
+        {showNav && <SiteNav entries={navEntries} tabs={tabs} width={template.nav} />}
         <div className={tabs ? "pk-tabs" : undefined}>
           {sections.map((section) => (
             <SectionShell key={section.id} section={section} template={template} tabs={tabs}>

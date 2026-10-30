@@ -17,6 +17,9 @@ export type TemplateStyle = {
   header: HeaderVariant;
   /** Content column (below the header). */
   container: string;
+  /** Section nav row: same width as the content column and padding that
+   * lines the first tab's label up with the section text below it. */
+  nav: string;
   /** Extra classes on each section shell (e.g. a top rule). */
   section: string;
   /** Horizontal padding + vertical gap inside every section shell. */
@@ -42,7 +45,8 @@ export type TemplateStyle = {
 export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   default: {
     header: "classic",
-    container: "mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 pt-10 pb-4",
+    container: "mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 pt-10 pb-4 @4xl:max-w-4xl @4xl:pt-14 @4xl:pb-8",
+    nav: "max-w-2xl px-1 @4xl:max-w-4xl",
     section: "",
     sectionInner: "gap-6 px-4",
     sectionWidth: "normal",
@@ -62,7 +66,8 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   },
   palco: {
     header: "stage",
-    container: "mx-auto flex w-full max-w-5xl flex-col gap-12 px-5 py-12 @3xl:gap-14 @3xl:px-8 @3xl:py-14",
+    container: "mx-auto flex w-full max-w-5xl flex-col gap-12 px-5 py-12 @3xl:gap-14 @3xl:px-8 @3xl:py-14 @7xl:max-w-6xl",
+    nav: "max-w-5xl px-2 @3xl:px-5 @7xl:max-w-6xl",
     section: "",
     sectionInner: "gap-8 px-5 @3xl:px-8",
     sectionWidth: "wide",
@@ -82,7 +87,8 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   },
   minimal: {
     header: "minimal",
-    container: "mx-auto flex w-full max-w-xl flex-col gap-10 px-6 pt-16 pb-6 @3xl:pt-24",
+    container: "mx-auto flex w-full max-w-xl flex-col gap-10 px-6 pt-16 pb-6 @3xl:pt-24 @4xl:max-w-3xl",
+    nav: "max-w-xl px-3 @4xl:max-w-3xl",
     section: "border-t border-[var(--presskit-border)]",
     sectionInner: "gap-6 px-6",
     sectionWidth: "narrow",
@@ -102,7 +108,10 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
   },
   editorial: {
     header: "editorial",
-    container: "mx-auto flex w-full max-w-2xl flex-col gap-14 px-6 pt-14 pb-4 @3xl:gap-20 @3xl:px-10 @3xl:pt-20",
+    container: "mx-auto flex w-full max-w-2xl flex-col gap-14 px-6 pt-14 pb-4 @3xl:gap-20 @3xl:px-10 @3xl:pt-20 @4xl:max-w-4xl",
+    // Centered like the headings; the auto margins (not justify-center) keep
+    // the first tabs reachable when the row overflows and scrolls.
+    nav: "max-w-2xl px-3 @3xl:px-7 @4xl:max-w-4xl [&>a:first-child]:ml-auto [&>a:last-child]:mr-auto",
     section: "",
     sectionInner: "gap-8 px-6 @3xl:px-10",
     sectionWidth: "normal",
