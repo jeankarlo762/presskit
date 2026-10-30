@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 
 import { env, corsOrigins } from "./config/env";
 import { prisma } from "./config/prisma";
+import { ensureBucketCors } from "./shared/storage.service";
 import { errorHandler } from "./middlewares/errorHandler";
 import authenticatePlugin from "./middlewares/authenticate";
 import { authRoutes } from "./modules/auth/auth.routes";
@@ -140,6 +141,11 @@ async function main() {
   process.on("SIGINT", shutdown);
 
   await fastify.listen({ port: env.PORT, host: "0.0.0.0" });
+
+  // Non-fatal: a failure here only breaks browser uploads, not the API.
+  ensureBucketCors()
+    .then((applied) => applied && fastify.log.info({ origins: corsOrigins }, "CORS do bucket de mídia aplicado"))
+    .catch((error) => fastify.log.error(error, "Falha ao aplicar CORS no bucket de mídia"));
 }
 
 main().catch((error) => {

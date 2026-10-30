@@ -4,10 +4,11 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import type { Readable } from "node:stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { env } from "../config/env";
+import { env, corsOrigins } from "../config/env";
 import { generateOpaqueToken } from "./crypto";
 
 export class StorageNotConfiguredError extends Error {
@@ -103,6 +104,35 @@ export function assertOwnedStorageKey(presskitId: string, folder: StorageFolder,
   const prefix = storageKeyPrefix(presskitId, folder);
   const wellFormed = /^[A-Za-z0-9/_.-]+$/.test(storageKey) && !storageKey.includes("..");
   if (!wellFormed || !storageKey.startsWith(prefix)) throw new ForeignStorageKeyError();
+}
+
+/**
+ * The dashboard PUTs images straight to the bucket with a presigned URL, so
+ * the bucket itself must answer the browser's CORS preflight. Railway
+ * buckets start with no CORS rules — without this every upload dies in the
+ * browser before reaching storage (and the API never sees a "confirm").
+ * Applied on every boot from CORS_ORIGINS, so a new dashboard domain only
+ * needs the env var, not a manual `aws s3api put-bucket-cors`.
+ */
+export async function ensureBucketCors() {
+  if (!isConfigured()) return false;
+  await getClient().send(
+    new PutBucketCorsCommand({
+      Bucket: env.R2_BUCKET,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedOrigins: corsOrigins,
+            AllowedMethods: ["PUT", "GET", "HEAD"],
+            AllowedHeaders: ["*"],
+            ExposeHeaders: ["ETag"],
+            MaxAgeSeconds: 3600,
+          },
+        ],
+      },
+    }),
+  );
+  return true;
 }
 
 /** `folder` separates the different kinds of images a presskit can have
