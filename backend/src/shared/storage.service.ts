@@ -79,6 +79,11 @@ function getClient() {
     region: "auto",
     endpoint: env.STORAGE_ENDPOINT ?? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
+    // SDK >= 3.729 adds CRC32 checksums by default. On a presigned PUT that
+    // bakes `x-amz-checksum-crc32=AAAAAA==` (the CRC of an empty body) into
+    // the URL, so every real upload is rejected by the bucket.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: { accessKeyId: env.R2_ACCESS_KEY_ID!, secretAccessKey: env.R2_SECRET_ACCESS_KEY! },
   });
 }
