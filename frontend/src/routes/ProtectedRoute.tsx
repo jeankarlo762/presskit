@@ -8,6 +8,7 @@ export function ProtectedRoute({ children, role }: { children: ReactNode; role?:
   if (!accessToken) return <Navigate to="/login" replace />;
   // The stored role is only a UI hint — every /admin/* call is re-checked
   // server-side by requireSuperadmin, so a tampered store buys nothing.
-  if (role && user?.role !== role) return <Navigate to="/" replace />;
+  // Superadmins only use the admin area; everyone else only the user area.
+  if (role && user?.role !== role) return <Navigate to={user?.role === "SUPERADMIN" ? "/admin" : "/"} replace />;
   return children;
 }

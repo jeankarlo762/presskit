@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema, type SignupInput } from "@presskit/shared";
 import { signup, type loginWithGoogle } from "../api/auth";
 import { apiErrorMessage } from "../api/axios";
-import { useAuthStore } from "../store/auth.store";
+import { postLoginPath, useAuthStore } from "../store/auth.store";
 import { Button, FieldError, Input, Label } from "../components/ui";
 import { AuthLayout } from "../components/auth/AuthLayout";
 
@@ -43,7 +43,7 @@ export function SignupPage() {
     try {
       const session = await signup(input);
       setSession(session);
-      navigate("/onboarding");
+      navigate(postLoginPath(session.user, true));
     } catch (error) {
       setServerError(apiErrorMessage(error, "Não foi possível criar a conta"));
     }
@@ -51,7 +51,7 @@ export function SignupPage() {
 
   function onGoogleSuccess(session: Awaited<ReturnType<typeof loginWithGoogle>>) {
     setSession(session);
-    navigate(session.isNewUser ? "/onboarding" : "/");
+    navigate(postLoginPath(session.user, session.isNewUser));
   }
 
   return (

@@ -46,3 +46,10 @@ export function isAgency(user: AuthUser | null | undefined) {
 export function isSuperadmin(user: AuthUser | null | undefined) {
   return user?.role === "SUPERADMIN";
 }
+
+/** Where to land right after signup/login: superadmins go straight to the
+ * admin panel; everyone else to onboarding (new account) or the dashboard. */
+export function postLoginPath(user: AuthUser, isNewUser = false) {
+  if (isSuperadmin(user)) return "/admin";
+  return isNewUser ? "/onboarding" : "/";
+}

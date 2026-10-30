@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -46,7 +46,7 @@ export default function App() {
         <Route
           path="/onboarding"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute role="USER">
               <OnboardingPage />
             </ProtectedRoute>
           }
@@ -58,15 +58,24 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<DashboardHomePage />} />
-          <Route path="/personalizar" element={<CustomizePage />} />
-          <Route path="/projeto/modelos-prontos" element={<Navigate to="/personalizar" replace />} />
-          <Route path="/assinatura" element={<SubscriptionPage />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/compartilhar" element={<SharePage />} />
-          <Route path="/quem-abriu" element={<AnalyticsPage />} />
-          <Route path="/conta" element={<AccountPage />} />
-          <Route path="/artistas" element={<ArtistsPage />} />
+          {/* The artist/agency area — a superadmin is sent to /admin instead. */}
+          <Route
+            element={
+              <ProtectedRoute role="USER">
+                <Outlet />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<DashboardHomePage />} />
+            <Route path="/personalizar" element={<CustomizePage />} />
+            <Route path="/projeto/modelos-prontos" element={<Navigate to="/personalizar" replace />} />
+            <Route path="/assinatura" element={<SubscriptionPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="/compartilhar" element={<SharePage />} />
+            <Route path="/quem-abriu" element={<AnalyticsPage />} />
+            <Route path="/conta" element={<AccountPage />} />
+            <Route path="/artistas" element={<ArtistsPage />} />
+          </Route>
 
           <Route path="/admin" element={admin(<AdminOverviewPage />)} />
           <Route path="/admin/usuarios" element={admin(<AdminUsersPage />)} />

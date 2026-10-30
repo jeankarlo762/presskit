@@ -120,7 +120,8 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const { user, refreshToken, clearSession, setUser } = useAuthStore();
   const { activePresskitId, setActivePresskitId } = usePresskitStore();
-  const agency = isAgency(user);
+  const superadmin = isSuperadmin(user);
+  const agency = isAgency(user) && !superadmin;
   const [pages, setPages] = useState<Presskit[]>([]);
 
   useEffect(() => {
@@ -165,29 +166,36 @@ export function DashboardLayout() {
           {agency && <PageSwitcher pages={pages} activeId={activePresskitId} onChange={switchPage} />}
 
           <nav aria-label="Menu" className="flex flex-col gap-1">
-            <NavGroup items={MAIN_ITEMS} />
-            {agency && <NavGroup items={AGENCY_ITEMS} />}
-            <NavGroup label="Conta" items={CONTA_ITEMS} />
-            {isSuperadmin(user) && (
+            {/* The platform owner only manages the platform: no presskit or
+                account modules, just the admin area. */}
+            {superadmin ? (
               <>
-                <p className="mt-5 mb-1 flex items-center gap-1.5 px-3 text-[11px] font-bold uppercase tracking-widest text-fg-muted/80">
+                <p className="mb-1 flex items-center gap-1.5 px-3 text-[11px] font-bold uppercase tracking-widest text-fg-muted/80">
                   <ShieldCheck size={13} /> Administração
                 </p>
                 <NavGroup items={ADMIN_ITEMS} />
+              </>
+            ) : (
+              <>
+                <NavGroup items={MAIN_ITEMS} />
+                {agency && <NavGroup items={AGENCY_ITEMS} />}
+                <NavGroup label="Conta" items={CONTA_ITEMS} />
               </>
             )}
           </nav>
         </div>
 
         <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
-          {user?.trialEndsAt && <TrialCard trialEndsAt={user.trialEndsAt} />}
+          {!superadmin && user?.trialEndsAt && <TrialCard trialEndsAt={user.trialEndsAt} />}
           <p className="truncate px-3 text-sm text-fg-muted">
             {user?.name}
             {agency && <span className="ml-2 text-[11px] font-bold text-fg-muted/70">produtora</span>}
-            <span className={"ml-2 text-[11px] font-bold " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
-              {user?.planKey}
-            </span>
-            {isSuperadmin(user) && <span className="ml-2 text-[11px] font-bold text-primary-text">superadmin</span>}
+            {!superadmin && (
+              <span className={"ml-2 text-[11px] font-bold " + (user?.planKey === "PRO" ? "text-emerald-400" : "text-fg-muted/70")}>
+                {user?.planKey}
+              </span>
+            )}
+            {superadmin && <span className="ml-2 text-[11px] font-bold text-primary-text">superadmin</span>}
           </p>
           <button
             onClick={handleLogout}

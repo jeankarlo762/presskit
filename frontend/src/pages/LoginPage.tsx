@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@presskit/shared";
 import { login, type loginWithGoogle } from "../api/auth";
 import { apiErrorMessage } from "../api/axios";
-import { useAuthStore } from "../store/auth.store";
+import { postLoginPath, useAuthStore } from "../store/auth.store";
 import { Button, FieldError, Input, Label } from "../components/ui";
 import { AuthLayout } from "../components/auth/AuthLayout";
 
@@ -25,7 +25,7 @@ export function LoginPage() {
     try {
       const session = await login(input);
       setSession(session);
-      navigate("/");
+      navigate(postLoginPath(session.user));
     } catch (error) {
       setServerError(apiErrorMessage(error, "E-mail ou senha inválidos"));
     }
@@ -33,7 +33,7 @@ export function LoginPage() {
 
   function onGoogleSuccess(session: Awaited<ReturnType<typeof loginWithGoogle>>) {
     setSession(session);
-    navigate(session.isNewUser ? "/onboarding" : "/");
+    navigate(postLoginPath(session.user, session.isNewUser));
   }
 
   return (
