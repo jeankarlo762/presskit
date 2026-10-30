@@ -12,6 +12,8 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
   // raw stored URL into an href (http(s) isn't guaranteed for old rows).
   const parsed = parseMediaUrl(embed.url);
   const isVideo = VIDEO_PROVIDERS.includes(embed.provider);
+  // Playlists and albums get the taller player that shows the track list.
+  const isList = !isVideo && /\/(playlist|album|sets)\//.test(embed.url);
 
   if (!parsed) {
     return <p className="text-sm text-[var(--presskit-muted)]">{embed.title ?? "Mídia indisponível"}</p>;
@@ -27,7 +29,7 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
-        className={isVideo ? "aspect-video w-full border-0" : "h-[152px] w-full border-0"}
+        className={isVideo ? "aspect-video w-full border-0" : `${isList ? "h-[352px]" : "h-[152px]"} w-full border-0`}
       />
     </div>
   );

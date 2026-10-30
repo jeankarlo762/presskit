@@ -36,6 +36,7 @@ import {
   type PresskitLanguage,
 } from "../constants/i18n";
 import { whatsappUrl } from "../constants/quickLinks";
+import { upcomingTourDates, type PresskitPage } from "../constants/pages";
 import { heroVideoEmbedSrc } from "../media/parseMediaUrl";
 import { presskitButtonClass, TEMPLATE_STYLES, type HeaderVariant, type TemplateStyle } from "./templates";
 import { RosterBlock } from "./RosterBlock";
@@ -125,7 +126,14 @@ function renderSection(
       return <GalleryBlock title={title} photos={presskit.galleryPhotos} layout={layout} />;
     case "TOUR_DATES":
       return (
-        <TourDatesBlock title={title} dates={presskit.tourDates} ticketsLabel={t.tickets} layout={layout} stage={stage} />
+        <TourDatesBlock
+          title={title}
+          dates={presskit.tourDates}
+          ticketsLabel={t.tickets}
+          ticketsSoonLabel={t.ticketsSoon}
+          layout={layout}
+          stage={stage}
+        />
       );
     case "PRESS":
       return <PressBlock title={title} data={data as PressSectionData} mentions={presskit.pressMentions} />;
@@ -646,12 +654,17 @@ function HeroBanner({
 
 /** Where a "book this artist" button goes: WhatsApp when set up, else the
  * contact section. Null when the page offers neither. */
-function bookingHref(presskit: PublicPresskit): { href: string; track: string; external: boolean } | null {
+function bookingHref(
+  presskit: PublicPresskit,
+  /** Where the contact section lives: "" on the page itself, the home URL
+   * on Palco's other pages. */
+  contactPage = "",
+): { href: string; track: string; external: boolean } | null {
   if (presskit.whatsappNumber) {
     return { href: whatsappUrl(presskit.whatsappNumber, presskit.whatsappMessage), track: "whatsapp", external: true };
   }
   const contact = presskit.sections.find((s) => s.type === "CONTACT" && s.visible)?.data as ContactSectionData | undefined;
-  if (contact?.email || contact?.phone) return { href: "#contato", track: "contact", external: false };
+  if (contact?.email || contact?.phone) return { href: `${contactPage}#contato`, track: "contact", external: false };
   return null;
 }
 
@@ -659,12 +672,14 @@ function BookingLink({
   presskit,
   lang,
   className,
+  contactPage,
 }: {
   presskit: PublicPresskit;
   lang: PresskitLanguage;
   className: string;
+  contactPage?: string;
 }) {
-  const target = bookingHref(presskit);
+  const target = bookingHref(presskit, contactPage);
   if (!target) return null;
   return (
     <a
@@ -680,12 +695,25 @@ function BookingLink({
 }
 
 /** Palco on a phone: a booking bar that stays at the bottom of the screen. */
-function StageBookingBar({ presskit, lang }: { presskit: PublicPresskit; lang: PresskitLanguage }) {
+function StageBookingBar({
+  presskit,
+  lang,
+  contactPage,
+}: {
+  presskit: PublicPresskit;
+  lang: PresskitLanguage;
+  contactPage?: string;
+}) {
   if (!bookingHref(presskit)) return null;
   return (
     <div className="pointer-events-none sticky bottom-3 z-20 px-3 @4xl:hidden">
       <div className="pointer-events-auto flex rounded-[calc(var(--pk-btn-radius)+0.5rem)] border border-[var(--presskit-border)] bg-[color-mix(in_srgb,var(--presskit-bg)_88%,transparent)] p-2 shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur">
-        <BookingLink presskit={presskit} lang={lang} className={`flex-1 ${presskitButtonClass("solid")}`} />
+        <BookingLink
+          presskit={presskit}
+          lang={lang}
+          contactPage={contactPage}
+          className={`flex-1 ${presskitButtonClass("solid")}`}
+        />
       </div>
     </div>
   );
@@ -713,7 +741,9 @@ function WhatsAppFloating({ presskit, lang }: { presskit: PublicPresskit; lang: 
 // Site structure: nav bar + one shell per section carrying its own look
 // ---------------------------------------------------------------------------
 
-type NavEntry = { anchor: string; label: string };
+/** A nav link: a section anchor on single-page sites, a page URL (`href`)
+ * on Palco's multi-page site. */
+type NavEntry = { anchor: string; label: string; href?: string; current?: boolean };
 
 function SiteNav({
   entries,
@@ -742,8 +772,13 @@ function SiteNav({
         {entries.map((entry) => (
           <a
             key={entry.anchor}
-            href={`#${entry.anchor}`}
-            className={`pk-nav-link shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 font-semibold transition ${strong ? "text-[15px] text-[var(--presskit-text)] hover:bg-[var(--presskit-hover)] @4xl:px-4 @4xl:text-base" : "text-sm text-[var(--presskit-muted)] hover:text-[var(--presskit-text)]"}`}
+            href={entry.href ?? `#${entry.anchor}`}
+            {...(entry.current ? { "aria-current": "page" as const } : {})}
+            className={`pk-nav-link shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 font-semibold transition ${
+              entry.current
+                ? "bg-[var(--presskit-hover)] text-[var(--presskit-text)] underline decoration-[var(--presskit-accent)] decoration-2 underline-offset-[6px]"
+                : ""
+            } ${strong ? "text-[15px] text-[var(--presskit-text)] hover:bg-[var(--presskit-hover)] @4xl:px-4 @4xl:text-base" : "text-sm text-[var(--presskit-muted)] hover:text-[var(--presskit-text)]"}`}
             {...(tabs ? { role: "tab" } : {})}
           >
             {entry.label}
@@ -867,12 +902,55 @@ function SectionShell({
  * `lang` picks the English variants (when the artist offers them);
  * `languageHref` makes the switch link appear — omit it in previews.
  */
+function MoreLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a href={href} className={`self-start ${presskitButtonClass("outline")}`}>
+      {label}
+      <span aria-hidden>→</span>
+    </a>
+  );
+}
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return <p className="py-6 text-lg text-[var(--presskit-muted)]">{children}</p>;
+}
+
+/** Title block of Palco's inner pages: the artist's name (back to home)
+ * over the page name in poster letters. */
+function StagePageHeader({ presskit, title, homeHref }: { presskit: PublicPresskit; title: string; homeHref: string }) {
+  return (
+    <header className={`mx-auto flex w-full flex-col gap-3 px-5 pb-6 pt-10 @3xl:px-8 @4xl:pb-10 @4xl:pt-16 ${SECTION_WIDTH_CLASS.wide}`}>
+      <a href={homeHref} className="flex w-fit items-center gap-3 no-underline">
+        {presskit.logoImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={presskit.logoImageUrl} alt={presskit.artistName} className="h-8 w-auto max-w-[60%] object-contain @4xl:h-10" />
+        ) : (
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--presskit-accent)] @4xl:text-sm">
+            {presskit.artistName}
+          </span>
+        )}
+      </a>
+      <h1
+        style={headingFontStyle}
+        className="break-words text-[clamp(3.5rem,20cqw,6rem)] font-bold uppercase leading-[0.86] @4xl:text-[clamp(5rem,10cqw,10rem)]"
+      >
+        {title}
+      </h1>
+    </header>
+  );
+}
+
+/** Smaller section titles inside an inner page, under its poster title. */
+const innerHeadingVars = { "--pk-h2-size": "clamp(2rem, 9cqw, 3.5rem)" } as CSSProperties;
+
 export function PresskitRenderer({
   presskit,
   fontFamilies = FONT_FAMILY_CSS,
   lang = "pt",
   languageHref,
   siteBaseUrl,
+  page = "home",
+  pageHref,
 }: {
   presskit: PublicPresskit;
   fontFamilies?: PresskitFontFamilies;
@@ -881,20 +959,98 @@ export function PresskitRenderer({
   /** Origin for links to other pages of the site (roster cards, agency
    * line). Empty/omitted = relative, which is right on presskitai.com.br. */
   siteBaseUrl?: string;
+  /** Which page of a multi-page (Palco) site to render. */
+  page?: PresskitPage;
+  /** URL of each page of the site. Given = Palco renders as a site with
+   * Home, Músicas, Agenda and Mídia; omitted (dashboard preview, other
+   * templates) = one scrolling page. */
+  pageHref?: (page: PresskitPage) => string;
 }) {
   const templateKey = resolveTemplateKey(presskit.templateKey);
   const template = TEMPLATE_STYLES[templateKey];
   const fullBleedHeader = template.header === "stage";
-  const tabs = presskit.navMode === "TABS";
+  const multiPage = fullBleedHeader && Boolean(pageHref);
+  const t = PUBLIC_STRINGS[lang]!;
+  const tabs = presskit.navMode === "TABS" && !multiPage;
+
+  const visibleSection = (type: PublicSection["type"]) => presskit.sections.some((s) => s.type === type && s.visible);
+  const audio = visibleSection("MUSIC") ? presskit.mediaEmbeds.filter((e) => AUDIO_PROVIDERS.includes(e.provider)) : [];
+  const videos = visibleSection("VIDEO") ? presskit.mediaEmbeds.filter((e) => VIDEO_PROVIDERS.includes(e.provider)) : [];
+  const photos = visibleSection("GALLERY") ? presskit.galleryPhotos : [];
+  const upcoming = upcomingTourDates(presskit.tourDates);
+  const href = (target: PresskitPage) => pageHref?.(target) ?? "";
+  const homeHref = href("home");
+  const contactPage = multiPage && page !== "home" ? homeHref : "";
+
+  // Home of a multi-page site: music, dates and media show a preview with a
+  // link to their own page; photos and videos share one "Mídia" preview,
+  // shown where whichever of the two comes first sits.
+  const firstMediaType = [...presskit.sections]
+    .filter((s) => (s.type === "GALLERY" && photos.length > 0) || (s.type === "VIDEO" && videos.length > 0))
+    .sort((a, b) => a.order - b.order)[0]?.type;
+  const homePreview = (section: PublicSection): React.ReactNode | undefined => {
+    switch (section.type) {
+      case "MUSIC":
+        return audio.length === 0 ? null : (
+          <>
+            <MediaEmbedBlock title={localizeSection(section, lang).title} embeds={audio.slice(0, 1)} />
+            <MoreLink href={href("musicas")} label={t.seeAllMusic!} />
+          </>
+        );
+      case "TOUR_DATES":
+        return upcoming.length === 0 ? null : (
+          <>
+            <TourDatesBlock
+              title={localizeSection(section, lang).title}
+              dates={presskit.tourDates}
+              ticketsLabel={t.tickets}
+              ticketsSoonLabel={t.ticketsSoon}
+              stage
+              limit={3}
+            />
+            <MoreLink href={href("agenda")} label={t.seeFullAgenda!} />
+          </>
+        );
+      case "GALLERY":
+      case "VIDEO":
+        if (section.type !== firstMediaType) return null;
+        return (
+          <>
+            {photos.length > 0 ? (
+              <GalleryBlock title={t.pageMedia!} photos={photos.slice(0, 4)} />
+            ) : (
+              <MediaEmbedBlock title={t.pageMedia!} embeds={videos.slice(0, 1)} />
+            )}
+            <MoreLink href={href("midia")} label={t.seeAllMedia!} />
+          </>
+        );
+      default:
+        return undefined;
+    }
+  };
+
   const sections = [...presskit.sections]
     .filter((section) => section.visible && sectionHasContent(section, presskit))
     // Palco keeps the page about the show: no download-cards section.
     .filter((section) => !(fullBleedHeader && section.type === "DOWNLOADS"))
+    .filter((section) => !multiPage || homePreview(section) !== null)
     .sort((a, b) => a.order - b.order);
-  const navEntries: NavEntry[] = sections.map((section) => ({
-    anchor: SECTION_ANCHORS[section.type],
-    label: localizeSection(section, lang).title,
-  }));
+
+  const navEntries: NavEntry[] = multiPage
+    ? (
+        [
+          { page: "home", label: t.pageHome!, show: true },
+          { page: "musicas", label: t.pageMusic!, show: audio.length > 0 },
+          { page: "agenda", label: t.pageAgenda!, show: visibleSection("TOUR_DATES") },
+          { page: "midia", label: t.pageMedia!, show: photos.length > 0 || videos.length > 0 },
+        ] as const
+      )
+        .filter((entry) => entry.show)
+        .map((entry) => ({ anchor: entry.page, label: entry.label, href: href(entry.page), current: entry.page === page }))
+    : sections.map((section) => ({
+        anchor: SECTION_ANCHORS[section.type],
+        label: localizeSection(section, lang).title,
+      }));
   const showNav = (presskit.showNav ?? true) && navEntries.length >= 2;
 
   const header = <Header variant={template.header} presskit={presskit} lang={lang} siteBaseUrl={siteBaseUrl} />;
@@ -912,7 +1068,7 @@ export function PresskitRenderer({
       <BackgroundLayers presskit={presskit} skipImage={fullBleedHeader && !presskit.coverImageUrl} />
       <LanguageSwitch presskit={presskit} lang={lang} languageHref={languageHref} />
       <div className="relative z-10">
-        {fullBleedHeader ? header : <div className={template.container}>{header}</div>}
+        {multiPage && page !== "home" ? null : fullBleedHeader ? header : <div className={template.container}>{header}</div>}
         {showNav && (
           <SiteNav
             entries={navEntries}
@@ -921,25 +1077,72 @@ export function PresskitRenderer({
             strong={fullBleedHeader}
             cta={
               fullBleedHeader ? (
-                <BookingLink
-                  presskit={presskit}
-                  lang={lang}
-                  className={`ml-auto hidden shrink-0 shadow-[0_6px_20px_color-mix(in_srgb,var(--presskit-accent)_45%,transparent)] @4xl:inline-flex ${presskitButtonClass("solid")}`}
-                />
+                // Desktop only: phones get the bottom booking bar instead.
+                <span className="ml-auto hidden shrink-0 @4xl:flex">
+                  <BookingLink
+                    presskit={presskit}
+                    lang={lang}
+                    contactPage={contactPage}
+                    className={`shadow-[0_6px_20px_color-mix(in_srgb,var(--presskit-accent)_45%,transparent)] ${presskitButtonClass("solid")}`}
+                  />
+                </span>
               ) : undefined
             }
           />
         )}
-        <div className={tabs ? "pk-tabs" : undefined}>
-          {sections.map((section) => (
-            <SectionShell key={section.id} section={section} template={template} tabs={tabs}>
-              {renderSection(section, presskit, lang, siteBaseUrl, fullBleedHeader)}
-            </SectionShell>
-          ))}
-        </div>
+        {multiPage && page !== "home" ? (
+          <>
+            <StagePageHeader
+              presskit={presskit}
+              homeHref={homeHref}
+              title={{ musicas: t.pageMusic!, agenda: t.pageAgenda!, midia: t.pageMedia! }[page]}
+            />
+            <div
+              style={innerHeadingVars}
+              className={`mx-auto flex w-full flex-col gap-12 px-5 pb-20 @3xl:px-8 @4xl:gap-16 ${SECTION_WIDTH_CLASS.wide}`}
+            >
+              {page === "musicas" &&
+                (audio.length > 0 ? (
+                  <MediaEmbedBlock title="" embeds={audio} layout="grid" />
+                ) : (
+                  <EmptyNote>{t.noMusic}</EmptyNote>
+                ))}
+              {page === "agenda" &&
+                (upcoming.length > 0 ? (
+                  <TourDatesBlock
+                    title=""
+                    dates={presskit.tourDates}
+                    ticketsLabel={t.tickets}
+                    ticketsSoonLabel={t.ticketsSoon}
+                    stage
+                  />
+                ) : (
+                  <EmptyNote>{t.noEvents}</EmptyNote>
+                ))}
+              {page === "midia" && (
+                <>
+                  {photos.length > 0 && <GalleryBlock title={videos.length > 0 ? t.photos! : ""} photos={photos} layout="masonry" />}
+                  {videos.length > 0 && (
+                    <MediaEmbedBlock title={photos.length > 0 ? t.videos! : ""} embeds={videos} layout="grid" />
+                  )}
+                  {photos.length === 0 && videos.length === 0 && <EmptyNote>{t.noMedia}</EmptyNote>}
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className={tabs ? "pk-tabs" : undefined}>
+            {sections.map((section) => (
+              <SectionShell key={section.id} section={section} template={template} tabs={tabs}>
+                {(multiPage ? homePreview(section) : undefined) ??
+                  renderSection(section, presskit, lang, siteBaseUrl, fullBleedHeader)}
+              </SectionShell>
+            ))}
+          </div>
+        )}
         {fullBleedHeader ? (
           // The sticky nav already carries the booking button on desktop.
-          <StageBookingBar presskit={presskit} lang={lang} />
+          <StageBookingBar presskit={presskit} lang={lang} contactPage={contactPage} />
         ) : (
           <WhatsAppFloating presskit={presskit} lang={lang} />
         )}
