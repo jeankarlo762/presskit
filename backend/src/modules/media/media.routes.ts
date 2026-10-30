@@ -2,9 +2,22 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { mediaEmbedCreateSchema, mediaEmbedPatchSchema } from "@presskit/shared";
 import { getOwnedPresskitOrThrow } from "../presskit/presskit.service";
-import { createMediaEmbed, deleteMediaEmbed, listMediaEmbeds, updateMediaEmbed } from "./mediaEmbed.service";
+import {
+  confirmUploadedVideo,
+  createMediaEmbed,
+  deleteMediaEmbed,
+  listMediaEmbeds,
+  requestVideoUpload,
+  updateMediaEmbed,
+} from "./mediaEmbed.service";
 
 const idParamSchema = z.object({ id: z.string().min(1).max(64) });
+const videoUploadUrlSchema = z.object({ extension: z.string().min(1).max(10) });
+// No `url` on purpose: it is derived from the storage key server-side.
+const videoConfirmSchema = z.object({
+  storageKey: z.string().min(1).max(512),
+  title: z.string().trim().max(150).optional(),
+});
 
 export async function mediaRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -20,6 +33,19 @@ export async function mediaRoutes(fastify: FastifyInstance) {
     const input = mediaEmbedCreateSchema.parse(request.body);
     const presskit = await getOwnedPresskitOrThrow(request);
     const media = await createMediaEmbed(presskit.id, input);
+    return reply.status(201).send({ media });
+  });
+
+  fastify.post("/presskit/media/video/upload-url", async (request, reply) => {
+    const { extension } = videoUploadUrlSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request);
+    return reply.send(await requestVideoUpload(presskit.id, request.currentUser.planKey, extension));
+  });
+
+  fastify.post("/presskit/media/video/confirm", async (request, reply) => {
+    const input = videoConfirmSchema.parse(request.body);
+    const presskit = await getOwnedPresskitOrThrow(request);
+    const media = await confirmUploadedVideo(presskit.id, request.currentUser.planKey, input);
     return reply.status(201).send({ media });
   });
 

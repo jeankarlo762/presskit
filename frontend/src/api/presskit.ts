@@ -155,6 +155,14 @@ export async function createMedia(input: MediaEmbedCreateInput) {
 export async function deleteMedia(id: string) {
   await api.delete(`/presskit/media/${id}`);
 }
+export async function requestVideoUploadUrl(extension: string) {
+  const { data } = await api.post<ImageUploadTicket>("/presskit/media/video/upload-url", { extension });
+  return data;
+}
+export async function confirmUploadedVideo(input: { storageKey: string; title?: string }) {
+  const { data } = await api.post<{ media: MediaEmbed }>("/presskit/media/video/confirm", input);
+  return data.media;
+}
 
 export async function listGalleryPhotos() {
   const { data } = await api.get<{ photos: GalleryPhoto[] }>("/presskit/gallery");

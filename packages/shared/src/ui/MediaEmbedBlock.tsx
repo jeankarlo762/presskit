@@ -4,9 +4,25 @@ import { parseMediaUrl } from "../media/parseMediaUrl";
 import { SectionHeading } from "./SectionHeading";
 
 export const AUDIO_PROVIDERS: MediaProvider[] = ["SPOTIFY", "SOUNDCLOUD"];
-export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO"];
+export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO", "UPLOAD"];
 
 function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
+  if (embed.provider === "UPLOAD") {
+    // Our own bucket (served by the API's /media route), so a plain player.
+    return (
+      <div className="overflow-hidden rounded-[var(--pk-card-radius)]">
+        {embed.title && <p className="mb-1 text-sm font-medium">{embed.title}</p>}
+        <video
+          src={embed.url}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full bg-black object-contain"
+        />
+      </div>
+    );
+  }
+
   // Links are validated against parseMediaUrl on write, so this only fails
   // for rows that predate the validation — and even then we never put the
   // raw stored URL into an href (http(s) isn't guaranteed for old rows).

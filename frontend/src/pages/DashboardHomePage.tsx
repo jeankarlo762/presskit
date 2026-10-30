@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, ExternalLink, Monitor, Palette, Smartphone, Users } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { CalendarDays, CheckCircle2, Circle, ExternalLink, Home, Image, Monitor, Music, Palette, Smartphone, Users } from "lucide-react";
 import {
   FONT_FAMILY_CSS,
   SECTION_DEFAULT_TITLES,
@@ -55,6 +55,17 @@ const FAQ_FIELDS: ListField[] = [
   { key: "answer", label: "Resposta", kind: "textarea", maxLength: 1500 },
 ];
 
+/** The editor is split the same way the public site is (Palco: Home,
+ * Músicas, Agenda, Mídia), so each page's content is edited on its own tab
+ * — the tab lives in the URL (?aba=midia) so it survives a reload. */
+const EDITOR_TABS = [
+  { key: "inicio", label: "Home", page: "home", icon: Home },
+  { key: "musicas", label: "Músicas", page: "musicas", icon: Music },
+  { key: "agenda", label: "Agenda", page: "agenda", icon: CalendarDays },
+  { key: "midia", label: "Mídia", page: "midia", icon: Image },
+] as const;
+type EditorTab = (typeof EDITOR_TABS)[number]["key"];
+
 function itemsOf<T>(section: Section | undefined): T[] {
   const items = (section?.data as { items?: T[] } | null)?.items;
   return Array.isArray(items) ? items : [];
@@ -84,6 +95,12 @@ export function DashboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [publishBusy, setPublishBusy] = useState(false);
   const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: EditorTab = EDITOR_TABS.find((t) => t.key === searchParams.get("aba"))?.key ?? "inicio";
+  const currentTab = EDITOR_TABS.find((t) => t.key === tab)!;
+  function selectTab(next: EditorTab) {
+    setSearchParams(next === "inicio" ? {} : { aba: next }, { replace: true });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -231,87 +248,208 @@ export function DashboardHomePage() {
         </div>
       </header>
 
+      <nav className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0" aria-label="Partes da página">
+        <div className="flex w-max gap-1 rounded-xl bg-bg-elevated p-1" role="tablist">
+          {EDITOR_TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => selectTab(key)}
+              className={
+                "flex min-h-10 items-center gap-2 rounded-lg px-4 text-sm font-bold transition " +
+                (tab === key ? "bg-primary text-white" : "text-fg-muted hover:text-fg")
+              }
+            >
+              <Icon size={16} aria-hidden /> {label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       <div className="flex flex-col gap-6 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-elevated p-5" aria-labelledby="checklist-title">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="checklist-title" className="font-extrabold text-fg">
-                Pronto para enviar a contratantes
-              </h2>
-              <span className="font-extrabold text-primary-text">
-                {doneCount} de {checklist.length}
-              </span>
-            </div>
-            <div
-              className="h-2 rounded-full bg-white/10"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={checklist.length}
-              aria-valuenow={doneCount}
-              aria-label="Progresso do presskit"
-            >
-              <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(doneCount / checklist.length) * 100}%` }} />
-            </div>
-            <ul className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
-              {checklist.map((item) => (
-                <li key={item.label} className={"flex items-center gap-2.5 " + (item.done ? "text-fg-muted" : "text-fg")}>
-                  {item.done ? (
-                    <CheckCircle2 size={18} className="shrink-0 text-emerald-400" aria-hidden />
-                  ) : (
-                    <Circle size={18} className="shrink-0 text-fg-muted/60" aria-hidden />
-                  )}
-                  <span className={item.done ? "line-through decoration-white/20" : ""}>{item.label}</span>
-                  <span className="sr-only">{item.done ? "(feito)" : "(pendente)"}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {tab === "inicio" && (
+            <>
+              <section className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-elevated p-5" aria-labelledby="checklist-title">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 id="checklist-title" className="font-extrabold text-fg">
+                    Pronto para enviar a contratantes
+                  </h2>
+                  <span className="font-extrabold text-primary-text">
+                    {doneCount} de {checklist.length}
+                  </span>
+                </div>
+                <div
+                  className="h-2 rounded-full bg-white/10"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={checklist.length}
+                  aria-valuenow={doneCount}
+                  aria-label="Progresso do presskit"
+                >
+                  <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(doneCount / checklist.length) * 100}%` }} />
+                </div>
+                <ul className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+                  {checklist.map((item) => (
+                    <li key={item.label} className={"flex items-center gap-2.5 " + (item.done ? "text-fg-muted" : "text-fg")}>
+                      {item.done ? (
+                        <CheckCircle2 size={18} className="shrink-0 text-emerald-400" aria-hidden />
+                      ) : (
+                        <Circle size={18} className="shrink-0 text-fg-muted/60" aria-hidden />
+                      )}
+                      <span className={item.done ? "line-through decoration-white/20" : ""}>{item.label}</span>
+                      <span className="sr-only">{item.done ? "(feito)" : "(pendente)"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-          <Link
-            to="/personalizar"
-            className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
-          >
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
-              <Palette size={20} />
-            </span>
-            <span className="flex flex-col">
-              <span className="font-bold text-fg">Personalizar visual</span>
-              <span className="text-[13px] text-fg-muted">Modelo, cores, fundos, abas e seções extras (números, depoimentos, FAQ, downloads…)</span>
-            </span>
-          </Link>
-
-          {isAgencyPage && (
-            <Link
-              to="/artistas"
-              className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
-                <Users size={20} />
-              </span>
-              <span className="flex flex-col">
-                <span className="font-bold text-fg">Artistas</span>
-                <span className="text-[13px] text-fg-muted">
-                  Crie e edite a página de cada artista. Os publicados aparecem na seção "Artistas" desta página.
+              <Link
+                to="/personalizar"
+                className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
+                  <Palette size={20} />
                 </span>
-              </span>
-            </Link>
-          )}
+                <span className="flex flex-col">
+                  <span className="font-bold text-fg">Personalizar visual</span>
+                  <span className="text-[13px] text-fg-muted">Modelo, cores, fundos, abas e seções extras (números, depoimentos, FAQ, downloads…)</span>
+                </span>
+              </Link>
 
-          <BioForm
-            initial={bioData}
-            initialTitle={bioSection?.title ?? SECTION_DEFAULT_TITLES.BIO}
-            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "BIO", data, title))}
-            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
-          />
-          {presskit.languages?.includes("en") && (
-            <BioTranslationForm
-              initial={bioSection?.dataEn as Partial<BioSectionData> | null | undefined}
-              onLiveChange={(dataEn) =>
-                setPreviewSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn } : s)))
-              }
-              onSaved={(section) => setSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn: section.dataEn, titleEn: section.titleEn } : s)))}
-            />
+              {isAgencyPage && (
+                <Link
+                  to="/artistas"
+                  className="flex min-h-11 items-center gap-4 rounded-2xl border border-border bg-bg-elevated p-4 transition hover:border-white/25"
+                >
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bg-elevated-2 text-primary-text">
+                    <Users size={20} />
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="font-bold text-fg">Artistas</span>
+                    <span className="text-[13px] text-fg-muted">
+                      Crie e edite a página de cada artista. Os publicados aparecem na seção "Artistas" desta página.
+                    </span>
+                  </span>
+                </Link>
+              )}
+
+              <BioForm
+                initial={bioData}
+                initialTitle={bioSection?.title ?? SECTION_DEFAULT_TITLES.BIO}
+                onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "BIO", data, title))}
+                onSaved={(data, title) => setSections((prev) => upsertSection(prev, "BIO", data, title))}
+              />
+              {presskit.languages?.includes("en") && (
+                <BioTranslationForm
+                  initial={bioSection?.dataEn as Partial<BioSectionData> | null | undefined}
+                  onLiveChange={(dataEn) =>
+                    setPreviewSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn } : s)))
+                  }
+                  onSaved={(section) => setSections((prev) => prev.map((s) => (s.type === "BIO" ? { ...s, dataEn: section.dataEn, titleEn: section.titleEn } : s)))}
+                />
+              )}
+              {statsSection && (
+                <ListSectionForm
+                  sectionType="STATS"
+                  fields={STATS_FIELDS}
+                  max={6}
+                  description="Até 6 números que impressionam: ouvintes mensais, shows feitos, seguidores…"
+                  initialItems={itemsOf(statsSection)}
+                  initialTitle={statsSection.title ?? SECTION_DEFAULT_TITLES.STATS}
+                  defaultTitle={SECTION_DEFAULT_TITLES.STATS}
+                  onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "STATS", { items }, title))}
+                  onSaved={(items, title) => setSections((prev) => upsertSection(prev, "STATS", { items }, title))}
+                />
+              )}
+              {testimonialsSection && (
+                <ListSectionForm
+                  sectionType="TESTIMONIALS"
+                  fields={TESTIMONIAL_FIELDS}
+                  max={8}
+                  description="O que contratantes, produtores e público disseram sobre você."
+                  initialItems={itemsOf(testimonialsSection)}
+                  initialTitle={testimonialsSection.title ?? SECTION_DEFAULT_TITLES.TESTIMONIALS}
+                  defaultTitle={SECTION_DEFAULT_TITLES.TESTIMONIALS}
+                  onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
+                  onSaved={(items, title) => setSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
+                />
+              )}
+              {pressSection && (
+                <PressManager
+                  initialMentions={press}
+                  initialData={pressData}
+                  initialTitle={pressSection.title ?? SECTION_DEFAULT_TITLES.PRESS}
+                  onMentionsChange={setPress}
+                  onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "PRESS", data, title))}
+                  onSaved={(data, title) => setSections((prev) => upsertSection(prev, "PRESS", data, title))}
+                />
+              )}
+              {downloadsSection && (
+                <DownloadsManager
+                  initialItems={itemsOf<DownloadsSectionData["items"][number]>(downloadsSection)}
+                  initialTitle={downloadsSection.title ?? SECTION_DEFAULT_TITLES.DOWNLOADS}
+                  defaultTitle={SECTION_DEFAULT_TITLES.DOWNLOADS}
+                  onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
+                  onSaved={(items, title) => setSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
+                />
+              )}
+              {riderSection && (
+                <TextSectionForm
+                  sectionType="TECH_RIDER"
+                  textKey="text"
+                  label="Necessidades técnicas"
+                  placeholder="Ex.: 2 CDJ-3000 + DJM-900, monitor de palco, 1 microfone sem fio…"
+                  maxLength={6000}
+                  withPdf
+                  initialText={riderData.text ?? ""}
+                  initialPdfUrl={riderData.pdfUrl ?? null}
+                  initialTitle={riderSection.title ?? SECTION_DEFAULT_TITLES.TECH_RIDER}
+                  defaultTitle={SECTION_DEFAULT_TITLES.TECH_RIDER}
+                  onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
+                  onSaved={(data, title) => setSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
+                />
+              )}
+              {faqSection && (
+                <ListSectionForm
+                  sectionType="FAQ"
+                  fields={FAQ_FIELDS}
+                  max={12}
+                  description="Perguntas que contratantes sempre fazem: cachê, duração do set, deslocamento…"
+                  initialItems={itemsOf(faqSection)}
+                  initialTitle={faqSection.title ?? SECTION_DEFAULT_TITLES.FAQ}
+                  defaultTitle={SECTION_DEFAULT_TITLES.FAQ}
+                  onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
+                  onSaved={(items, title) => setSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
+                />
+              )}
+              {customSection && (
+                <TextSectionForm
+                  sectionType="CUSTOM"
+                  textKey="body"
+                  label="Texto"
+                  placeholder="Qualquer coisa que não coube nas outras seções."
+                  maxLength={4000}
+                  initialText={customData.body ?? ""}
+                  initialTitle={customSection.title ?? SECTION_DEFAULT_TITLES.CUSTOM}
+                  defaultTitle={SECTION_DEFAULT_TITLES.CUSTOM}
+                  onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
+                  onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
+                />
+              )}
+              <ContactForm
+                initial={contactData}
+                initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
+                onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CONTACT", data, title))}
+                onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
+              />
+            </>
           )}
+          {tab === "musicas" && (
+            <>
+              <TabIntro>Tudo o que entra aqui aparece na página Músicas. A Home mostra só a primeira.</TabIntro>
           <EmbedManager
             sectionType="MUSIC"
             providers={AUDIO_PROVIDERS}
@@ -324,6 +462,30 @@ export function DashboardHomePage() {
             onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "MUSIC", {}, title))}
           />
+            </>
+          )}
+          {tab === "agenda" && (
+            <>
+              <TabIntro>
+                A página Agenda lista todos os eventos de hoje em diante. Coloque o link de ingressos em cada um; a Home
+                mostra os 3 próximos.
+              </TabIntro>
+          <TourDatesManager
+            initial={tourDates}
+            initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
+            onChange={setTourDates}
+            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
+            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
+          />
+            </>
+          )}
+          {tab === "midia" && (
+            <>
+              <TabIntro>
+                Fotos e vídeos da página Mídia. Suba quantos quiser (dentro do limite do plano): a Home mostra só uma
+                prévia.
+              </TabIntro>
+          <GalleryManager initial={gallery} onChange={setGallery} />
           <EmbedManager
             sectionType="VIDEO"
             providers={VIDEO_PROVIDERS}
@@ -336,108 +498,8 @@ export function DashboardHomePage() {
             onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
             onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "VIDEO", {}, title))}
           />
-          <GalleryManager initial={gallery} onChange={setGallery} />
-          <TourDatesManager
-            initial={tourDates}
-            initialTitle={tourDatesSection?.title ?? SECTION_DEFAULT_TITLES.TOUR_DATES}
-            onChange={setTourDates}
-            onTitleLiveChange={(title) => setPreviewSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
-            onTitleSaved={(title) => setSections((prev) => upsertSection(prev, "TOUR_DATES", {}, title))}
-          />
-          {statsSection && (
-            <ListSectionForm
-              sectionType="STATS"
-              fields={STATS_FIELDS}
-              max={6}
-              description="Até 6 números que impressionam: ouvintes mensais, shows feitos, seguidores…"
-              initialItems={itemsOf(statsSection)}
-              initialTitle={statsSection.title ?? SECTION_DEFAULT_TITLES.STATS}
-              defaultTitle={SECTION_DEFAULT_TITLES.STATS}
-              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "STATS", { items }, title))}
-              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "STATS", { items }, title))}
-            />
+            </>
           )}
-          {testimonialsSection && (
-            <ListSectionForm
-              sectionType="TESTIMONIALS"
-              fields={TESTIMONIAL_FIELDS}
-              max={8}
-              description="O que contratantes, produtores e público disseram sobre você."
-              initialItems={itemsOf(testimonialsSection)}
-              initialTitle={testimonialsSection.title ?? SECTION_DEFAULT_TITLES.TESTIMONIALS}
-              defaultTitle={SECTION_DEFAULT_TITLES.TESTIMONIALS}
-              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
-              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "TESTIMONIALS", { items }, title))}
-            />
-          )}
-          {pressSection && (
-            <PressManager
-              initialMentions={press}
-              initialData={pressData}
-              initialTitle={pressSection.title ?? SECTION_DEFAULT_TITLES.PRESS}
-              onMentionsChange={setPress}
-              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "PRESS", data, title))}
-              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "PRESS", data, title))}
-            />
-          )}
-          {downloadsSection && (
-            <DownloadsManager
-              initialItems={itemsOf<DownloadsSectionData["items"][number]>(downloadsSection)}
-              initialTitle={downloadsSection.title ?? SECTION_DEFAULT_TITLES.DOWNLOADS}
-              defaultTitle={SECTION_DEFAULT_TITLES.DOWNLOADS}
-              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
-              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "DOWNLOADS", { items }, title))}
-            />
-          )}
-          {riderSection && (
-            <TextSectionForm
-              sectionType="TECH_RIDER"
-              textKey="text"
-              label="Necessidades técnicas"
-              placeholder="Ex.: 2 CDJ-3000 + DJM-900, monitor de palco, 1 microfone sem fio…"
-              maxLength={6000}
-              withPdf
-              initialText={riderData.text ?? ""}
-              initialPdfUrl={riderData.pdfUrl ?? null}
-              initialTitle={riderSection.title ?? SECTION_DEFAULT_TITLES.TECH_RIDER}
-              defaultTitle={SECTION_DEFAULT_TITLES.TECH_RIDER}
-              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
-              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "TECH_RIDER", data, title))}
-            />
-          )}
-          {faqSection && (
-            <ListSectionForm
-              sectionType="FAQ"
-              fields={FAQ_FIELDS}
-              max={12}
-              description="Perguntas que contratantes sempre fazem: cachê, duração do set, deslocamento…"
-              initialItems={itemsOf(faqSection)}
-              initialTitle={faqSection.title ?? SECTION_DEFAULT_TITLES.FAQ}
-              defaultTitle={SECTION_DEFAULT_TITLES.FAQ}
-              onLiveChange={(items, title) => setPreviewSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
-              onSaved={(items, title) => setSections((prev) => upsertSection(prev, "FAQ", { items }, title))}
-            />
-          )}
-          {customSection && (
-            <TextSectionForm
-              sectionType="CUSTOM"
-              textKey="body"
-              label="Texto"
-              placeholder="Qualquer coisa que não coube nas outras seções."
-              maxLength={4000}
-              initialText={customData.body ?? ""}
-              initialTitle={customSection.title ?? SECTION_DEFAULT_TITLES.CUSTOM}
-              defaultTitle={SECTION_DEFAULT_TITLES.CUSTOM}
-              onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
-              onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CUSTOM", data, title))}
-            />
-          )}
-          <ContactForm
-            initial={contactData}
-            initialTitle={contactSection?.title ?? SECTION_DEFAULT_TITLES.CONTACT}
-            onLiveChange={(data, title) => setPreviewSections((prev) => upsertSection(prev, "CONTACT", data, title))}
-            onSaved={(data, title) => setSections((prev) => upsertSection(prev, "CONTACT", data, title))}
-          />
         </div>
 
         <aside
@@ -481,7 +543,7 @@ export function DashboardHomePage() {
               }
               style={{ fontFamily: FONT_FAMILY_CSS[presskit.themeFontKey] }}
             >
-              <PresskitRenderer presskit={previewPresskit} />
+              <PresskitRenderer presskit={previewPresskit} page={currentTab.page} pageHref={() => "#"} />
             </div>
           </div>
         </aside>
@@ -499,4 +561,8 @@ function upsertSection(sections: Section[], type: Section["type"], data: unknown
     ...sections,
     { id: type, type, title: title ?? null, order: sections.length, visible: true, data, titleEn: null, dataEn: null, style: {}, layout: null },
   ];
+}
+
+function TabIntro({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-fg-muted">{children}</p>;
 }

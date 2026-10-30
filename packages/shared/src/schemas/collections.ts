@@ -2,7 +2,10 @@ import { z } from "zod";
 import { httpUrlSchema } from "./url";
 import { parseMediaUrl } from "../media/parseMediaUrl";
 
-export const mediaProviderSchema = z.enum(["SPOTIFY", "YOUTUBE", "SOUNDCLOUD", "VIMEO"]);
+/** UPLOAD = a video file the artist sent to our bucket. It is never created
+ * through the link endpoints: parseMediaUrl never answers UPLOAD, so
+ * refineMediaLink below rejects it there. */
+export const mediaProviderSchema = z.enum(["SPOTIFY", "YOUTUBE", "SOUNDCLOUD", "VIMEO", "UPLOAD"]);
 export type MediaProvider = z.infer<typeof mediaProviderSchema>;
 
 export const MEDIA_PROVIDER_LABELS: Record<MediaProvider, string> = {
@@ -10,7 +13,12 @@ export const MEDIA_PROVIDER_LABELS: Record<MediaProvider, string> = {
   YOUTUBE: "YouTube",
   SOUNDCLOUD: "SoundCloud",
   VIMEO: "Vimeo",
+  UPLOAD: "Vídeo enviado",
 };
+
+/** Formats a browser plays in a plain <video> tag. */
+export const VIDEO_UPLOAD_EXTENSIONS = ["mp4", "m4v", "mov", "webm"] as const;
+export const MAX_VIDEO_UPLOAD_MB = 300;
 
 export const mediaEmbedSchema = z.object({
   id: z.string().cuid().optional(),

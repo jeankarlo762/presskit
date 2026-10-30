@@ -126,18 +126,22 @@ export type PlanKey = (typeof PLAN_KEYS)[number];
  */
 export const PLAN_LIMITS: Record<PlanKey, {
   maxGalleryPhotos: number;
+  /** Video files on the Mídia page (YouTube/Vimeo links don't count). */
+  maxUploadedVideos: number;
   maxTrackableLinks: number;
   analyticsHistoryDays: number;
   watermark: boolean;
 }> = {
   FREE: {
     maxGalleryPhotos: 6,
+    maxUploadedVideos: 2,
     maxTrackableLinks: 1,
     analyticsHistoryDays: 7,
     watermark: true,
   },
   PRO: {
     maxGalleryPhotos: 40,
+    maxUploadedVideos: 20,
     maxTrackableLinks: 20,
     analyticsHistoryDays: 365,
     watermark: false,

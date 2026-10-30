@@ -382,10 +382,12 @@ async function loadFullPublicPresskit(where: Prisma.PresskitWhereInput) {
     agency,
     roster,
     sections,
+    mediaEmbeds,
     ...rest
   } = presskit;
   return {
     ...rest,
+    mediaEmbeds: mediaEmbeds.map(({ storageKey: _mediaKey, ...embed }) => embed),
     artistName: presskit.displayName ?? user.name,
     agency: agency && agency.published ? { slug: agency.slug, name: agency.displayName ?? agency.user.name } : null,
     roster: roster.map(({ user: rosterUser, displayName, ...artist }) => ({ ...artist, name: displayName ?? rosterUser.name })),

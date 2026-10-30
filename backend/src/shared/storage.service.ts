@@ -10,6 +10,7 @@ import type { Readable } from "node:stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env, corsOrigins } from "../config/env";
 import { generateOpaqueToken } from "./crypto";
+import { MAX_VIDEO_UPLOAD_MB } from "@presskit/shared";
 
 export class StorageNotConfiguredError extends Error {
   constructor() {
@@ -41,7 +42,25 @@ export class ForeignStorageKeyError extends Error {
 
 export type ImageFolder = "gallery" | "theme-bg" | "cover" | "avatar" | "logo" | "section-bg";
 export type FileFolder = "files";
-export type StorageFolder = ImageFolder | FileFolder;
+export type VideoFolder = "videos";
+export type StorageFolder = ImageFolder | FileFolder | VideoFolder;
+
+/** Video files for the Mídia page, played with a plain <video> tag — so
+ * only formats browsers play natively. */
+const VIDEO_CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+};
+export const MAX_VIDEO_BYTES = MAX_VIDEO_UPLOAD_MB * 1024 * 1024;
+
+export class UnsupportedVideoExtensionError extends Error {
+  constructor(extension: string) {
+    super(`Formato de vídeo não suportado: .${extension} — use MP4, MOV ou WebM`);
+    this.name = "UnsupportedVideoExtensionError";
+  }
+}
 
 /** Downloadable press material: documents, archives and audio. */
 const FILE_CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
@@ -180,6 +199,40 @@ export async function createFileUploadUrl(presskitId: string, extension: string)
   return { uploadUrl, storageKey, contentType, maxBytes: MAX_FILE_BYTES, publicUrl: publicUrlFor(storageKey) };
 }
 
+/** Presigned PUT for a video file (Mídia page). Same mechanics as images,
+ * a much bigger cap and its own folder. */
+export async function createVideoUploadUrl(presskitId: string, extension: string) {
+  const normalizedExtension = extension.toLowerCase().replace(/^\./, "");
+  const contentType = VIDEO_CONTENT_TYPE_BY_EXTENSION[normalizedExtension];
+  if (!contentType) throw new UnsupportedVideoExtensionError(normalizedExtension);
+
+  const client = getClient();
+  const storageKey = `${storageKeyPrefix(presskitId, "videos")}${generateOpaqueToken()}.${normalizedExtension}`;
+  const uploadUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey, ContentType: contentType }),
+    // Big files on a phone connection take a while to even start.
+    { expiresIn: 3600 },
+  );
+  return { uploadUrl, storageKey, contentType, maxBytes: MAX_VIDEO_BYTES, publicUrl: publicUrlFor(storageKey) };
+}
+
+/** Confirms an uploaded video landed and is within the cap. */
+export async function assertVideoObjectExists(storageKey: string) {
+  const client = getClient();
+  let size: number | undefined;
+  try {
+    const head = await client.send(new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
+    size = head.ContentLength;
+  } catch {
+    throw new UploadNotFoundError();
+  }
+  if (size !== undefined && size > MAX_VIDEO_BYTES) {
+    await deleteImageObject(storageKey);
+    throw new UploadNotFoundError();
+  }
+}
+
 /** HEAD for a confirmed file: size + type, so the section can show them. */
 export async function describeStoredFile(storageKey: string) {
   const client = getClient();
@@ -199,7 +252,12 @@ export async function describeStoredFile(storageKey: string) {
 
 export function contentTypeForKey(storageKey: string): string {
   const extension = storageKey.split(".").pop()?.toLowerCase() ?? "";
-  return CONTENT_TYPE_BY_EXTENSION[extension] ?? FILE_CONTENT_TYPE_BY_EXTENSION[extension] ?? "application/octet-stream";
+  return (
+    CONTENT_TYPE_BY_EXTENSION[extension] ??
+    FILE_CONTENT_TYPE_BY_EXTENSION[extension] ??
+    VIDEO_CONTENT_TYPE_BY_EXTENSION[extension] ??
+    "application/octet-stream"
+  );
 }
 
 /** Confirms the object actually landed in R2 (and isn't oversized) before
@@ -221,15 +279,20 @@ export async function assertImageObjectExists(storageKey: string) {
 }
 
 /** Streams an object for the public /media route. Throws for a missing key
- * (callers answer 404) — the bucket is private, this is the only read path. */
-export async function getImageObject(storageKey: string) {
+ * (callers answer 404) — the bucket is private, this is the only read path.
+ * `range` (an HTTP Range header) is passed through so videos can seek and
+ * Safari, which only plays video served in ranges, can play them at all. */
+export async function getImageObject(storageKey: string, range?: string) {
   const client = getClient();
-  const object = await client.send(new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey }));
+  const object = await client.send(
+    new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: storageKey, ...(range ? { Range: range } : {}) }),
+  );
   if (!object.Body) throw new UploadNotFoundError();
   return {
     body: object.Body as Readable,
     contentType: object.ContentType ?? contentTypeForKey(storageKey),
     contentLength: object.ContentLength,
+    contentRange: object.ContentRange,
     etag: object.ETag,
   };
 }

@@ -1,8 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { InfoTip } from "../../components/InfoTip";
 import { FIELD_HELP } from "../../lib/fieldHelp";
-import { MEDIA_PROVIDER_LABELS, parseMediaUrl, type MediaProvider, type SectionType } from "@presskit/shared";
-import { createMedia, deleteMedia, updateSectionData, type MediaEmbed } from "../../api/presskit";
+import {
+  MAX_VIDEO_UPLOAD_MB,
+  MEDIA_PROVIDER_LABELS,
+  VIDEO_UPLOAD_EXTENSIONS,
+  parseMediaUrl,
+  type MediaProvider,
+  type SectionType,
+} from "@presskit/shared";
+import {
+  confirmUploadedVideo,
+  createMedia,
+  deleteMedia,
+  requestVideoUploadUrl,
+  updateSectionData,
+  type MediaEmbed,
+} from "../../api/presskit";
+import { fileExtension, uploadVideoToStorage } from "../../lib/uploadImage";
 import { apiErrorMessage } from "../../api/axios";
 import { SectionTitleField } from "./SectionTitleField";
 import { Button, Card, FieldError, Input } from "../../components/ui";
@@ -38,6 +53,10 @@ export function EmbedManager({
   const [embedTitle, setEmbedTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  /** 0–1 while a video file is uploading, null otherwise. */
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const isVideoSection = sectionType === "VIDEO";
 
   const [sectionTitle, setSectionTitle] = useState(initialTitle);
   const [titleSaving, setTitleSaving] = useState(false);
@@ -51,7 +70,6 @@ export function EmbedManager({
   // a youtube.com/shorts link are "the same provider".
   const parsed = useMemo(() => parseMediaUrl(url), [url]);
   const trimmedUrl = url.trim();
-  const isVideoSection = sectionType === "VIDEO";
   const providerMismatch = parsed !== null && !providers.includes(parsed.provider);
 
   let hint: string | null = null;
@@ -75,6 +93,30 @@ export function EmbedManager({
       setError(apiErrorMessage(err, "Não foi possível adicionar — confira o link"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleVideoFile(file: File) {
+    setError(null);
+    const extension = fileExtension(file);
+    if (!(VIDEO_UPLOAD_EXTENSIONS as readonly string[]).includes(extension)) {
+      setError("Formato não suportado — envie MP4, MOV ou WebM");
+      return;
+    }
+    setUploadProgress(0);
+    try {
+      const ticket = await requestVideoUploadUrl(extension);
+      await uploadVideoToStorage(ticket, file, setUploadProgress);
+      const title = embedTitle.trim() || file.name.replace(/\.[^.]+$/, "").slice(0, 150);
+      const media = await confirmUploadedVideo({ storageKey: ticket.storageKey, title });
+      const next = [...items, media];
+      setItems(next);
+      onChange(next);
+      setEmbedTitle("");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível enviar o vídeo"));
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -168,6 +210,37 @@ export function EmbedManager({
         {hint && <p className="text-sm text-fg-muted">{hint}</p>}
         <FieldError>{error}</FieldError>
       </form>
+      {isVideoSection && (
+        <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={uploadProgress !== null}
+              onClick={() => fileInput.current?.click()}
+            >
+              {uploadProgress !== null ? `Enviando... ${Math.round(uploadProgress * 100)}%` : "Enviar arquivo de vídeo"}
+            </Button>
+            <span className="text-sm text-fg-muted">MP4, MOV ou WebM, até {MAX_VIDEO_UPLOAD_MB} MB</span>
+          </div>
+          {uploadProgress !== null && (
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full bg-primary transition-[width]" style={{ width: `${uploadProgress * 100}%` }} />
+            </div>
+          )}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void handleVideoFile(file);
+            }}
+          />
+        </div>
+      )}
     </Card>
   );
 }
