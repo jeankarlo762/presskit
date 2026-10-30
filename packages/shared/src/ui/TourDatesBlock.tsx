@@ -20,11 +20,14 @@ export function TourDatesBlock({
   dates,
   ticketsLabel = "Ingressos",
   layout = "list",
+  stage = false,
 }: {
   title: string;
   dates: PublicTourDate[];
   ticketsLabel?: string;
   layout?: string;
+  /** Palco: the list layout with poster-sized dates. */
+  stage?: boolean;
 }) {
   if (dates.length === 0) return null;
 
@@ -61,6 +64,49 @@ export function TourDatesBlock({
                     rel="noopener noreferrer"
                     data-track="tickets"
                     className={presskitButtonClass("outline", "sm")}
+                  >
+                    {ticketsLabel}
+                  </a>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
+
+  if (stage) {
+    return (
+      <section className="flex flex-col gap-4 @4xl:gap-8">
+        <SectionHeading>{title}</SectionHeading>
+        <ul className="flex flex-col divide-y divide-[var(--presskit-border)] border-y border-[var(--presskit-border)]">
+          {list.map((date) => {
+            const day = new Date(date.date);
+            const month = day.toLocaleDateString("pt-BR", { month: "short", timeZone: "UTC" }).replace(".", "");
+            return (
+              <li
+                key={date.id}
+                className="flex items-center gap-4 py-4 @4xl:grid @4xl:grid-cols-[12rem_minmax(0,1fr)_auto] @4xl:gap-8 @4xl:py-7"
+              >
+                <span
+                  style={{ fontFamily: "var(--presskit-font-heading)" }}
+                  className="flex w-16 shrink-0 flex-col items-center text-3xl font-bold uppercase leading-[0.95] @4xl:w-auto @4xl:flex-row @4xl:items-baseline @4xl:gap-3 @4xl:text-5xl"
+                >
+                  {String(day.getUTCDate()).padStart(2, "0")}
+                  <span className="text-base @4xl:text-5xl">{month}</span>
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 @4xl:flex-row @4xl:items-baseline @4xl:justify-between @4xl:gap-6">
+                  <span className="truncate text-base font-bold @4xl:text-2xl">{date.venueName}</span>
+                  <span className="text-sm text-[var(--presskit-muted)] @4xl:text-lg">{date.city}</span>
+                </div>
+                {date.ticketUrl && (
+                  <a
+                    href={date.ticketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-track="tickets"
+                    className={`shrink-0 ${presskitButtonClass("outline", "sm")}`}
                   >
                     {ticketsLabel}
                   </a>

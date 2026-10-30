@@ -11,6 +11,7 @@ export const FONT_OPTIONS = [
   { key: "playfair_display", label: "Playfair Display", category: "serif" },
   { key: "lora", label: "Lora", category: "serif" },
   { key: "dm_serif_display", label: "DM Serif Display", category: "serif" },
+  { key: "anton", label: "Anton", category: "display" },
   { key: "bebas_neue", label: "Bebas Neue", category: "display" },
   { key: "oswald", label: "Oswald", category: "display" },
 ] as const;
@@ -31,6 +32,7 @@ export const FONT_FAMILY_CSS: Record<FontKey, string> = {
   playfair_display: '"Playfair Display", serif',
   lora: '"Lora", serif',
   dm_serif_display: '"DM Serif Display", serif',
+  anton: '"Anton", sans-serif',
   bebas_neue: '"Bebas Neue", sans-serif',
   oswald: '"Oswald", sans-serif',
 };
@@ -69,8 +71,8 @@ export const TEMPLATE_OPTIONS = [
   {
     key: "palco",
     label: "Palco",
-    description: "Capa grande e nome em letras gigantes",
-    suggestedHeadingFontKey: "bebas_neue",
+    description: "Foto grande e nome gigante, cara de cartaz de show",
+    suggestedHeadingFontKey: "anton",
   },
   {
     key: "minimal",
