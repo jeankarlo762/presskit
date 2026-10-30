@@ -37,6 +37,10 @@ export async function storageRoutes(fastify: FastifyInstance) {
       if (object.etag) reply.header("ETag", object.etag);
       // Images embed anywhere (OG scrapers, other sites linking the presskit).
       reply.header("Access-Control-Allow-Origin", "*");
+      // helmet's default `same-origin` makes the browser refuse to render
+      // these on presskitai.com.br / app.presskitai.com.br (another origin
+      // than api.*), even though the response itself is a 200.
+      reply.header("Cross-Origin-Resource-Policy", "cross-origin");
       reply.header("X-Content-Type-Options", "nosniff");
       // Documents open inline (PDF viewer); archives/audio are offered as a
       // download with a readable name instead of the random key.
