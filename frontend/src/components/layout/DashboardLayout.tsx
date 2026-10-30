@@ -118,7 +118,7 @@ function NavGroup({ label, items }: { label?: string; items: NavItem[] }) {
 
 export function DashboardLayout() {
   const navigate = useNavigate();
-  const { user, refreshToken, clearSession, setUser } = useAuthStore();
+  const { user, refreshToken, clearSession, setUser, impersonator, stopImpersonation } = useAuthStore();
   const { activePresskitId, setActivePresskitId } = usePresskitStore();
   const superadmin = isSuperadmin(user);
   const agency = isAgency(user) && !superadmin;
@@ -151,7 +151,15 @@ export function DashboardLayout() {
       .catch(() => undefined);
   }, [setUser]);
 
+  // Back to the admin's own session; the borrowed one is revoked.
+  async function handleStopImpersonation() {
+    const borrowed = stopImpersonation();
+    if (borrowed) await logout(borrowed).catch(() => undefined);
+    navigate("/admin/usuarios");
+  }
+
   async function handleLogout() {
+    if (impersonator) return handleStopImpersonation();
     if (refreshToken) await logout(refreshToken).catch(() => undefined);
     clearSession();
     navigate("/login");
@@ -208,6 +216,16 @@ export function DashboardLayout() {
       </aside>
 
       <main className="min-w-0 flex-1" key={activePresskitId ?? "primary"}>
+        {impersonator && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-amber-500/15 px-4 py-2.5 text-sm text-amber-200">
+            <span>
+              Você está vendo a conta de <strong>{user?.email}</strong> como administrador.
+            </span>
+            <button onClick={handleStopImpersonation} className="font-bold underline hover:text-amber-100">
+              Voltar ao admin
+            </button>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

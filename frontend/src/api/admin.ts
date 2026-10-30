@@ -1,4 +1,5 @@
 import { api } from "./axios";
+import type { AuthUser } from "../store/auth.store";
 import type {
   AdminFeedbackQuery,
   AdminFeedbackUpdateInput,
@@ -39,6 +40,13 @@ export async function updateAdminUser(id: string, input: AdminUpdateUserInput) {
 
 export async function setAdminUserPassword(id: string, password: string) {
   await api.post(`/admin/users/${id}/password`, { password });
+}
+
+export async function impersonateAdminUser(id: string) {
+  const { data } = await api.post<{ user: AuthUser; accessToken: string; refreshToken: string }>(
+    `/admin/users/${id}/impersonate`,
+  );
+  return data;
 }
 
 export async function fetchAdminSubscriptions(params: QueryInput<AdminSubscriptionsQuery>) {

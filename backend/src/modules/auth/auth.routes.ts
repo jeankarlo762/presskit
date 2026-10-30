@@ -20,7 +20,7 @@ import {
 import { signAccessToken } from "../../shared/jwt";
 import { prisma } from "../../config/prisma";
 
-function toPublicUser(user: {
+export function toPublicUser(user: {
   id: string;
   name: string;
   email: string;

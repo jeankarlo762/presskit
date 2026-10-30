@@ -16,12 +16,16 @@ import {
   listRecentWebhookEvents,
   listSubscriptions,
   listUsers,
+  loadImpersonationTarget,
   setUserPassword,
   updateUser,
 } from "./admin.service";
 import { listFeedback, updateFeedback } from "../feedback/feedback.service";
 import { cancelSubscription, runBillingHousekeeping, syncSubscriptionFromMp, SubscriptionNotFoundError } from "../billing/billing.service";
 import { prisma } from "../../config/prisma";
+import { signAccessToken } from "../../shared/jwt";
+import { issueRefreshToken } from "../auth/auth.service";
+import { toPublicUser } from "../auth/auth.routes";
 import {
   activateCustomDomain,
   deactivateCustomDomain,
@@ -62,6 +66,21 @@ export async function adminRoutes(fastify: FastifyInstance) {
     await setUserPassword(id, password);
     request.log.info({ adminId: request.currentUser.id, userId: id }, "admin set user password");
     return reply.status(204).send();
+  });
+
+  // "Entrar como usuário": a normal session for the target account, so the
+  // admin sees exactly what the user sees. The dashboard keeps the admin's
+  // own session aside and revokes this one when they return.
+  fastify.post("/admin/users/:id/impersonate", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    const target = await loadImpersonationTarget(id);
+    const accessToken = await signAccessToken(target.id);
+    const refreshToken = await issueRefreshToken(target.id, {
+      userAgent: `impersonation by ${request.currentUser.id}`,
+      ip: request.ip,
+    });
+    request.log.info({ adminId: request.currentUser.id, userId: target.id }, "admin impersonated user");
+    return reply.send({ user: toPublicUser(target), accessToken, refreshToken });
   });
 
   // Billing -----------------------------------------------------------------

@@ -14,11 +14,20 @@ export type AuthUser = {
   trialEndsAt?: string | null;
 };
 
+type Session = { user: AuthUser; accessToken: string; refreshToken: string };
+
 type AuthState = {
   user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
-  setSession: (session: { user: AuthUser; accessToken: string; refreshToken: string }) => void;
+  /** While a superadmin is "Entrar como usuário", their own session waits
+   * here and the fields above hold the user's. */
+  impersonator: Session | null;
+  setSession: (session: Session) => void;
+  /** Switches to `session`, keeping the current (admin) one aside. */
+  startImpersonation: (session: Session) => void;
+  /** Puts the admin session back; returns the user session to revoke. */
+  stopImpersonation: () => string | null;
   /** Refreshes just the profile (role/plan can change server-side without
    * a new login — e.g. after being promoted to superadmin). */
   setUser: (user: AuthUser) => void;
@@ -27,13 +36,25 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      impersonator: null,
       setSession: ({ user, accessToken, refreshToken }) => set({ user, accessToken, refreshToken }),
+      startImpersonation: (session) => {
+        const { user, accessToken, refreshToken, impersonator } = get();
+        const admin = impersonator ?? (user && accessToken && refreshToken ? { user, accessToken, refreshToken } : null);
+        set({ ...session, impersonator: admin });
+      },
+      stopImpersonation: () => {
+        const { impersonator, refreshToken } = get();
+        if (!impersonator) return null;
+        set({ ...impersonator, impersonator: null });
+        return refreshToken;
+      },
       setUser: (user) => set({ user }),
-      clearSession: () => set({ user: null, accessToken: null, refreshToken: null }),
+      clearSession: () => set({ user: null, accessToken: null, refreshToken: null, impersonator: null }),
     }),
     { name: "presskit-auth" },
   ),

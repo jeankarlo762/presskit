@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, KeyRound, User as UserIcon } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ExternalLink, KeyRound, LogIn, User as UserIcon } from "lucide-react";
 import {
   BILLING_PLANS,
   PLAN_KEYS,
@@ -11,7 +11,7 @@ import {
   type PlanKey,
   type UserRole,
 } from "@presskit/shared";
-import { fetchAdminUser, setAdminUserPassword, updateAdminUser } from "../../api/admin";
+import { fetchAdminUser, impersonateAdminUser, setAdminUserPassword, updateAdminUser } from "../../api/admin";
 import { apiErrorMessage } from "../../api/axios";
 import { useAuthStore } from "../../store/auth.store";
 import { publicPresskitUrl } from "../../config";
@@ -22,6 +22,8 @@ import { Badge, EmptyState, PageHeader, PaymentBadge, SubscriptionBadge, TableSh
 export function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const me = useAuthStore((state) => state.user);
+  const startImpersonation = useAuthStore((state) => state.startImpersonation);
+  const navigate = useNavigate();
   const [user, setUser] = useState<AdminUserDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,6 +49,17 @@ export function AdminUserDetailPage() {
     }
   }
 
+  async function handleImpersonate() {
+    if (!user) return;
+    setError(null);
+    try {
+      startImpersonation(await impersonateAdminUser(user.id));
+      navigate("/");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível entrar na conta"));
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <Link to="/admin/usuarios" className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg">
@@ -60,6 +73,13 @@ export function AdminUserDetailPage() {
       ) : (
         <>
           <PageHeader icon={UserIcon} title={user.name} description={user.email} />
+          {user.role !== "SUPERADMIN" && (
+            <div>
+              <Button size="sm" variant="secondary" onClick={handleImpersonate}>
+                <LogIn size={15} /> Entrar como usuário
+              </Button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Card className="flex flex-col gap-3 text-sm">

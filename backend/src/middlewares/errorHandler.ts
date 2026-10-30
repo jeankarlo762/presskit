@@ -29,7 +29,12 @@ import {
 import { PlanLimitError } from "@presskit/shared";
 import { InvalidAccessTokenError } from "../shared/jwt";
 import { ForbiddenError } from "./authenticate";
-import { CannotChangeOwnRoleError, LastSuperadminError, UserNotFoundError } from "../modules/admin/admin.service";
+import {
+  CannotChangeOwnRoleError,
+  CannotImpersonateSuperadminError,
+  LastSuperadminError,
+  UserNotFoundError,
+} from "../modules/admin/admin.service";
 import { BillingNotConfiguredError, BillingProviderError, WebhookSignatureError } from "../modules/billing/mercadopago";
 import { AlreadySubscribedError, SubscriptionNotFoundError } from "../modules/billing/billing.service";
 import { FeedbackNotFoundError } from "../modules/feedback/feedback.service";
@@ -49,6 +54,7 @@ const KNOWN_ERROR_STATUS = new Map<Function, number>([
   [CannotChangeOwnRoleError, 400],
   [InvalidResetCodeError, 400],
   [LastSuperadminError, 409],
+  [CannotImpersonateSuperadminError, 403],
   [AlreadySubscribedError, 409],
   [EmailAlreadyInUseError, 409],
   [PresskitNotFoundError, 404],

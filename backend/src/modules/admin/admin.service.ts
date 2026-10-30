@@ -192,6 +192,22 @@ export async function setUserPassword(userId: string, password: string) {
   ]);
 }
 
+export class CannotImpersonateSuperadminError extends Error {
+  constructor() {
+    super("Não é possível entrar na conta de outro superadmin");
+    this.name = "CannotImpersonateSuperadminError";
+  }
+}
+
+/** The account a superadmin may open via "Entrar como usuário" — never
+ * another superadmin, so impersonation can't be used to escalate. */
+export async function loadImpersonationTarget(userId: string) {
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) throw new UserNotFoundError();
+  if (target.role === "SUPERADMIN") throw new CannotImpersonateSuperadminError();
+  return target;
+}
+
 // ---------------------------------------------------------------------------
 // Subscriptions & payments
 // ---------------------------------------------------------------------------
