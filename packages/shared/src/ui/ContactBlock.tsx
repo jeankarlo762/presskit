@@ -1,4 +1,6 @@
+import { phoneWhatsappUrl } from "../constants/quickLinks";
 import type { ContactSectionData } from "../schemas/section";
+import { BrandIcon } from "./QuickLinksBar";
 import { SectionHeading } from "./SectionHeading";
 import { presskitButtonClass } from "./templates";
 
@@ -18,6 +20,7 @@ export function ContactBlock({ title, data }: { title: string; data: ContactSect
   const socialLinks = data.socialLinks ?? [];
   const hasContent = data.email || data.phone || socialLinks.length > 0;
   if (!hasContent) return null;
+  const phoneWhatsapp = data.phone ? phoneWhatsappUrl(data.phone) : null;
 
   return (
     <section className="flex flex-col gap-3 text-sm">
@@ -28,7 +31,20 @@ export function ContactBlock({ title, data }: { title: string; data: ContactSect
             {data.email}
           </a>
         )}
-        {data.phone && <span>{data.phone}</span>}
+        {phoneWhatsapp ? (
+          <a
+            href={phoneWhatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-track="whatsapp"
+            className={presskitButtonClass("solid", "sm")}
+          >
+            <BrandIcon platform="WHATSAPP" size={16} />
+            WhatsApp
+          </a>
+        ) : (
+          data.phone && <span>{data.phone}</span>
+        )}
       </div>
       {socialLinks.length > 0 && (
         <div className="flex flex-wrap gap-2">

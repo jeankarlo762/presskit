@@ -39,3 +39,15 @@ export function whatsappUrl(number: string, message?: string | null): string {
   if (message?.trim()) url.searchParams.set("text", message.trim());
   return url.toString();
 }
+
+/**
+ * wa.me link for a free-typed phone such as "(48) 99122-1256". Brazilian
+ * numbers typed without the country code (10-11 digits) get 55 prepended.
+ * Returns null when there aren't enough digits to be a real number.
+ */
+export function phoneWhatsappUrl(phone: string): string | null {
+  let digits = phone.replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length < 10) return null;
+  if (digits.length <= 11) digits = `55${digits}`;
+  return `https://wa.me/${digits}`;
+}
