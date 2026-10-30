@@ -1,3 +1,4 @@
+import { upcomingTourDates } from "../constants/pages";
 import type { PublicTourDate } from "../types/publicPresskit";
 import { SectionHeading } from "./SectionHeading";
 import { presskitButtonClass } from "./templates";
@@ -20,13 +21,74 @@ export function TourDatesBlock({
   dates,
   ticketsLabel = "Ingressos",
   layout = "list",
+  stage = false,
+  ticketsSoonLabel = "Ingressos em breve",
+  limit,
 }: {
   title: string;
   dates: PublicTourDate[];
   ticketsLabel?: string;
   layout?: string;
+  /** Palco: poster-sized dates, only events from today on, and a tickets
+   * button on every event (a disabled "soon" one until a link is set). */
+  stage?: boolean;
+  ticketsSoonLabel?: string;
+  /** Show only the first N upcoming events (the home page's preview). */
+  limit?: number;
 }) {
   if (dates.length === 0) return null;
+
+  if (stage) {
+    const upcomingOnly = upcomingTourDates(dates).slice(0, limit);
+    if (upcomingOnly.length === 0) return null;
+    return (
+      <section className="flex flex-col gap-4 @4xl:gap-8">
+        <SectionHeading>{title}</SectionHeading>
+        <ul className="flex flex-col divide-y divide-[var(--presskit-border)] border-y border-[var(--presskit-border)]">
+          {upcomingOnly.map((date) => {
+            const day = new Date(date.date);
+            const month = day.toLocaleDateString("pt-BR", { month: "short", timeZone: "UTC" }).replace(".", "");
+            return (
+              <li
+                key={date.id}
+                className="flex items-center gap-4 py-4 @4xl:grid @4xl:grid-cols-[12rem_minmax(0,1fr)_auto] @4xl:gap-8 @4xl:py-7"
+              >
+                <span
+                  style={{ fontFamily: "var(--presskit-font-heading)" }}
+                  className="flex w-16 shrink-0 flex-col items-center text-3xl font-bold uppercase leading-[0.95] @4xl:w-auto @4xl:flex-row @4xl:items-baseline @4xl:gap-3 @4xl:text-5xl"
+                >
+                  {String(day.getUTCDate()).padStart(2, "0")}
+                  <span className="text-base @4xl:text-5xl">{month}</span>
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 @4xl:flex-row @4xl:items-baseline @4xl:justify-between @4xl:gap-6">
+                  <span className="truncate text-base font-bold @4xl:text-2xl">{date.venueName}</span>
+                  <span className="text-sm text-[var(--presskit-muted)] @4xl:text-lg">{date.city}</span>
+                </div>
+                {date.ticketUrl ? (
+                  <a
+                    href={date.ticketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-track="tickets"
+                    className={`shrink-0 ${presskitButtonClass("solid", "sm")}`}
+                  >
+                    {ticketsLabel}
+                  </a>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    className={`shrink-0 cursor-default opacity-60 ${presskitButtonClass("outline", "sm")} hover:bg-transparent`}
+                  >
+                    {ticketsSoonLabel}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
 
   const now = Date.now();
   const upcoming = dates.filter((d) => new Date(d.date).getTime() >= now);

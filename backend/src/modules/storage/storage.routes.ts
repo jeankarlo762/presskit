@@ -5,7 +5,7 @@ import { getImageObject, StorageNotConfiguredError } from "../../shared/storage.
 // Only keys the app itself writes (see createImageUploadUrl) are ever
 // served — anything else in the bucket stays unreachable through here.
 const SERVABLE_KEY =
-  /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg|cover|avatar|logo|section-bg|files)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp|pdf|zip|docx|pptx|mp3)$/;
+  /^presskits\/[A-Za-z0-9_-]+\/(gallery|theme-bg|cover|avatar|logo|section-bg|files|videos)\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp|pdf|zip|docx|pptx|mp3|mp4|m4v|webm|mov)$/;
 const ATTACHMENT_EXTENSIONS = new Set(["zip", "docx", "pptx", "mp3"]);
 
 /**
@@ -25,7 +25,9 @@ export async function storageRoutes(fastify: FastifyInstance) {
 
       let object;
       try {
-        object = await getImageObject(key);
+        // Only a single "bytes=a-b" range is passed on (what <video> sends).
+        const range = request.headers.range;
+        object = await getImageObject(key, range && /^bytes=\d*-\d*$/.test(range) ? range : undefined);
       } catch (error) {
         if (error instanceof StorageNotConfiguredError) throw error;
         return reply.status(404).send({ error: "NOT_FOUND" });
@@ -34,6 +36,11 @@ export async function storageRoutes(fastify: FastifyInstance) {
       reply.header("Cache-Control", "public, max-age=31536000, immutable");
       reply.header("Content-Type", object.contentType);
       if (object.contentLength !== undefined) reply.header("Content-Length", String(object.contentLength));
+      reply.header("Accept-Ranges", "bytes");
+      if (object.contentRange) {
+        reply.header("Content-Range", object.contentRange);
+        reply.status(206);
+      }
       if (object.etag) reply.header("ETag", object.etag);
       // Images embed anywhere (OG scrapers, other sites linking the presskit).
       reply.header("Access-Control-Allow-Origin", "*");

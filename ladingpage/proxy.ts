@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { geolocation } from "@vercel/functions";
+import { isPresskitSubpage } from "@presskit/shared";
 import { SERVER_API_URL } from "./lib/urls";
 
 const SESSION_COOKIE = "presskit_sid";
@@ -41,7 +42,8 @@ async function resolveCustomDomain(host: string): Promise<string | null> {
  *
  * It is also where an artist's own domain (artista.com.br) turns into the
  * presskit route: the host is looked up and the request rewritten to
- * /<slug>, so the address bar keeps the artist's domain. */
+ * /<slug> (or /<slug>/agenda etc. for Palco's inner pages), so the
+ * address bar keeps the artist's domain. */
 export default async function proxy(request: NextRequest) {
   const { country } = geolocation(request);
   const sessionId = request.cookies.get(SESSION_COOKIE)?.value ?? crypto.randomUUID();
@@ -53,11 +55,13 @@ export default async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   let response: NextResponse;
 
-  if (host && !isOwnHost(host) && request.nextUrl.pathname === "/") {
+  const pathname = request.nextUrl.pathname;
+  const sitePage = pathname === "/" || isPresskitSubpage(pathname.slice(1));
+  if (host && !isOwnHost(host) && sitePage) {
     const slug = await resolveCustomDomain(host.replace(/:\d+$/, "").toLowerCase());
     if (slug) {
       const url = request.nextUrl.clone();
-      url.pathname = `/${slug}`;
+      url.pathname = pathname === "/" ? `/${slug}` : `/${slug}${pathname}`;
       requestHeaders.set("x-custom-domain", "1");
       response = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
     } else {

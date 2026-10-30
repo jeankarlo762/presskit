@@ -73,11 +73,11 @@ export const TEMPLATE_STYLES: Record<TemplateKey, TemplateStyle> = {
     sectionWidth: "wide",
     sectionPadding: "normal",
     vars: {
-      "--pk-h2-size": "clamp(2.25rem, 11cqw, 3rem)",
+      "--pk-h2-size": "clamp(3rem, 14cqw, 7.5rem)",
       "--pk-h2-weight": "700",
       "--pk-h2-transform": "uppercase",
       "--pk-h2-tracking": "0.01em",
-      "--pk-h2-leading": "0.95",
+      "--pk-h2-leading": "0.9",
       "--pk-h2-color": "var(--presskit-accent)",
       "--pk-h2-align": "left",
       "--pk-h2-style": "normal",

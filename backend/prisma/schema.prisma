@@ -63,6 +63,8 @@ enum MediaProvider {
   YOUTUBE
   SOUNDCLOUD
   VIMEO
+  /// A video file the artist uploaded (stored in the media bucket).
+  UPLOAD
 }
 
 enum BillingCycle {
@@ -433,6 +435,8 @@ model MediaEmbed {
   url        String
   title      String?
   order      Int
+  /// Set only for provider UPLOAD: the bucket object behind `url`.
+  storageKey String?
 
   @@index([presskitId])
 }

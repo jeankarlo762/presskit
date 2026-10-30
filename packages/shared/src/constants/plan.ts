@@ -22,6 +22,15 @@ export function requireWithinGalleryLimit(plan: PlanKey, currentCount: number, l
   }
 }
 
+export function requireWithinUploadedVideoLimit(plan: PlanKey, currentCount: number): void {
+  const limit = PLAN_LIMITS[plan].maxUploadedVideos;
+  if (currentCount >= limit) {
+    throw new PlanLimitError(
+      `Limite de vídeos enviados do plano ${plan} atingido (${limit}). Faça upgrade ou use um link do YouTube.`,
+    );
+  }
+}
+
 export function requireWithinTrackableLinkLimit(plan: PlanKey, currentCount: number): void {
   const limit = PLAN_LIMITS[plan].maxTrackableLinks;
   if (currentCount >= limit) {

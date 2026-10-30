@@ -5,6 +5,7 @@ import {
   Playfair_Display,
   Lora,
   DM_Serif_Display,
+  Anton,
   Bebas_Neue,
   Oswald,
 } from "next/font/google";
@@ -21,6 +22,7 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", 
 const playfairDisplay = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const lora = Lora({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const dmSerifDisplay = DM_Serif_Display({ subsets: ["latin"], weight: ["400"] });
+const anton = Anton({ subsets: ["latin"], weight: ["400"] });
 const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: ["400"] });
 const oswald = Oswald({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -35,6 +37,7 @@ export const FONT_FAMILY: Record<FontKey, string> = {
   playfair_display: playfairDisplay.style.fontFamily,
   lora: lora.style.fontFamily,
   dm_serif_display: dmSerifDisplay.style.fontFamily,
+  anton: anton.style.fontFamily,
   bebas_neue: bebasNeue.style.fontFamily,
   oswald: oswald.style.fontFamily,
 };

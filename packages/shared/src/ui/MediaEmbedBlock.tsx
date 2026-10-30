@@ -4,14 +4,32 @@ import { parseMediaUrl } from "../media/parseMediaUrl";
 import { SectionHeading } from "./SectionHeading";
 
 export const AUDIO_PROVIDERS: MediaProvider[] = ["SPOTIFY", "SOUNDCLOUD"];
-export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO"];
+export const VIDEO_PROVIDERS: MediaProvider[] = ["YOUTUBE", "VIMEO", "UPLOAD"];
 
 function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
+  if (embed.provider === "UPLOAD") {
+    // Our own bucket (served by the API's /media route), so a plain player.
+    return (
+      <div className="overflow-hidden rounded-[var(--pk-card-radius)]">
+        {embed.title && <p className="mb-1 text-sm font-medium">{embed.title}</p>}
+        <video
+          src={embed.url}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full bg-black object-contain"
+        />
+      </div>
+    );
+  }
+
   // Links are validated against parseMediaUrl on write, so this only fails
   // for rows that predate the validation — and even then we never put the
   // raw stored URL into an href (http(s) isn't guaranteed for old rows).
   const parsed = parseMediaUrl(embed.url);
   const isVideo = VIDEO_PROVIDERS.includes(embed.provider);
+  // Playlists and albums get the taller player that shows the track list.
+  const isList = !isVideo && /\/(playlist|album|sets)\//.test(embed.url);
 
   if (!parsed) {
     return <p className="text-sm text-[var(--presskit-muted)]">{embed.title ?? "Mídia indisponível"}</p>;
@@ -27,7 +45,7 @@ function EmbedFrame({ embed }: { embed: PublicMediaEmbed }) {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
-        className={isVideo ? "aspect-video w-full border-0" : "h-[152px] w-full border-0"}
+        className={isVideo ? "aspect-video w-full border-0" : `${isList ? "h-[352px]" : "h-[152px]"} w-full border-0`}
       />
     </div>
   );

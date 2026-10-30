@@ -16,6 +16,24 @@ export async function uploadImageToStorage(ticket: ImageUploadTicket, file: File
   await axios.put(ticket.uploadUrl, file, { headers: { "Content-Type": ticket.contentType } });
 }
 
+/** Same presigned PUT, for video files: they are big, so progress (0–1) is
+ * reported back for the editor to show. */
+export async function uploadVideoToStorage(
+  ticket: ImageUploadTicket,
+  file: File,
+  onProgress: (fraction: number) => void,
+) {
+  if (file.size > ticket.maxBytes) {
+    throw new Error(`Vídeo muito grande — o limite é ${Math.round(ticket.maxBytes / 1024 / 1024)} MB`);
+  }
+  await axios.put(ticket.uploadUrl, file, {
+    headers: { "Content-Type": ticket.contentType },
+    onUploadProgress: (event) => {
+      if (event.total) onProgress(event.loaded / event.total);
+    },
+  });
+}
+
 export function fileExtension(file: File): string {
   return file.name.split(".").pop()?.toLowerCase() ?? "jpg";
 }

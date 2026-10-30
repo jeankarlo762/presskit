@@ -13,12 +13,18 @@ function TemplateThumb({ templateKey, colors, bodyFont }: { templateKey: Templat
   switch (templateKey) {
     case "palco":
       return (
-        <div
-          style={{ ...base, backgroundColor: `color-mix(in srgb, ${colors.accent} 28%, ${colors.bg})` }}
-          className="flex h-[72px] items-end rounded-lg p-2"
-        >
-          <span style={{ fontFamily: font }} className="text-[22px] leading-none font-bold uppercase">
+        <div style={base} className="relative flex h-[72px] items-end overflow-hidden rounded-lg p-2">
+          <span
+            aria-hidden
+            className="absolute inset-y-0 right-0 w-1/2"
+            style={{
+              background: `linear-gradient(to right, ${colors.bg}, color-mix(in srgb, ${colors.accent} 45%, ${colors.bg}))`,
+            }}
+          />
+          <span style={{ fontFamily: font }} className="relative text-[22px] leading-[0.85] font-bold uppercase">
             Nome
+            <br />
+            Gigante
           </span>
         </div>
       );
