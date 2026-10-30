@@ -33,6 +33,13 @@ export const adminUpdateUserSchema = z
   });
 export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 
+/** A superadmin sets a new password for any account (the old one can't be
+ * read back — it's only stored as a bcrypt hash). */
+export const adminSetPasswordSchema = z.object({
+  password: z.string().min(8, "mínimo de 8 caracteres").max(72),
+});
+export type AdminSetPasswordInput = z.infer<typeof adminSetPasswordSchema>;
+
 export const adminSubscriptionsQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   status: z.enum(SUBSCRIPTION_STATUSES).optional(),

@@ -4,6 +4,7 @@ import {
   adminFeedbackQuerySchema,
   adminFeedbackUpdateSchema,
   adminPaymentsQuerySchema,
+  adminSetPasswordSchema,
   adminSubscriptionsQuerySchema,
   adminUpdateUserSchema,
   adminUsersQuerySchema,
@@ -15,6 +16,7 @@ import {
   listRecentWebhookEvents,
   listSubscriptions,
   listUsers,
+  setUserPassword,
   updateUser,
 } from "./admin.service";
 import { listFeedback, updateFeedback } from "../feedback/feedback.service";
@@ -52,6 +54,14 @@ export async function adminRoutes(fastify: FastifyInstance) {
     const { id } = idParamSchema.parse(request.params);
     const input = adminUpdateUserSchema.parse(request.body);
     return reply.send({ user: await updateUser(request.currentUser.id, id, input) });
+  });
+
+  fastify.post("/admin/users/:id/password", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    const { password } = adminSetPasswordSchema.parse(request.body);
+    await setUserPassword(id, password);
+    request.log.info({ adminId: request.currentUser.id, userId: id }, "admin set user password");
+    return reply.status(204).send();
   });
 
   // Billing -----------------------------------------------------------------

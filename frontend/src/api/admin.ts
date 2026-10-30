@@ -37,6 +37,10 @@ export async function updateAdminUser(id: string, input: AdminUpdateUserInput) {
   return data.user;
 }
 
+export async function setAdminUserPassword(id: string, password: string) {
+  await api.post(`/admin/users/${id}/password`, { password });
+}
+
 export async function fetchAdminSubscriptions(params: QueryInput<AdminSubscriptionsQuery>) {
   const { data } = await api.get<Paginated<AdminSubscriptionRow>>("/admin/subscriptions", { params });
   return data;

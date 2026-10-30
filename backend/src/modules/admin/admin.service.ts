@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { effectiveArtistSeats } from "../presskit/presskit.service";
@@ -19,6 +20,9 @@ import {
 } from "@presskit/shared";
 import { isBillingConfigured, isWebhookSecretConfigured } from "../billing/mercadopago";
 import { isEmailConfigured } from "../../shared/mailer";
+
+// Same cost as signup/reset in modules/auth.
+const ADMIN_BCRYPT_ROUNDS = 12;
 
 export class UserNotFoundError extends Error {
   constructor() {
@@ -173,6 +177,19 @@ export async function updateUser(actorId: string, userId: string, input: AdminUp
     select: userRowSelect,
   });
   return toUserRow(updated);
+}
+
+/** Overwrites the user's password and logs them out everywhere, the same as
+ * a self-service reset. Also works for Google-only accounts (adds one). */
+export async function setUserPassword(userId: string, password: string) {
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!target) throw new UserNotFoundError();
+
+  const passwordHash = await bcrypt.hash(password, ADMIN_BCRYPT_ROUNDS);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, User as UserIcon } from "lucide-react";
+import { ArrowLeft, ExternalLink, KeyRound, User as UserIcon } from "lucide-react";
 import {
   BILLING_PLANS,
   PLAN_KEYS,
@@ -11,12 +11,12 @@ import {
   type PlanKey,
   type UserRole,
 } from "@presskit/shared";
-import { fetchAdminUser, updateAdminUser } from "../../api/admin";
+import { fetchAdminUser, setAdminUserPassword, updateAdminUser } from "../../api/admin";
 import { apiErrorMessage } from "../../api/axios";
 import { useAuthStore } from "../../store/auth.store";
 import { publicPresskitUrl } from "../../config";
 import { formatDate, formatDateTime } from "../../lib/format";
-import { Card, FieldError, Select } from "../../components/ui";
+import { Button, Card, FieldError, Input, Select } from "../../components/ui";
 import { Badge, EmptyState, PageHeader, PaymentBadge, SubscriptionBadge, TableShell } from "../../components/admin/ui";
 
 export function AdminUserDetailPage() {
@@ -153,6 +153,8 @@ export function AdminUserDetailPage() {
             </Card>
           </div>
 
+          <PasswordCard userId={user.id} />
+
           <Card className="flex flex-col gap-3">
             <h2 className="font-medium text-fg">Histórico de assinaturas</h2>
             {user.subscriptions.length === 0 ? (
@@ -227,5 +229,58 @@ export function AdminUserDetailPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** Senhas ficam só como hash (bcrypt), então não dá pra mostrar a atual —
+ * o admin define uma nova, e a pessoa é deslogada de todos os aparelhos. */
+function PasswordCard({ userId }: { userId: string }) {
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setDone(false);
+    if (password.length < 8) return setError("A senha precisa ter pelo menos 8 caracteres");
+    setSaving(true);
+    try {
+      await setAdminUserPassword(userId, password);
+      setPassword("");
+      setDone(true);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível trocar a senha"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card as="form" onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
+      <h2 className="inline-flex items-center gap-2 font-medium text-fg">
+        <KeyRound size={15} /> Trocar senha
+      </h2>
+      <p className="text-fg-muted">
+        A senha atual não pode ser vista (fica guardada criptografada). Defina uma nova e passe pra pessoa. Ela será
+        desconectada de todos os aparelhos.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="text"
+          autoComplete="new-password"
+          placeholder="Nova senha (mín. 8 caracteres)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="sm:max-w-xs"
+        />
+        <Button type="submit" size="sm" disabled={saving || !password}>
+          {saving ? "Salvando..." : "Definir senha"}
+        </Button>
+      </div>
+      <FieldError>{error}</FieldError>
+      {done && <p className="text-emerald-400">Senha alterada.</p>}
+    </Card>
   );
 }
